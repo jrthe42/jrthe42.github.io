@@ -1,0 +1,671 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="想入非非就是寻找神奇" />
+
+
+
+  <meta name="keywords" content="Java,Original," />
+
+
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="Java平台在JDK 5中引入了一个重要的特性 —— 泛型（generics），允许在定义类和接口的时候使用  句法表示的类型参数（type parameter），在使用相应的类和接口的时候用具体的类来替换类型参数，因此泛型又被称作参数化类型（parameterized type）。泛型的最广泛应用是在Java集合库中。
+为什么引入泛型？泛型引入的目的是为了解决容器（数据结构）的类型安全性，使得编">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java 基础之泛型">
+<meta property="og:url" content="http://blog.jrwang.me/2015/java-generics/index.html">
+<meta property="og:site_name" content="JR's Blog">
+<meta property="og:description" content="Java平台在JDK 5中引入了一个重要的特性 —— 泛型（generics），允许在定义类和接口的时候使用  句法表示的类型参数（type parameter），在使用相应的类和接口的时候用具体的类来替换类型参数，因此泛型又被称作参数化类型（parameterized type）。泛型的最广泛应用是在Java集合库中。
+为什么引入泛型？泛型引入的目的是为了解决容器（数据结构）的类型安全性，使得编">
+<meta property="og:updated_time" content="2016-03-09T14:53:10.762Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java 基础之泛型">
+<meta name="twitter:description" content="Java平台在JDK 5中引入了一个重要的特性 —— 泛型（generics），允许在定义类和接口的时候使用  句法表示的类型参数（type parameter），在使用相应的类和接口的时候用具体的类来替换类型参数，因此泛型又被称作参数化类型（parameterized type）。泛型的最广泛应用是在Java集合库中。
+为什么引入泛型？泛型引入的目的是为了解决容器（数据结构）的类型安全性，使得编">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+  <title> Java 基础之泛型 | JR's Blog </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-66913886-2', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">JR's Blog</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              Java 基础之泛型
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2015-11-03T20:18:11+08:00" content="2015-11-03">
+            2015-11-03
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><p>Java平台在JDK 5中引入了一个重要的特性 —— 泛型（generics），允许在定义类和接口的时候使用 <t> 句法表示的类型参数（type parameter），在使用相应的类和接口的时候用具体的类来替换类型参数，因此泛型又被称作参数化类型（parameterized type）。泛型的最广泛应用是在Java集合库中。</t></p>
+<h3 id="为什么引入泛型？">为什么引入泛型？</h3><p>泛型引入的目的是为了解决容器（数据结构）的类型安全性，使得编译器在编译时就能发现明显的类型错误，从而避免运行时的转型错误。下面举一个具体的例子：</p>
+<p>在引入泛型以前：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">List list = <span class="keyword">new</span> ArrayList();</span><br><span class="line">list.add(<span class="string">"this is a string."</span>);</span><br><span class="line">list.add(<span class="number">123</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">//不知道list中存放什么类型的对象，必须校正</span></span><br><span class="line">String str = (String)list.get(<span class="number">0</span>);</span><br><span class="line"><span class="comment">//运行时错误</span></span><br><span class="line">String str = (String)list.get(<span class="number">1</span>);</span><br></pre></td></tr></table></figure></p>
+<p>上述代码是合理的，但是为了取出有效的对象，必须进行强制的类型转换，因为List并不知道其中的对象是什么类型，取出是都是Object对象；可以把不同类型的对象放入同一个容器中，但如果做了不合法的转型，会导致运行时错误。（java.lang.ClassCastException）</p>
+<p>在引入了泛型后，编译器可以在编译时了解容器中具体存放的对象的类型，确保其它类型的对象无法存入容器中，从而在编译时就发现大多数的类型错误，避免运行时错误：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; list = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line">list.add(<span class="string">"this is a string."</span>);</span><br><span class="line"><span class="comment">//编译时错误</span></span><br><span class="line">list.add(<span class="number">123</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">//无需校正</span></span><br><span class="line">String str = list.get(<span class="number">0</span>);</span><br></pre></td></tr></table></figure></p>
+<h3 id="如何使用泛型">如何使用泛型</h3><p>泛型可以用于类和接口中，其通用的结构如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">interface</span> <span class="title">List</span>&lt;<span class="title">E</span>&gt; <span class="keyword">extends</span> <span class="title">Collection</span>&lt;<span class="title">E</span>&gt; </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">add</span><span class="params">(E e)</span></span>;</span><br><span class="line">    <span class="function">E <span class="title">get</span><span class="params">(<span class="keyword">int</span> index)</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ArrayList</span>&lt;<span class="title">E</span>&gt; <span class="title">implement</span> <span class="title">List</span>&lt;<span class="title">E</span>&gt; </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">add</span><span class="params">(E e)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//...</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function">E <span class="title">get</span><span class="params">(<span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//...</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在定义有参数的类型时，要使用一种不对类型参数作任何假设的方式指定具体的值。上面用类型参数 E 作为占位符，在具体使用的时候由其它的类型（负载类型）替换掉。</p>
+<p>在创建泛型实例时，赋值语句的右侧会重复类型参数的值。一般情况下，编译器能够推导出类型参数的值，可以使用菱形句法省略重复的类型值。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br></pre></td></tr></table></figure>
+<p>在非泛型的类中也可以使用泛型方法，结构如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Utils</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; <span class="function">T <span class="title">add</span><span class="params">(T a, T b)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>上述方法在调用时，可以显示指定类型参数的具体值，如：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Utils.&lt;Integer&gt;add(<span class="number">1</span>,<span class="number">2</span>);</span><br></pre></td></tr></table></figure></p>
+<p>也可以不指定，让编译器自己推断，<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Utils.add(<span class="number">1</span>,<span class="number">2</span>);</span><br></pre></td></tr></table></figure></p>
+<p>编译器不仅可以从方法接收的参数类型来推断，也可以从方法赋值的目标参数来推断。类型推导在lambda表达式中也经常使用。</p>
+<h3 id="类型擦除">类型擦除</h3><p>Java 泛型中的类型参数只在编译时可见，javac 会去掉类型参数，这个被称为类型擦除（type erasure）。在生成的Java字节代码中是不包含泛型中的类型信息的，但会保留泛型的一些踪迹，在运行时通过反射可以看到（from Java 技术手册）。类型擦除也是Java的泛型实现方式与C++模板机制实现方式之间的重要区别。</p>
+<p>Java 5中添加的泛型是一个新增加的语言特性，而类型擦除正是解决后向兼容型的保证。旧的非泛型集合类和新的泛型集合类是可以兼容的：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">List someList = getSomeThings();</span><br><span class="line">List&lt;String&gt; stringList = (List&lt;String&gt;)someList;</span><br></pre></td></tr></table></figure></p>
+<p>这是因为在经过了编译器的类型擦除后，对 JVM 来说看到的都是List。非泛型的List一般成为原始类型。类型擦除机制会导致一些看上去比较奇怪的现象：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//无法编译</span></span><br><span class="line"><span class="class"><span class="keyword">interface</span> <span class="title">OrderCounter</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">totalOrders</span><span class="params">(Map&lt;String, List&lt;String&gt;&gt; orders)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">totalOrders</span><span class="params">(Map&lt;String, Integer&gt; orders)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述代码乍看上去是合法的，但实际上并不能进行编译。因为在类型擦除以后，两个方法的签名都是：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">totalOrders</span><span class="params">(Map)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>运行时无法通过签名区分这两个方法，因而Java规范把这种句法列为非法的。</p>
+<p>关于类型擦除需要记住的几点是：</p>
+<ol>
+<li><p>泛型类并没有自己独有的Class类对象。比如并不存在<code>List&lt;String&gt;.class</code>或是<code>List&lt;Integer&gt;.class</code>，而只有<code>List.class</code>。在经过类型擦除后剩下的只有原始类型，无论是<code>List&lt;String&gt;</code>或是<code>List&lt;Integer&gt;</code>，对JVM来说都看作List。</p>
+</li>
+<li><p>静态变量是被泛型类的所有实例所共享的。对于声明为<code>MyClass&lt;T&gt;</code>的类，访问其中的静态变量的方法仍然是 <code>MyClass.myStaticVar</code>。不管是通过<code>new MyClass&lt;String&gt;</code>还是<code>new MyClass&lt;Integer&gt;</code>创建的对象，都是共享一个静态变量。</p>
+</li>
+<li><p>泛型的类型参数不能用在Java异常处理的catch语句中。因为异常处理是由JVM在运行时刻来进行的。由于类型信息被擦除，JVM是无法区分两个异常类型<code>MyException&lt;String&gt;</code>和<code>MyException&lt;Integer&gt;</code>的。对于JVM来说，它们都是 <code>MyException</code>类型的。也就无法执行与异常对应的catch语句。</p>
+</li>
+</ol>
+<h3 id="通配符与上下界">通配符与上下界</h3><p>在开始接触泛型的时候，最让人困惑的问题之一是，<strong>“ <code>List&lt;String&gt;</code> 是 <code>List&lt;Object&gt;</code> 的子类吗？”</strong>。即这样的代码是合理的吗：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Object&gt; objects = <span class="keyword">new</span> ArrayList&lt;String&gt;(); <span class="comment">//合法吗？</span></span><br></pre></td></tr></table></figure></p>
+<p>乍看起来，似乎是正确的，因为String是Object的子类，因而集合中任何一个String类型的元素都是有效的Object对象。但是<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Object&gt; objects = <span class="keyword">new</span> ArrayList&lt;String&gt;(); <span class="comment">//合法吗？</span></span><br><span class="line">objects.add(<span class="keyword">new</span> Object()); <span class="comment">//如果合法，那么这句呢？</span></span><br></pre></td></tr></table></figure></p>
+<p>既然objects的类型声明为<code>List&lt;Object&gt;</code>，那么就能将Object实例存入其中；但是，这个实例保存的元素都是字符串，尝试存入的Object对象与其并不兼容。因而这种写法是不合理的，也就是说，<strong>“ <code>List&lt;String&gt;</code> 并不是 <code>List&lt;Object&gt;</code> 的子类”</strong> 如果想让容器的类型具有父子关系，需要使用未知类型：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">List&lt;?&gt; objects = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br></pre></td></tr></table></figure></p>
+<p>在Java中，有“未知类型”这一明确的概念，使用 <code>&lt;?&gt;</code> 表示。这是一种最简单的Java通配符类型 (wildcard type)。<code>ArrayList&lt;?&gt;</code> 和 <code>ArrayList&lt;T&gt;</code> 是不一样的，前者是变量可以使用的完整的类型，即便它的负载类型是不确定的；<code>ArrayList&lt;?&gt;</code> 和 <code>ArrayList&lt;Object&gt;</code> 也是不一样的，<code>ArrayList&lt;Object&gt;</code>实际上确定了List中包含的是Object及其子类，在使用的时候都可以通过Object来进行引用，而<code>ArrayList&lt;?&gt;</code>中所包含的元素类型是不确定。正因为<code>ArrayList&lt;?&gt;</code>包含的元素类型是不确定的，就不能通过<code>new ArrayList&lt;?&gt;()</code>的方法来创建一个新的ArrayList对象。在Java语言的规范中，是禁止实例化负载为未知类型的容器的。</p>
+<p>虽然对编译器来说，<code>ArrayList&lt;?&gt;</code>的元素类型是什么，但还是可以通过Object来引用其中的元素（get()返回的类型是Object），因为虽然类型未知，但肯定是Object或者它的子类。</p>
+<p>考虑下面的代码：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">wildcard</span><span class="params">(List&lt;?&gt; list)</span> </span>&#123;</span><br><span class="line">    list.add(<span class="number">1</span>);<span class="comment">//编译错误</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>试图对一个未知类型的泛型类进行操作的时候，总是会出现编译错误。其原因在于通配符所表示的类型是未知的。</p>
+<p>其实，Java的通配符类型并不只有未知类型一种，还存在受限通配符(bounded wildcard)这一概念，也叫做类型参数约束条件，即使用上下界来约束类型参数可以使用哪些类型。如List&lt;? extends Number&gt;说明List中可能包含的元素类型是Number及其子类。而List&lt;? super Number&gt;则说明List中包含的是Number及其父类。当引入了上界之后，在使用类型的时候就可以使用上界类中定义的方法。</p>
+<ol>
+<li>? extends T - 这里的?表示类型T的任意子类型，包括类型T本身。</li>
+<li>? super T - 这里的?表示类型T的任意父类型，包括类型T本身。</li>
+</ol>
+<p>这两者的使用通常让人感到非常迷惑，比如说，由于 ? extends T 表示类型T和它的任意子类型，那么我们可以说<code>List&lt;? extends Number&gt;</code> 实例可以添加任意为Number子类的元素吗？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">List&lt;? extends Number&gt; intList = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">intList.add(<span class="number">1</span>); <span class="comment">//complier error</span></span><br><span class="line">intList.add(<span class="number">3.14</span>); <span class="comment">//compiler error</span></span><br></pre></td></tr></table></figure>
+<p>关于 ? extends T 和 ? super T 的使用，有一个简单的原则可以参考，</p>
+<blockquote>
+<p>当你需要从一个数据结构中获取数据时(get)，那么就使用 ? extends T；如果你需要存储数据(put)到一个数据结构时，那么就使用 ? super T； 如果你又想存储数据，又想获取数据，那么就不要使用通配符 ? ，即直接使用具体泛型T。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">List&lt;? <span class="keyword">super</span> Number&gt; intList = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">intList.add(<span class="number">1</span>); <span class="comment">//it works</span></span><br><span class="line">intList.add(<span class="number">3.14</span>); <span class="comment">//it works</span></span><br><span class="line"></span><br><span class="line">intList.get(<span class="number">0</span>) <span class="comment">//compiler error</span></span><br></pre></td></tr></table></figure>
+<h3 id="泛型的类型系统">泛型的类型系统</h3><p>面向对象的语言中，一个重要的规则是<a href="https://en.wikipedia.org/wiki/Liskov_substitution_principle" target="_blank" rel="external">Liskov替换原则</a>, 即可以使用子类替换父类，即在需要父类引用的地方可以传入子类的引用；但反之，如果要将父类引用替换子类引用，就需要使用强制类型转换，虽然编译器并不能保证运行时刻这种转换一定是合法的。</p>
+<p>但引入泛型之后，对Java的类型系统带来了一些令人困扰的问题，比如说ArrayList<object>和ArrayList<string>的关系，List<integer>和Collection<integer>的关系等，在<a href="http://www.infoq.com/cn/articles/cf-java-generics" target="_blank" rel="external">Java深度历险（五）——Java泛型</a>一文中的描述很好：</integer></integer></string></object></p>
+<blockquote>
+<p>引入泛型之后的类型系统增加了两个维度：一个是类型参数自身的继承体系结构，另外一个是泛型类或接口自身的继承体系结构。第一个指的是对于<code>List&lt;String&gt;</code>和<code>List&lt;Object&gt;</code>这样的情况，类型参数String是继承自Object的。而第二种指的是List接口继承自Collection接口。对于这个类型系统，有如下的一些规则：</p>
+<ol>
+<li>相同类型参数的泛型类的关系取决于泛型类自身的继承体系结构。即<code>List&lt;String&gt;</code>是<code>Collection&lt;String&gt;</code> 的子类型，<code>List&lt;String&gt;</code>可以替换<code>Collection&lt;String&gt;</code>。这种情况也适用于带有上下界的类型声明。</li>
+<li>当泛型类的类型声明中使用了通配符的时候，其子类型可以在两个维度上分别展开。如对<code>Collection&lt;? extends Number&gt;</code>来说，其子类型可以在Collection这个维度上展开，即<code>List&lt;? extends Number&gt;</code>和<code>Set&lt;? extends Number&gt;</code>等；也可以在Number这个层次上展开，即<code>Collection&lt;Double&gt;</code>和 <code>Collection&lt;Integer&gt;</code>等。如此循环下去，<code>ArrayList&lt;Long&gt;</code>和 <code>HashSet&lt;Double&gt;</code>等也都算是<code>Collection&lt;? extends Number&gt;</code>的子类型。</li>
+<li>如果泛型类中包含多个类型参数，则对于每个类型参数分别应用上面的规则。</li>
+</ol>
+</blockquote>
+<h3 id="一个小坑">一个小坑</h3><p>创建泛型数组在Java中是不被允许的。需要适用类型转换来创建泛型数组。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">T[] a = (T[])<span class="keyword">new</span> Object[<span class="number">10</span>];</span><br></pre></td></tr></table></figure></p>
+<p>-EOF-</p>
+<p>参考：<br><a href="http://www.infoq.com/cn/articles/cf-java-generics" target="_blank" rel="external">Java深度历险（五）——Java泛型</a><br><a href="http://www.jianshu.com/p/b99a40c1f760" target="_blank" rel="external">浅谈Java泛型</a><br>Java技术手册</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Java/" rel="tag">#Java</a>
+          
+            <a href="/tags/Original/" rel="tag">#Original</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2015/java-reflection/" rel="prev">Java 基础之反射</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/java-varargs/" rel="next">Java 中的变长参数</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+
+        
+          <div class="comments" id="comments">
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">JR</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">18</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">8</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://music.jrwang.me" target="_blank">Music</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://jrwang.me" target="_blank">Site</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么引入泛型？"><span class="nav-number">1.</span> <span class="nav-text">为什么引入泛型？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#如何使用泛型"><span class="nav-number">2.</span> <span class="nav-text">如何使用泛型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#类型擦除"><span class="nav-number">3.</span> <span class="nav-text">类型擦除</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#通配符与上下界"><span class="nav-number">4.</span> <span class="nav-text">通配符与上下界</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#泛型的类型系统"><span class="nav-number">5.</span> <span class="nav-text">泛型的类型系统</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一个小坑"><span class="nav-number">6.</span> <span class="nav-text">一个小坑</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <div class="copyright" >
+  
+  &copy; &nbsp;  2015 - 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JR</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="powered-by">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+<div class="theme-info">
+  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
+</div>
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+    
+
+  
+
+
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+</body>
+</html>
