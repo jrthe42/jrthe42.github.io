@@ -48,7 +48,7 @@ GC 日志及堆转储快照的分析目前给执行">
 <meta property="og:image" content="http://blog.jrwang.me/img/gc-overhead-limit-in-putsortreducer/putsortreducer_gc_detail.PNG">
 <meta property="og:image" content="http://blog.jrwang.me/img/gc-overhead-limit-in-putsortreducer/putsortreducer_heap_dump_1.PNG">
 <meta property="og:image" content="http://blog.jrwang.me/img/gc-overhead-limit-in-putsortreducer/putsortreducerheap_dump_2.PNG">
-<meta property="og:updated_time" content="2016-05-01T09:33:35.716Z">
+<meta property="og:updated_time" content="2016-05-17T15:28:52.574Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="记一次使用 PutSortReducer 时 OOM 错误的排查过程">
 <meta name="twitter:description" content="之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我非常困惑。谷歌搜索了一圈也没有发现可行的解决方案，无奈只能自己解决了。经过仔细排查，最终定位了出错的原因，这里做一个简单的记录。
@@ -214,7 +214,7 @@ GC 日志及堆转储快照的分析目前给执行">
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">long</span> reduceThreshMem = <span class="number">1L</span> * (<span class="number">1</span> &lt;&lt; <span class="number">28</span>)</span><br><span class="line">conf.setLong(<span class="string">"putsortreducer.row.threshold"</span>, reduceThreshMem);</span><br></pre></td></tr></table></figure>
 <p>将该值调整为 512 MB后重新运行，成功完成任务。当然，这个阈值的设置可以依据 JVM 虚拟机的堆内存进行调整，建议设置保守一点，以保证任务正常执行下去。</p>
 <p>因为每次强制刷写后都会生成一个 StoreFile，在极端的情况下生成的文件数量可能会很多，在使用 bulk load 载入的时候可能会出错 <code>ERROR mapreduce.LoadIncrementalHFiles: Trying to load more than 32 hfiles to family f of region ...</code> (没错，我也遇到了T@T.)，可以修改一下这个属性 <code>hbase.mapreduce.bulkload.max.hfiles.perRegion.perFamily</code>，默认是 32。</p>
-<h3 id="小结">小结</h3><p>这篇文章主要是对使用 PutSortReducer 中遇到的问题及解决过程做一个总结。PutSortReducer 在极端情况下可能会造成内存溢出的问题，主要是内部使用的内存阈值和当前分配的堆内存不匹配造成的，在使用的时候按序调整该阈值即可。</p>
+<h3 id="小结">小结</h3><p>这篇文章主要是对使用 PutSortReducer 中遇到的问题及解决过程做一个总结。PutSortReducer 在极端情况下可能会造成内存溢出的问题，主要是内部使用的内存阈值和当前分配的堆内存不匹配造成的，在使用的时候按需调整该阈值即可。</p>
 <p>-EOF-</p>
 </span>
       
