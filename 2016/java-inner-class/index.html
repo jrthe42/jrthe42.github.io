@@ -1,0 +1,661 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="想入非非就是寻找神奇" />
+
+
+
+  <meta name="keywords" content="Java,Original," />
+
+
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="为什么使用内部类？在 『Effective Java』中提到了一条建议，尽量使类和成员的可访问性最小化。这个原则其实是面向对象的程序设计的基本原则，即封装的概念。对于成员变量，我们知道，可以有较好的访问权限控制；但是对于类来说，通常我们都使用 public 或 包级私有（默认，不加修饰符），这样的话似乎做不到可访问性的控制，顶多是不同包之间不能访问。其实，这只是针对顶层的类和接口而言。类和接口也可">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于 Java 内部类的小抄">
+<meta property="og:url" content="http://blog.jrwang.me/2016/java-inner-class/index.html">
+<meta property="og:site_name" content="JR's Blog">
+<meta property="og:description" content="为什么使用内部类？在 『Effective Java』中提到了一条建议，尽量使类和成员的可访问性最小化。这个原则其实是面向对象的程序设计的基本原则，即封装的概念。对于成员变量，我们知道，可以有较好的访问权限控制；但是对于类来说，通常我们都使用 public 或 包级私有（默认，不加修饰符），这样的话似乎做不到可访问性的控制，顶多是不同包之间不能访问。其实，这只是针对顶层的类和接口而言。类和接口也可">
+<meta property="og:updated_time" content="2016-07-12T14:13:03.137Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="关于 Java 内部类的小抄">
+<meta name="twitter:description" content="为什么使用内部类？在 『Effective Java』中提到了一条建议，尽量使类和成员的可访问性最小化。这个原则其实是面向对象的程序设计的基本原则，即封装的概念。对于成员变量，我们知道，可以有较好的访问权限控制；但是对于类来说，通常我们都使用 public 或 包级私有（默认，不加修饰符），这样的话似乎做不到可访问性的控制，顶多是不同包之间不能访问。其实，这只是针对顶层的类和接口而言。类和接口也可">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+  <title> 关于 Java 内部类的小抄 | JR's Blog </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-66913886-2', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">JR's Blog</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              关于 Java 内部类的小抄
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2016-01-30T22:35:11+08:00" content="2016-01-30">
+            2016-01-30
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><h3 id="为什么使用内部类？">为什么使用内部类？</h3><p>在 『Effective Java』中提到了一条建议，尽量使类和成员的可访问性最小化。这个原则其实是面向对象的程序设计的基本原则，即封装的概念。对于成员变量，我们知道，可以有较好的访问权限控制；但是对于类来说，通常我们都使用 public 或 包级私有（默认，不加修饰符），这样的话似乎做不到可访问性的控制，顶多是不同包之间不能访问。其实，这只是针对顶层的类和接口而言。类和接口也可以嵌套在其他的类和接口中，被称为内部类（或嵌套类）。对于内部类而言，就可以和成员一样使用 private 等修饰符来控制可访问性。</p>
+<p>如果一个类或接口只是在某一个类的内部被用到，就应该考虑使它成为唯一使用它的那个类的私有嵌套类。</p>
+<p>内部类除了能够提供更好的封装以外，还具有一些特殊的性质，如内部类可以直接访问到外部类中的成员，包括私有的成员。</p>
+<p>在 Java 的集合框架中大量地使用了内部类，比如集合类中迭代器的实现。这些迭代器实现了同样的接口（Iterator Interface），但是具体的实现又各不相同。外部类也不必关心它们的具体实现方法，只需要按照约定的接口进行访问即可。</p>
+<h3 id="内部类怎么用？">内部类怎么用？</h3><h4 id="成员内部类">成员内部类</h4><p>相当于外部类的一个成员的位置，可以使用任意的访问修饰符，如 public, protected, private 或是不加访问修饰符（包可见）。常规类只有包可见性或公有可见性。</p>
+<p>成员内部类是最普通的内部类，它相当于外部类的一个成员，所以可以无限制的访问外部类的所有 成员属性和方法，即便是 private 的成员或方法也可以直接访问；但是外部类要访问内部类的成员属性和方法则需要通过内部类实例来访问。</p>
+<p>在成员内部类中要注意两点。首先，<strong>成员内部类中不能存在任何 static 的变量和方法</strong>；其次，成员内部类是依附于外围类的，所以只有先创建了外围类才能够创建内部类。实际上，内部类中存在一个外部类的引用，可以使用 <code>OuterClass.this</code> 来显示指代。</p>
+<p>成员内部类中成员内部类中不能存在任何 static 的变量和方法，但 static final 的常量是可以的。<br>因为成员内部类是要依赖于外部类的实例，而静态变量和方法是不依赖于对象的，在加载静态域时外部类的实例尚未创建，自然不行了；但是常量是在编译期就确定的，放在常量池中。</p>
+<p>内部类实例的创建需要使用 <code>OuterClass.InnerClass inner = outer.new InnerClass();</code> 的形式创建。建议在外部内中提供一个创建内部类实例的方法，如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> InnerClass <span class="title">getInnerClass</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> InnerClass();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意：</p>
+<ol>
+<li>外部类是不能直接使用内部类的成员和方法的，可先创建内部类的对象，然后通过内部类的对象来访问其成员变量和方法;</li>
+<li>如果外部类和内部类具有相同的成员变量或方法，内部类默认访问自己的成员变量或方法，如果要访问外部类的成员变量，可以使用 this 关键字,如<code>OuterClass.this.name</code>。</li>
+</ol>
+<p>在编译后会内部类会被编译为 Outer$Inner.class, 下面给个例子：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Outer</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> id;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> state;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Inner</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">int</span> field;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">displayOuterState</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            System.out.println(<span class="string">"Outer Id: "</span> + id);</span><br><span class="line">            System.out.println(<span class="string">"Outer State: "</span> + Outer.<span class="keyword">this</span>.state);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setField</span><span class="params">(<span class="keyword">int</span> field)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">this</span>.field = field;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getField</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">this</span>.field;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Outer.Inner inner = <span class="keyword">new</span> Outer().new Inner();</span><br><span class="line">        inner.displayOuterState();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>反编译一下 Outer$Inner.class: </p>
+<figure class="highlight xquery"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">F:\Demos\InnerClass&gt;javap -p Outer<span class="variable">$Inner</span>.class</span><br><span class="line">Compiled from <span class="string">"Outer.java"</span></span><br><span class="line">public class Outer<span class="variable">$Inner</span> &#123;</span><br><span class="line">  private int field;</span><br><span class="line">  final Outer this<span class="variable">$0</span>;</span><br><span class="line">  public Outer<span class="variable">$Inner</span>(Outer);</span><br><span class="line">  public void displayOuterState();</span><br><span class="line">  public void setField(int);</span><br><span class="line">  public int getField();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中 <code>this$0</code> 就是外部类的引用。</p>
+<p>再反编译一下 <code>Outer.class</code>, 看到编译器在外部类添加了静态方法 <code>access$000(Outer)</code> 和 <code>access$100(Outer)</code>, 内部类正是通过这两个方法来读取到私有的外部成员变量的。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">F:\Demos\InnerClass&gt;javap -p Outer.<span class="keyword">class</span></span><br><span class="line">Compiled from <span class="string">"Outer.java"</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> Outer &#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> id;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> state;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">Outer</span><span class="params">()</span></span>;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(java.lang.String[])</span></span>;</span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">int</span> access$<span class="number">000</span>(Outer);</span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">int</span> access$<span class="number">100</span>(Outer);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>access$000</code> 并不是一个合法的方法名，但如果熟悉类文件的结构的话还是可以通过创建虚拟机指令来调用的，进而获取到私有的成员。但是，注意到这个方法具有包可见性。要想通过这种方式来访问私有成员，还是很有难度的。</p>
+<h4 id="静态内部类">静态内部类</h4><p>静态内部类只是将一个类隐藏在一个类的内部，和外部类的对象没有任何关联，不像成员内部类那样会持有一个外部类的引用。最好将静态内部类看作一个普通类，只是碰巧被声明在另一个类的内部而已。静态内部类桶其他的静态成员一样，也遵循同样的可访问性规则。如果被声明为 private ，则使能在外部内中才能使用。</p>
+<p>静态内部类中<strong>不能直接访问任何外围类的非 static 成员变量和方法</strong>；创建静态内部类的对象时不需要通过外部类的对象来进行。静态内部类可以直接访问外部类的静态成员，包括私有的。</p>
+<p>声明在接口中的内部类自动成为 public 和 static 。</p>
+<h4 id="局部内部类（方法内部类）">局部内部类（方法内部类）</h4><p>局部内部类是嵌套在方法和作用域内的，就像是方法里面的一个局部变量一样。</p>
+<p>局部内部类是不能有 public、protected、private 以及 static 等修饰符的，因为它的作用域被局限在声明这个局部类的块中。局部内部类最大的优势在于，它对外部世界可以完全地隐藏起来。除了它所在的作用域中，即便是外部类中的其它方法中也不能访问到它。</p>
+<p>局部内部类除了可以访问外部类的成员以外，还可以访问它所在的作用域中的局部变量。不过，这些局部变量必须是被声明为 final 的才可以。有时候 final 的限制会很不方便，可以使用一个长度为1的数组类补救（数组变量虽然是被声明为final的，但这仅仅表示不可以让其引用另一个数组对象。数组中的数据元素还是可以自由改变的）。</p>
+<h4 id="匿名内部类">匿名内部类</h4><p>匿名内部类是对局部内部类的一种深化。如果只需要创建内部类的一个对象的话，其实就不必命名了。</p>
+<p>匿名内部类的语法格式为 <code>new SuperType(construction parameters) {}</code>。</p>
+<p>如果 SuperType 是一个接口，则匿名类实现这个接口，并扩展 Object 类；如果 SuperType 是一个类，则匿名类是该类的子类。</p>
+<p>匿名类没有名称，因而不能在类主体中定义构造器。定义匿名类时，如果在父类后面的括号中指定参数，会传递给父类的构造器。匿名类只有一个默认的构造器，但经常可以使用初始化语句块来代替构造方法。如“双括号初始化”技巧：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">invite(<span class="keyword">new</span> ArrayList&lt;String&gt;()&#123;</span><br><span class="line">    &#123;</span><br><span class="line">      add(<span class="string">"Harry"</span>); </span><br><span class="line">      add(<span class="string">"Tony"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>这里就利用了内部类的语法。外层括号创建了 ArrayList 的一个匿名子类， 内部括号则是一个初始化块。</p>
+<p>匿名内部类在一些“回调”的场景中有大量应用，如 Android 开发中为控件设置监听器，就经常见到匿名内部类的用法。</p>
+<p>这里分享一个 『Java 核心技术』 中提到的使用匿名内部类的一个场景。在生成日志或调试消息是，通常希望包含当前类的类名，如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">System.err.println(<span class="string">"Something awful happened in :"</span> + getClass());</span><br></pre></td></tr></table></figure>
+<p>但是，这对于静态方法不奏效，因为 getClass() 不是一个静态方法。可以通过以下技巧在静态方法中获取到所在的类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> Object()&#123;&#125;.getClass().getEnclosingClass(); <span class="comment">//get class of static method</span></span><br></pre></td></tr></table></figure>
+<p>在这里，会建立一个 Object 的匿名子类的对象，进而通过 getEnclosingClass 得到其外围类，及包含该静态方法的类。</p>
+<p>Java 8 之后，很多使用匿名内部类的场景都可以使用 Lambda 表达式进行替换，使用起来也更为方便。</p>
+<h4 id="为什么局部类可访问的局部变量必须是_final_的？">为什么局部类可访问的局部变量必须是 final 的？</h4><p>局部类的实例在 JVM 退出定义了这个局部类的代码块后依然存在。即，即便这个类的局部定义，但这个类的实例能够跳出定义它的地方。</p>
+<p>在 Java 中，局部类有时也被称为闭包。更一般的 Java 术语， 闭包是一个对象，它保存作用域的状态，并让这个作用域在后面可以继续使用。不同的编程语言中定义和实现闭包的方式都不一样， Java 通过局部类，匿名类和 lambda 表达式来实现闭包。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Weird</span> </span>&#123;</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">interface</span> <span class="title">IntHolder</span> </span>&#123;<span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getValue</span><span class="params">()</span></span>; &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    IntHolder[] holders = <span class="keyword">new</span> IntHolder[<span class="number">10</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">      <span class="keyword">final</span> <span class="keyword">int</span> fi = i;</span><br><span class="line"></span><br><span class="line">      <span class="class"><span class="keyword">class</span> <span class="title">MyIntHolder</span> <span class="keyword">implements</span> <span class="title">IntHolder</span> </span>&#123;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getValue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">          <span class="keyword">return</span> fi;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      holders[i] = <span class="keyword">new</span> MyIntHolder();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//跳出了内部类定义的作用域，但内部类的实例仍然存在</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">      System.out.println(holders[i].getValue());</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实际上，在通过局部类访问外部的局部变量是并不是直接访问的，我们反编译一下内部类来看一下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Weird</span>$1<span class="title">MyIntHolder</span></span><br><span class="line">    <span class="keyword">implements</span> <span class="title">Weird</span>.<span class="title">IntHolder</span></span><br><span class="line"></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getValue</span><span class="params">()</span></span><br><span class="line">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> val$fi;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> val$fi;</span><br><span class="line"></span><br><span class="line">    Weird$<span class="number">1</span>MyIntHolder()</span><br><span class="line">    &#123;</span><br><span class="line">        val$fi = i;</span><br><span class="line">        <span class="keyword">super</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，在局部内中有一个成员 <code>final int val$fi;</code> 是外部局部变量的引用拷贝（这里是基本类型，没有体现），后面通过局部类的实例访问时都是通过这个拷贝及进行的。为了避免引用值发生改变，例如被外部类的方法修改等，而导致内部类得到的值不一致，于是用 final 来让该引用不可改变。</p>
+<p>有时候这个限制会显得不太实用，可以使用一个长度为1的数组类补救（数组变量虽然是被声明为final的，但这仅仅表示不可以让其引用另一个数组对象。数组中的数据元素还是可以自由改变的）。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> <span class="keyword">int</span>[] val = <span class="keyword">new</span> Int[<span class="number">1</span>];</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyIntHolder</span> <span class="keyword">implements</span> <span class="title">IntHolder</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">    val[<span class="number">0</span>] += i;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getValue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> val[<span class="number">0</span>];</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Java/" rel="tag">#Java</a>
+          
+            <a href="/tags/Original/" rel="tag">#Original</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/java-collections-arraylist/" rel="prev">Java 容器源码分析之 ArrayList</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/import-data-to-hbase-using-bulk-loding/" rel="next">使用 Bulk Load 快速向 HBase 中导入数据</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+
+        
+          <div class="comments" id="comments">
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">JR</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">19</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">8</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://music.jrwang.me" target="_blank">Music</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://jrwang.me" target="_blank">Site</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么使用内部类？"><span class="nav-number">1.</span> <span class="nav-text">为什么使用内部类？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内部类怎么用？"><span class="nav-number">2.</span> <span class="nav-text">内部类怎么用？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#成员内部类"><span class="nav-number">2.1.</span> <span class="nav-text">成员内部类</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#静态内部类"><span class="nav-number">2.2.</span> <span class="nav-text">静态内部类</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#局部内部类（方法内部类）"><span class="nav-number">2.3.</span> <span class="nav-text">局部内部类（方法内部类）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#匿名内部类"><span class="nav-number">2.4.</span> <span class="nav-text">匿名内部类</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么局部类可访问的局部变量必须是_final_的？"><span class="nav-number">2.5.</span> <span class="nav-text">为什么局部类可访问的局部变量必须是 final 的？</span></a></li></ol></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <div class="copyright" >
+  
+  &copy; &nbsp;  2015 - 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JR</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="powered-by">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+<div class="theme-info">
+  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
+</div>
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+    
+
+  
+
+
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+</body>
+</html>
