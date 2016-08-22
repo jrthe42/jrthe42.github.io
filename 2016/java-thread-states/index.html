@@ -37,19 +37,19 @@
   <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
 
 
-<meta name="description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。
+<meta name="description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。
 Java 线程的状态先来谈一谈 Java 中线程的状态。在 Java 中，线程的状态和底层操作系统中线程的状态并不是一一对应的关系，我们所能见到的是 JVM">
 <meta property="og:type" content="article">
 <meta property="og:title" content="谈谈 Java 线程状态相关的几个方法">
 <meta property="og:url" content="http://blog.jrwang.me/2016/java-thread-states/index.html">
 <meta property="og:site_name" content="JR's Blog">
-<meta property="og:description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。
+<meta property="og:description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。
 Java 线程的状态先来谈一谈 Java 中线程的状态。在 Java 中，线程的状态和底层操作系统中线程的状态并不是一一对应的关系，我们所能见到的是 JVM">
 <meta property="og:image" content="http://blog.jrwang.me/img/java-thread-states/thread-states-os.png">
-<meta property="og:updated_time" content="2016-08-19T16:50:12.451Z">
+<meta property="og:updated_time" content="2016-08-22T02:25:46.038Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="谈谈 Java 线程状态相关的几个方法">
-<meta name="twitter:description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。
+<meta name="twitter:description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。
 Java 线程的状态先来谈一谈 Java 中线程的状态。在 Java 中，线程的状态和底层操作系统中线程的状态并不是一一对应的关系，我们所能见到的是 JVM">
 
 
@@ -196,7 +196,7 @@ Java 线程的状态先来谈一谈 Java 中线程的状态。在 Java 中，线
       
 
       
-        <span itemprop="articleBody"><p>在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。</p>
+        <span itemprop="articleBody"><p>在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。</p>
 <h3 id="Java_线程的状态">Java 线程的状态</h3><p>先来谈一谈 Java 中线程的状态。在 Java 中，线程的状态和底层操作系统中线程的状态并不是一一对应的关系，我们所能见到的是 JVM 虚拟机层面暴露的状态。</p>
 <p>Java 中线程的状态在 Thread 的内部枚举类 <code>Thread.State</code> 中定义，有 <code>NEW</code>, <code>RUNNABLE</code>, <code>BLOCKED</code>, <code>WAITING</code>, <code>TIMED_WAITING</code>, <code>TERMINATED</code> 这六类状态。</p>
 <p>在 Java 的官方文档中写道：“A thread in the runnable state is executing in the Java virtual machine but it may be waiting for other resources from the operating system such as processor.” 就是说，处于 <code>RUNNABLE</code> 状态的线程在 JVM 虚拟机正在 Java 虚拟机中执行，但它可能正在等待来自于操作系统的其它资源，比如处理器。实际上，如果一个线程在等待阻塞I/O的操作时，它的状态也是 <code>RUNNABLE</code> 的。</p>
