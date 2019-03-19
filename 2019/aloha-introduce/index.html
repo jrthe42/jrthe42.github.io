@@ -1,0 +1,672 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="想入非非就是寻找神奇" />
+
+
+
+  <meta name="keywords" content="Original,RPC,Aloha,Spark," />
+
+
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="概览Aloha 是一个基于 Scala 实现的分布式的任务调度和管理框架，提供插件式扩展功能，可以用来调度各种类型的任务。Aloha 的典型的应用场景是作为统一的任务管理入口。例如，在数据平台上通常会运行各种类型的应用，如 Spark 任务，Flink 任务，ETL 任务等，统一对这些任务进行管理并及时感知任务状态的变化是很有必要的。 Aloha 的基本实现是基于 Spark 的任务调度模块，在">
+<meta name="keywords" content="Original,RPC,Aloha,Spark">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Aloha：一个分布式任务调度框架">
+<meta property="og:url" content="http://blog.jrwang.me/2019/aloha-introduce/index.html">
+<meta property="og:site_name" content="JR&#39;s Blog">
+<meta property="og:description" content="概览Aloha 是一个基于 Scala 实现的分布式的任务调度和管理框架，提供插件式扩展功能，可以用来调度各种类型的任务。Aloha 的典型的应用场景是作为统一的任务管理入口。例如，在数据平台上通常会运行各种类型的应用，如 Spark 任务，Flink 任务，ETL 任务等，统一对这些任务进行管理并及时感知任务状态的变化是很有必要的。 Aloha 的基本实现是基于 Spark 的任务调度模块，在">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://blog.jrwang.me/img/aloha-introduce/aloha-infra.png">
+<meta property="og:updated_time" content="2019-03-19T16:20:16.142Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Aloha：一个分布式任务调度框架">
+<meta name="twitter:description" content="概览Aloha 是一个基于 Scala 实现的分布式的任务调度和管理框架，提供插件式扩展功能，可以用来调度各种类型的任务。Aloha 的典型的应用场景是作为统一的任务管理入口。例如，在数据平台上通常会运行各种类型的应用，如 Spark 任务，Flink 任务，ETL 任务等，统一对这些任务进行管理并及时感知任务状态的变化是很有必要的。 Aloha 的基本实现是基于 Spark 的任务调度模块，在">
+<meta name="twitter:image" content="http://blog.jrwang.me/img/aloha-introduce/aloha-infra.png">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+  <title> Aloha：一个分布式任务调度框架 | JR's Blog </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-66913886-2', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">JR's Blog</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              Aloha：一个分布式任务调度框架
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2019-03-15T23:58:18+08:00" content="2019-03-15">
+            2019-03-15
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p><a href="https://github.com/jrthe42/aloha" target="_blank" rel="noopener">Aloha</a> 是一个基于 Scala 实现的分布式的任务调度和管理框架，提供插件式扩展功能，可以用来调度各种类型的任务。Aloha 的典型的应用场景是作为统一的任务管理入口。例如，在数据平台上通常会运行各种类型的应用，如 Spark 任务，Flink 任务，ETL 任务等，统一对这些任务进行管理并及时感知任务状态的变化是很有必要的。</p>
+<p>Aloha 的基本实现是基于 <a href="https://github.com/apache/spark" target="_blank" rel="noopener">Spark</a> 的任务调度模块，在 Master 和 Worker 组件的基础上进行了修改，并提供了扩展接口，可以方便地集成各种类型的任务。Master 支持高可用配置及状态恢复，并提供了 REST 接口用于提交任务。</p>
+<h2 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a>扩展</h2><h3 id="不同类型应用程序"><a href="#不同类型应用程序" class="headerlink" title="不同类型应用程序"></a>不同类型应用程序</h3><p>在 Aloha 中，调度的应用被抽象为 Application 接口。只需要按需实现 Application 接口，就可以对多种不同类型的应用进行调度管理。Application 的生命周期主要通过 <code>start()</code>, <code>shutdown()</code> 进行管理，当应用被调度到 worker 上执行时， <code>start()</code> 方法首先被调用，当用户要求强制停止应用时，<code>shutdown()</code> 方法被调用。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">trait</span> <span class="title">Application</span> </span>&#123;</span><br><span class="line">  <span class="comment">//启动</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">start</span></span>(): <span class="type">Promise</span>[<span class="type">ExitState</span>]</span><br><span class="line">  <span class="comment">//强制停止</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">shutdown</span></span>(reason: <span class="type">Option</span>[<span class="type">String</span>]): <span class="type">Unit</span></span><br><span class="line">  <span class="comment">//提交应用时的描述</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">withDescription</span></span>(desc: <span class="type">ApplicationDescription</span>): <span class="type">Application</span></span><br><span class="line">  <span class="comment">//应用运行时的工作目录</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">withApplicationDir</span></span>(appDir: <span class="type">File</span>): <span class="type">Application</span></span><br><span class="line">  <span class="comment">//系统配置</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">withAlohaConf</span></span>(conf: <span class="type">AlohaConf</span>): <span class="type">Application</span></span><br><span class="line">  <span class="comment">//应用运行结束后的清理动作</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">clean</span></span>(): <span class="type">Unit</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>你可能注意到了，<code>start()</code> 方法的返回值是一个 <code>Promise</code> 对象。这是因为，Aloha 最初在设计时主要针对的是长期运行的应用程序，如 Flink 任务、Spark Streaming 任务等。对于这一类 long-running 的应用，Future 和 Promise 提供了一种更灵活的任务状态通知机制。当任务停止后，通过调用 <code>Promise.success()</code> 方法告知 Worker。</p>
+<p>例如，如果要通过启动一个独立进程的方式来启动一个应用程序，可以这样来实现：<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">start</span></span>(): <span class="type">Promise</span>[<span class="type">ExitState</span>] = &#123;</span><br><span class="line">  <span class="comment">//启动进程</span></span><br><span class="line">  <span class="keyword">val</span> processBuilder = getProcessBuilder()</span><br><span class="line">  process = processBuilder.start()</span><br><span class="line">  stateMonitorThread = <span class="keyword">new</span> <span class="type">Thread</span>(<span class="string">"app-state-monitor-thread"</span>) &#123;</span><br><span class="line">    <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">run</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">      <span class="keyword">val</span> exitCode = process.waitFor()</span><br><span class="line">      <span class="comment">//进程退出</span></span><br><span class="line">      <span class="keyword">if</span>(exitCode == <span class="number">0</span>) &#123;</span><br><span class="line">        result.success(<span class="type">ExitState</span>(<span class="type">ExitCode</span>.<span class="type">SUCCESS</span>, <span class="type">Some</span>(<span class="string">"success"</span>)))</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        result.success(<span class="type">ExitState</span>(<span class="type">ExitCode</span>.<span class="type">FAILED</span>, <span class="type">Some</span>(<span class="string">"failed"</span>)))</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  stateMonitorThread.start()</span><br><span class="line">  result</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">shutdown</span></span>(reason: <span class="type">Option</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="keyword">if</span> (process != <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">//强制结束进程</span></span><br><span class="line">    <span class="keyword">val</span> exitCode = <span class="type">Utils</span>.terminateProcess(process, <span class="type">APP_TERMINATE_TIMEOUT_MS</span>)</span><br><span class="line">    <span class="keyword">if</span> (exitCode.isEmpty) &#123;</span><br><span class="line">      logWarning(<span class="string">"Failed to terminate process: "</span> + process +</span><br><span class="line">        <span class="string">". This process will likely be orphaned."</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="自定义事件监听"><a href="#自定义事件监听" class="headerlink" title="自定义事件监听"></a>自定义事件监听</h3><p>在很多情况下，我们希望能够实时感知到任务状态的变化，例如在任务完成或者失败时发送一条消息提醒。Aloha 提供了事件监听接口，可以及时对任务状态的变化作出响应。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">trait</span> <span class="title">AlohaEventListener</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">onApplicationStateChange</span></span>(event: <span class="type">AppStateChangedEvent</span>): <span class="type">Unit</span></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">onApplicationRelaunched</span></span>(event: <span class="type">AppRelaunchedEvent</span>): <span class="type">Unit</span></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">onOtherEvent</span></span>(event: <span class="type">AlohaEvent</span>): <span class="type">Unit</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>自定义实现的事件监听器在 Aloha 启动时动态注册，也可以同时注册多个监听器。</p>
+<h2 id="模块设计"><a href="#模块设计" class="headerlink" title="模块设计"></a>模块设计</h2><h3 id="总体架构"><a href="#总体架构" class="headerlink" title="总体架构"></a>总体架构</h3><p>Aloha 的整体实现方案是建构在 Spark 的基础之上，因而 Aloha 也是基于主从架构实现的，主要由 Master 和 Worker 这两个主要组件构成：Master 负责管理集群中所有的 Worker，接收用户提交的应用，并将应用分派给不同的 Worker；而 Worker 主要是负责启动、关闭具体的应用，对应用的生命周期进行管理等。Aloha 还提供了 REST 服务，实际上充当了 Client 的角色，方便通过 REST 接口提交应用。<br><img src="/img/aloha-introduce/aloha-infra.png" alt="Aloha"><br>Aloha 提供了 HA 配置，在 Master 发生故障时可以自动进行故障转移。同时启动的多个 Master 实例，只有一个实例会处于 Alive 状态，其余的处于 Standby 状态。当原本处于 Alive 状态的 Master 实例宕机后，LeaderElectionAgent 会从处于 Standby 状态的 Master 中选举出新的 Alive Master，并恢复故障之前的状态。</p>
+<h3 id="任务调度管理"><a href="#任务调度管理" class="headerlink" title="任务调度管理"></a>任务调度管理</h3><h4 id="Worker-注册"><a href="#Worker-注册" class="headerlink" title="Worker 注册"></a>Worker 注册</h4><p>在 Master 启动后，等待 Worker 的注册请求。在 Worker 启动时，根据 Master 的地址向 Master 发送注册请求。由于可能会有多个 Master 实例在运行，Worker 会所有的这些Master 都发送注册请求，只有处于 Alive 状态的 Master 会响应注册成功的消息，处于Standby 状态的 Master 会告知 Worker 自己正处于 Standby 状态，Worker 会忽略这一类消息。Worker 会一直尝试向 Master 发送注册请求，直到接收到注册成功的响应。在向 Master 发送注册请求时，请求的消息中会包含当前 Worker 节点的计算资源信息，包括可用的 CPU 数量和内存大小，Master 在进行调度的时候会追踪 Worker 的资源使用情况。</p>
+<p>一旦 Worker 注册成功，就会周期性地向 Master 发送心跳信息。Master 则会定期检查所有 Worker 的心跳情况，一旦发现太久没有接收到某一个 Worker 的心跳消息，则认为该 Worker 已经下线。另外，网络故障或者进程异常退出等情况会造成 Master 和 Worker 之间建立的网络连接断开，连接断开的事件能直接被 Master 和 Worker 监听到。对 Master 而言，一旦一个 Worker 掉线，需要将该 Worker 上运行的应用置为为异常状态，或是重新调度这些应用。对于 Worker 而言，一旦失去和 Master 建立的连接，就需要重新进入注册流程。</p>
+<h4 id="Application-提交"><a href="#Application-提交" class="headerlink" title="Application 提交"></a>Application 提交</h4><p>可以通过两种方式向 Master 提交 Application，一种方式是通过 REST 接口，另一种方式是自行创建一个 Client，通过 Master 的地址向 Master 发送 RPC 调用。实际上 REST Server 充当了一个 Client 的角色。</p>
+<p>当 Master 接收到注册 Application 的请求时，会分配 applicationId，并将应用放到等待调度的列表中。在调度时，采用 FIFO 的方式，选取剩余资源能够满足应用需求的 Worker，向对应的 Worker 发送启动应用的消息，应用从 <code>SUMITTED</code> 状态切换为 <code>LAUNCHING</code> 状态。Worker 在收到启动的应用的请求后，会为对应的应用创建工作目录，并为每一个应用单独启动一个工作线程。应用成功启动后会向 Master 发送应用状态改变的消息，应用状态切换为 <code>RUNNING</code> 状态。此后每当应用状态发生改变，例如任务成功完成，或是异常退出，都会向 Master 发送应用状态改变的消息。在应用启动后，对于的工作线程会阻塞地等待应用结束。当 Master 接收到强制停止应用的请求后，会将消息转发给对应的 Worker，Worker 在接收到消息后会中断对应应用的工作线程，工作线程响应中断，调用 Application 提供的强制关闭方法强行停止应用。</p>
+<p>为了支持扩展不同的应用，Worker 在启动应用时使用了自定义的 ClassLoader 去加载应用提供的依赖包和配置文件路径。目前需要预先在每个 Worker 上放置好对应的文件，并在提交应用时指定路径。后续可以考虑使用一个分布式文件系统，如 HDFS ，在启动应用前下载对应的依赖，或者用户提交应用时上传依赖文件，以避免预先放置文件的不便。由于每个应用的依赖文件都是单独进行加载的，用户可以方便地对应用进行升级，同时也避免了不同 Application 出现依赖冲突的问题。</p>
+<h4 id="容错机制"><a href="#容错机制" class="headerlink" title="容错机制"></a>容错机制</h4><p>由于 Master 负责对整个集群的应用的调度情况进行管理，一旦 Master 出现异常，则整个集群就处于瘫痪的状态，因而必须要考虑为 Master 提供异常恢复机制。</p>
+<p>Master 的异常恢复机制的核心流程在于状态的恢复。Master 会将已经注册的 Worker 和 Application的状态信息持久化存储在持久化引擎中（目前支持 FileSystem 和 ZooKeeper，支持扩展），每当 Worker 或者 Application 的状态发生更改，都会更新存储引擎中保存的状态。当 Master 启动时，处于 <code>Standby</code> 状态。一旦 Master 被选举为 <code>Alive</code> 节点，首先要从存储引擎中读取 Worker 和 Application 的状态信息，如果没有历史状态，则 Master 可以变更为 <code>Alive</code> 状态，否则进入恢复流程，状态变更为 <code>RECOVERING</code>。在恢复流程中，首先要检查 Application 的状态，如果 Application 还没有被调度到任何 Worker 上，则 Application 被放入调度队列，否则将 Application 的状态置为 <code>ApplicationState.UNKNOWN</code>。随后检查所有 Worker 的状态，将 Worker 置为 <code>WorkerState.UNKNOWN</code> 状态，并尝试向 Worker 发送 <code>MasterChange</code> 的消息。在 Worker 接收到 <code>MasterChange</code> 的消息后，会向 Master 响应目前该 Worker 上运行的所有 Application 的状态，Master 接收到响应后就可以将对应的 Worker 和 Application 分别调整为 <code>WorkerState.ALIVE</code> 和 <code>ApplicationState.RUNNING</code>。对于超时仍没有得到响应的 Worker 和 Application，则认为已经掉线或异常退出。至此，状态恢复完成，Master 进入 <code>ALIVE</code> 状态，可以正常处理 Worker 和 Application 的各种请求。</p>
+<p>在使用 Standalone 模式时，可以使用 FILESYSTEM 作为存储引擎，这种情况下只有一个 Master 会运行，失败后需要手动进行重启，重启后状态可以恢复。也可以将 Master 配置为 HA 模式，多个 Master 实例同时运行，使用 ZooKeeper 作为 LeaderElectionAgent 和存储引擎，当 Alive 状态的 Master 失败后会自动选举出新的主节点，并自动进行状态恢复。</p>
+<h4 id="事件总线"><a href="#事件总线" class="headerlink" title="事件总线"></a>事件总线</h4><p>Master 在启动时会创建一个事件总线，并注册多个事件监听器，事件监听器可以方便地进行扩展，从而满足不同的需求。事件总线的核心是一个异步的事件分发机制，基于阻塞队列实现。当接收到新事件时，会将事件分派给事件监听器处理。每当 Master 接收到 Application 状态发生变更的消息时，就会将对应的事件放入事件总线，因而监听器可以及时获取到任务状态的变更事件。</p>
+<h3 id="RPC"><a href="#RPC" class="headerlink" title="RPC"></a>RPC</h3><h4 id="RPC-概述"><a href="#RPC-概述" class="headerlink" title="RPC 概述"></a>RPC 概述</h4><p>从上一节的介绍可以看出，作为一个分布式的系统，Master 和 Worker 之间存在大量的通信，这些不同的组件之间的通信正是通过 RPC 来实现的。</p>
+<p>在 Aloha 中，RPC 模块不同于传统的 RPC 框架，不需要预先使用 IDL (Interface Description Language) 来定义客户端和服务端进行通信的数据结构、服务端提供的服务等，而是直接基于 Scala 的模式匹配来完成消息的识别和路由。之所以这样来实现，是因为在这里 RPC 的主要定位是作为内部组件之间通信的桥梁，无需考虑跨语言等特性。基于 Scala 的模式匹配进行路由降低了代码的复杂度，使用起来非常便捷。</p>
+<p>我们先看一个简单的例子，来了解一下 RPC 的基本使用方法。其核心就在于 RpcEndpoint 的实现。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//------------------------ Server side ----------------------------</span></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">HelloWorldServer</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> host = <span class="string">"localhost"</span></span><br><span class="line">    <span class="keyword">val</span> rpcEnv: <span class="type">RpcEnv</span> = <span class="type">RpcEnv</span>.create(<span class="string">"hello-server"</span>, host, <span class="number">52345</span>, <span class="keyword">new</span> <span class="type">AlohaConf</span>())</span><br><span class="line">    <span class="keyword">val</span> helloEndpoint: <span class="type">RpcEndpoint</span> = <span class="keyword">new</span> <span class="type">HelloEndpoint</span>(rpcEnv)</span><br><span class="line">    rpcEnv.setupEndpoint(<span class="string">"hello-service"</span>, helloEndpoint)</span><br><span class="line">    rpcEnv.awaitTermination()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">HelloEndpoint</span>(<span class="params">override val rpcEnv: <span class="type">RpcEnv</span></span>) <span class="keyword">extends</span> <span class="title">RpcEndpoint</span> </span>&#123;</span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">onStart</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">    println(<span class="string">"Service started."</span>)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">receiveAndReply</span></span>(context: <span class="type">RpcCallContext</span>): <span class="type">PartialFunction</span>[<span class="type">Any</span>, <span class="type">Unit</span>] = &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="type">SayHi</span>(msg) =&gt;</span><br><span class="line">      context.reply(<span class="string">s"Aloha: <span class="subst">$msg</span>"</span>)</span><br><span class="line">    <span class="keyword">case</span> <span class="type">SayBye</span>(msg) =&gt;</span><br><span class="line">      context.reply(<span class="string">s"Bye :), <span class="subst">$msg</span>"</span>)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">onStop</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">    println(<span class="string">"Stop hello endpoint"</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">SayHi</span>(<span class="params">msg: <span class="type">String</span></span>)</span></span><br><span class="line"><span class="class"></span></span><br><span class="line"><span class="class"><span class="title">case</span> <span class="title">class</span> <span class="title">SayBye</span>(<span class="params">msg: <span class="type">String</span></span>)</span></span><br><span class="line"><span class="class"></span></span><br><span class="line"><span class="class"><span class="title">//---------------------------</span> <span class="title">Client</span> <span class="title">side</span> <span class="title">-------------------------------</span></span></span><br><span class="line"><span class="class"><span class="title">object</span> <span class="title">HelloWorldClient</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> host = <span class="string">"localhost"</span></span><br><span class="line">    <span class="keyword">val</span> rpcEnv: <span class="type">RpcEnv</span> = <span class="type">RpcEnv</span>.create(<span class="string">"hello-client"</span>, host, <span class="number">52345</span>, <span class="keyword">new</span> <span class="type">AlohaConf</span>, <span class="literal">true</span>)</span><br><span class="line">    <span class="keyword">val</span> endPointRef: <span class="type">RpcEndpointRef</span> = rpcEnv.retrieveEndpointRef(<span class="type">RpcAddress</span>(<span class="string">"localhost"</span>, <span class="number">52345</span>), <span class="string">"hello-service"</span>)</span><br><span class="line">    <span class="keyword">val</span> future: <span class="type">Future</span>[<span class="type">String</span>] = endPointRef.ask[<span class="type">String</span>](<span class="type">SayHi</span>(<span class="string">"WALL-E"</span>))</span><br><span class="line">    future.onComplete &#123;</span><br><span class="line">      <span class="keyword">case</span> <span class="type">Success</span>(value) =&gt; println(<span class="string">s"Got response: <span class="subst">$value</span>"</span>)</span><br><span class="line">      <span class="keyword">case</span> <span class="type">Failure</span>(e) =&gt; println(<span class="string">s"Got error: <span class="subst">$e</span>"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">Await</span>.result(future, <span class="type">Duration</span>.apply(<span class="string">"30s"</span>))</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="RpcEndpoint、-RpcEndpointRef-和-RpcEnv"><a href="#RpcEndpoint、-RpcEndpointRef-和-RpcEnv" class="headerlink" title="RpcEndpoint、 RpcEndpointRef 和 RpcEnv"></a>RpcEndpoint、 RpcEndpointRef 和 RpcEnv</h4><p>从上面的例子很容易观察到，<code>RpcEndpoint</code>、 <code>RpcEndpointRef</code> 和 <code>RpcEnv</code> 是使用这个 RPC 框架的关键。如果你恰好知道一点 Actor 模型和 Akka 的基本概念，很容易就能把这三个抽象同 Akka 中的 <code>Actor</code>, <code>ActorRef</code> 和 <code>ActorSystem</code> 联系起来。事实上，Spark 内部的 RPC 最初正是基于 Akka 来实现的，后来虽然剥离了 Akka，但基本的设计理念却保留了下来。</p>
+<p>简单地来说，<code>RpcEndpoint</code> 是一个能够接收消息并作出响应的服务。Master 和 Worker 实际上都是 <code>RpcEndpoint</code>。</p>
+<p><code>RpcEndpoint</code> 对接收的消息有两种方式，分别对应需要作出应答和不需要作出应答，即：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">receive</span></span>: <span class="type">PartialFunction</span>[<span class="type">Any</span>, <span class="type">Unit</span>] = &#123;</span><br><span class="line">  <span class="keyword">case</span> _ =&gt; <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">AlohaException</span>(self + <span class="string">" does not implement 'receive'"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">receiveAndReply</span></span>(context: <span class="type">RpcCallContext</span>): <span class="type">PartialFunction</span>[<span class="type">Any</span>,<span class="type">Unit</span>] = &#123;</span><br><span class="line">  <span class="keyword">case</span> _ =&gt; context.sendFailure(<span class="keyword">new</span> <span class="type">AlohaException</span>(self + <span class="string">" won't reply anything"</span>))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中，<code>RpcCallContext</code> 用于向消息发送方作出应答，包括回复正常的响应以及错误的异常。通过 <code>RpcCallContext</code> 将业务逻辑和数据传输进行了解耦，服务方无需知道请求的发送方是来自本地还是来自远端。</p>
+<p><code>RpcEndpoint</code> 还包含了一系列生命周期相关的回调方法，如 <code>onStart</code>, <code>onStop</code>, <code>onError</code>, <code>onConnected</code>, <code>onDisconnected</code>, <code>onNetworkError</code>。</p>
+<p><code>RpcEndpointRef</code> 是对 <code>RpcEndpoint</code> 的引用，它是服务调用方发送请求的入口。通过获取 <code>RpcEndpoint</code> 对应的 <code>RpcEndpointRef</code>，就可以直接向 <code>RpcEndpoint</code> 发送请求。无论 <code>RpcEndpoint</code> 是在本地还是在远端，向 <code>RpcEndpoint</code> 发送消息的方法都是一致的。这也正是 RPC 存在的意义，即：执行一个远程服务提供的方法，就如同调用本地方法一样。</p>
+<p><code>RpcEndpointRef</code> 提供了如下几种请求的发送方式：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//Sends a one-way asynchronous message. Fire-and-forget semantics.</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">send</span></span>(message: <span class="type">Any</span>): <span class="type">Unit</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Send a message to the corresponding [[RpcEndpoint.receiveAndReply)]] and return a [[Future]] to receive the reply within the specified timeout.</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">ask</span></span>[<span class="type">T</span>: <span class="type">ClassTag</span>](message: <span class="type">Any</span>, timeout: <span class="type">RpcTimeout</span>): <span class="type">Future</span>[<span class="type">T</span>]</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">ask</span></span>[<span class="type">T</span>: <span class="type">ClassTag</span>](message: <span class="type">Any</span>): <span class="type">Future</span>[<span class="type">T</span>] = ask(message, defaultAskTimeout)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">askSync</span></span>[<span class="type">T</span>: <span class="type">ClassTag</span>](message: <span class="type">Any</span>):<span class="type">T</span> = askSync(message, defaultAskTimeout)</span><br><span class="line"></span><br><span class="line"><span class="comment">//Send a message to the corresponding [[RpcEndpoint.receiveAndReply]] and get its result within a specified timeout, throw an exception if this fails.</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">askSync</span></span>[<span class="type">T</span>: <span class="type">ClassTag</span>](message: <span class="type">Any</span>,timeout: <span class="type">RpcTimeout</span>):<span class="type">T</span> = &#123;</span><br><span class="line">  <span class="keyword">val</span> future = ask[<span class="type">T</span>](message, timeout)</span><br><span class="line">  timeout.awaitResult(future)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>RpcEnv</code> 是 <code>RpcEndpoint</code> 的运行时环境。一方面，它负责 <code>RpcEndpoint</code> 的注册，<code>RpcEndpoint</code> 生命周期的管理，以及根据 <code>RpcEndpoint</code> 的地址来获取对应 <code>RpcEndpointRef</code>；另一方面，它还负责请求的进一步封装，底层数据的网络传输，消息的路由等。</p>
+<p><code>RpcEnv</code> 有两种模式，一种是 Server 模式，一种是 Client 模式。在 Server 模式下，可以向<code>RpcEnv</code> 注册 <code>RpcEndpoint</code>，并且会注册一个特殊的 Endpoint，即 <code>RpcEndpointVerifier</code>，在获取 <code>RpcEndpointRef</code> 时，会通过 <code>RpcEndpointVerifier</code> 验证对应的 <code>RpcEndpoint</code> 是否存在。</p>
+<p><code>RpcEnv</code> 通过工厂模式来创建，底层具体的实现方案是可替换的，目前使用的是基于 Netty 实现的 <code>NettyRpcEnv</code>。</p>
+<h4 id="Dispatcher、Inbox-和-Outbox"><a href="#Dispatcher、Inbox-和-Outbox" class="headerlink" title="Dispatcher、Inbox 和 Outbox"></a>Dispatcher、Inbox 和 Outbox</h4><p>在 <code>NettyRpcEnv</code> 内部，为了高效进行消息的路由与传递，使用了一种类似于 mailbox 的设计。</p>
+<p>对于每一个 <code>RpcEndpoint</code>，都有一个关联的 <code>Inbox</code>，<code>Inbox</code> 内部有一个消息列表，这个消息列表中保存了这个 <code>RpcEndpoint</code> 收到的所有消息，包括需要应答的 <code>RpcMessage</code>，无需应答的 <code>OneWayMessage</code>， 以及各种和生命周期相关的状态消息，对于每一条消息，都会调用对应在 <code>RpcEndpoint</code> 内部定义的各种函数进行处理。而 <code>Dispatcher</code> 则充当了消息投递的角色。对于 <code>NettyRpcEnv</code> 接收到的所有消息， <code>Dispatcher</code> 都会根据指定的 Endpoint 标识找到对应的 <code>Inbox</code>，并将消息投递进去。此外，<code>Dispatcher</code> 内部启动了一个 MessageLoop，这个 MessaLoop 不断从阻塞队列中获取有新消息到达的 Endpoint，不断地消化新到达的这些消息。</p>
+<p>和 <code>Inbox</code> 遥相呼应的是，在 <code>NettyRpcEnv</code> 内部维护了 <code>RpcAddress</code> 和 <code>Outbox</code> 的映射关系，每个远程 Endpoint 都对应一个 Outbox 。在通过 <code>RpcEndpointRef</code> 发送消息时， <code>NettyRpcEnv</code> 会根据 <code>RpcEndpoint</code> 的地址进行判断：如果是本地的 Endpoint， 则直接通过 <code>Dispatcher</code>进行消息投递；如果是远端的 Endpoint， 则将消息投递到对应的 <code>Outbox</code> 中。 <code>Outbox</code> 中也有一个待投递的消息列表，在首次向远端 Endpoint 投递消息时，会先建立网络连接，然后依次将消息发送出去。</p>
+<h3 id="网络传输"><a href="#网络传输" class="headerlink" title="网络传输"></a>网络传输</h3><p>在 <code>NettyRpcEnv</code> 中，如何将请求发送给远端的 Endpoint，并收到远端 Endpoint 给出的回复，这就要要依赖于更底层的网络传输模块。网络传输模块，主要是对 Netty 的更进一步封装，其中关键的组件及功能如下：</p>
+<ul>
+<li><code>TransportServer</code>： 网络传输的服务端，当 <code>NettyRpcEnv</code> 以 Server 模式启动时就会创建一个 <code>TransportServer</code>，等待客户端的连接请求</li>
+<li><code>TransportClient</code>：网络传输的客户端，实际上就是对 channel 的进一步封装，一旦网络双方的请求建立成功，那么在 channel 的两端就各有一个 <code>TransportClient</code>，从而可以以全双工的方式进行数据交换</li>
+<li><code>TransportClientFactory</code>：创建 <code>TransportClient</code> 的工厂类，内部使用了连接池，可以复用已经建立的连接</li>
+<li><code>RpcHandler</code>：负责对接收到的 RPC 请求消息进行处理，<code>NettyRpcEnv</code> 就是在这个接口的方法中将消息交给 <code>Dispatcher</code> 进行投递</li>
+<li><code>RpcResponseCallback</code>：RPC 请求响应的回调接口，<code>NettyRpcEnv</code> 基于这个接口对接收到的数据进行反序列化</li>
+<li><code>TransportRequestHandler</code>：对请求消息进行处理，主要是将消息转交给 <code>RpcHandler</code> 进行处理</li>
+<li><code>TransportResponseHandler</code>：对响应消息进行处理，记录了每一条已发送的消息和与其关联的 <code>RpcResponseCallback</code>，一旦收到响应，就调用对应的回调方法</li>
+<li><code>TransportChannelHandler</code>：位于 channel pipeline 的尾端，根据消息类型将消息交给 <code>TransportRequestHandler</code> 或 <code>TransportResponseHandler</code> 进行处理</li>
+<li><code>TransportContext</code>：用于创建 <code>TransportServer</code> 和 <code>TransportClientFactory</code>，并初始化 Netty Channel 的 pipeline</li>
+</ul>
+<p>其他的诸如引导服务端、引导客户端、消息的编解码等过程，都是使用 Netty 进行网络通信的惯常流程，这里不再详述。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>Aloha 是一个分布式调度框架 <a href="https://github.com/jrthe42/aloha" target="_blank" rel="noopener">Aloha</a> ，它的实现主要参考了 <a href="https://github.com/apache/spark" target="_blank" rel="noopener">Spark</a>。文中首先介绍了 Aloha 的使用场景和扩展方式，并采用自顶向下的方式重点介绍了 Aloha 的模块设计和实现方案。</p>
+<p>Aloha 现已在 Github 开源，项目地址： <a href="https://github.com/jrthe42/aloha" target="_blank" rel="noopener">https://github.com/jrthe42/aloha</a> 。有关该项目的任何问题，欢迎各位通过 issue 进行交流。</p>
+<p>-EOF-</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Original/" rel="tag">#Original</a>
+          
+            <a href="/tags/RPC/" rel="tag">#RPC</a>
+          
+            <a href="/tags/Aloha/" rel="tag">#Aloha</a>
+          
+            <a href="/tags/Spark/" rel="tag">#Spark</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/grpc-at-first-view/" rel="next">Google 开源 RPC 框架 gRPC 初探</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+
+        
+          <div class="comments" id="comments">
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">JR</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">23</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">13</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://music.jrwang.me" target="_blank">Music</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://jrwang.me" target="_blank">Site</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#概览"><span class="nav-number">1.</span> <span class="nav-text">概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#扩展"><span class="nav-number">2.</span> <span class="nav-text">扩展</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#不同类型应用程序"><span class="nav-number">2.1.</span> <span class="nav-text">不同类型应用程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#自定义事件监听"><span class="nav-number">2.2.</span> <span class="nav-text">自定义事件监听</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#模块设计"><span class="nav-number">3.</span> <span class="nav-text">模块设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#总体架构"><span class="nav-number">3.1.</span> <span class="nav-text">总体架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#任务调度管理"><span class="nav-number">3.2.</span> <span class="nav-text">任务调度管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Worker-注册"><span class="nav-number">3.2.1.</span> <span class="nav-text">Worker 注册</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Application-提交"><span class="nav-number">3.2.2.</span> <span class="nav-text">Application 提交</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#容错机制"><span class="nav-number">3.2.3.</span> <span class="nav-text">容错机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#事件总线"><span class="nav-number">3.2.4.</span> <span class="nav-text">事件总线</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RPC"><span class="nav-number">3.3.</span> <span class="nav-text">RPC</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#RPC-概述"><span class="nav-number">3.3.1.</span> <span class="nav-text">RPC 概述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#RpcEndpoint、-RpcEndpointRef-和-RpcEnv"><span class="nav-number">3.3.2.</span> <span class="nav-text">RpcEndpoint、 RpcEndpointRef 和 RpcEnv</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Dispatcher、Inbox-和-Outbox"><span class="nav-number">3.3.3.</span> <span class="nav-text">Dispatcher、Inbox 和 Outbox</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#网络传输"><span class="nav-number">3.4.</span> <span class="nav-text">网络传输</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <div class="copyright" >
+  
+  &copy; &nbsp;  2015 - 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JR</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="powered-by">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+<div class="theme-info">
+  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
+</div>
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+    
+
+  
+
+
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+</body>
+</html>

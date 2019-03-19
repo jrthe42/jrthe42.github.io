@@ -39,12 +39,13 @@
 
 <meta name="description" content="想入非非就是寻找神奇">
 <meta property="og:type" content="website">
-<meta property="og:title" content="JR's Blog">
+<meta property="og:title" content="JR&#39;s Blog">
 <meta property="og:url" content="http://blog.jrwang.me/page/2/index.html">
-<meta property="og:site_name" content="JR's Blog">
+<meta property="og:site_name" content="JR&#39;s Blog">
 <meta property="og:description" content="想入非非就是寻找神奇">
+<meta property="og:locale" content="zh-Hans">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="JR's Blog">
+<meta name="twitter:title" content="JR&#39;s Blog">
 <meta name="twitter:description" content="想入非非就是寻找神奇">
 
 
@@ -153,6 +154,77 @@
       <div class="main-inner">
         <div id="content" class="content"> 
   <section id="posts" class="posts-expand">
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2016/java-collections-deque-arraydeque/" itemprop="url">
+                Java 容器源码分析之 Deque 与 ArrayDeque
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2016-03-16T20:32:07+08:00" content="2016-03-16">
+            2016-03-16
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            Queue 也是 Java 集合框架中定义的一种接口，直接继承自 Collection 接口。除了基本的 Collection 接口规定测操作外，Queue 接口还定义一组针对队列的特殊操作。通常来说，Queue 是按照先进先出(FIFO)的方式来管理其中的元素的，但是优先队列是一个例外。
+Dequ
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2016/java-collections-deque-arraydeque/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
     
       
 
@@ -790,78 +862,6 @@
 
 
     
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2015/java-varargs/" itemprop="url">
-                Java 中的变长参数
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2015-10-29T21:30:11+08:00" content="2015-10-29">
-            2015-10-29
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            在 Java 5 中提供了变长参数，允许在调用方法时传入不定长度的参数。变长参数是Java的一个语法糖，本质上还是基于数组的实现。
-12void foo(String... args);void foo(String[] args);
-12//方法签名([Ljava/lang/String;)V /
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2015/java-varargs/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -900,7 +900,7 @@
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">22</span>
+              <span class="site-state-item-count">23</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>
@@ -909,7 +909,7 @@
 
           <div class="site-state-item site-state-tags">
             <a href="/tags">
-              <span class="site-state-item-count">11</span>
+              <span class="site-state-item-count">13</span>
               <span class="site-state-item-name">标签</span>
               </a>
           </div>
@@ -971,7 +971,7 @@
       <div class="footer-inner"> <div class="copyright" >
   
   &copy; &nbsp;  2015 - 
-  <span itemprop="copyrightYear">2016</span>
+  <span itemprop="copyrightYear">2019</span>
   <span class="with-love">
     <i class="icon-next-heart"></i>
   </span>
