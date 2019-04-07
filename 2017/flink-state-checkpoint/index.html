@@ -1,0 +1,665 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="想入非非就是寻找神奇" />
+
+
+
+  <meta name="keywords" content="Flink," />
+
+
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="从状态说起状态 (State) 是 Flink 程序中构建复杂逻辑的基本组件。流处理中的状态可以视作算子上的记忆能力，可以保留和已经处理完的输入相关的信息，并对后续输入的处理造成影响。与之相反，流处理中的无状态操作只会考虑到当前处理的元素，不会受到处理完毕的元素的影响，也不会影响到后续待处理的元素。 简单来说，假定一个 source stream 中的事件消息都符合 e = {event_id:i">
+<meta name="keywords" content="Flink">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink 的状态管理和检查点机制">
+<meta property="og:url" content="http://blog.jrwang.me/2017/flink-state-checkpoint/index.html">
+<meta property="og:site_name" content="JR&#39;s Blog">
+<meta property="og:description" content="从状态说起状态 (State) 是 Flink 程序中构建复杂逻辑的基本组件。流处理中的状态可以视作算子上的记忆能力，可以保留和已经处理完的输入相关的信息，并对后续输入的处理造成影响。与之相反，流处理中的无状态操作只会考虑到当前处理的元素，不会受到处理完毕的元素的影响，也不会影响到后续待处理的元素。 简单来说，假定一个 source stream 中的事件消息都符合 e = {event_id:i">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://blog.jrwang.me/img/flink-state-checkpoint/stream_barriers.svg">
+<meta property="og:image" content="http://blog.jrwang.me/img/flink-state-checkpoint/checkpointing.svg">
+<meta property="og:image" content="http://blog.jrwang.me/img/flink-state-checkpoint/stream_aligning.svg">
+<meta property="og:image" content="http://blog.jrwang.me/img/flink-state-checkpoint/Making_the_State_Queryable.png">
+<meta property="og:image" content="http://blog.jrwang.me/img/flink-state-checkpoint/Querying_the_state.png">
+<meta property="og:updated_time" content="2019-04-07T16:23:23.896Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Flink 的状态管理和检查点机制">
+<meta name="twitter:description" content="从状态说起状态 (State) 是 Flink 程序中构建复杂逻辑的基本组件。流处理中的状态可以视作算子上的记忆能力，可以保留和已经处理完的输入相关的信息，并对后续输入的处理造成影响。与之相反，流处理中的无状态操作只会考虑到当前处理的元素，不会受到处理完毕的元素的影响，也不会影响到后续待处理的元素。 简单来说，假定一个 source stream 中的事件消息都符合 e = {event_id:i">
+<meta name="twitter:image" content="http://blog.jrwang.me/img/flink-state-checkpoint/stream_barriers.svg">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+  <title> Flink 的状态管理和检查点机制 | JR's Blog </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-66913886-2', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">JR's Blog</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              Flink 的状态管理和检查点机制
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2017-09-20T20:18:16+08:00" content="2017-09-20">
+            2017-09-20
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><h2 id="从状态说起"><a href="#从状态说起" class="headerlink" title="从状态说起"></a>从状态说起</h2><p>状态 (State) 是 Flink 程序中构建复杂逻辑的基本组件。流处理中的状态可以视作算子上的记忆能力，可以保留和已经处理完的输入相关的信息，并对后续输入的处理造成影响。与之相反，流处理中的无状态操作只会考虑到当前处理的元素，不会受到处理完毕的元素的影响，也不会影响到后续待处理的元素。</p>
+<p>简单来说，假定一个 source stream 中的事件消息都符合 <code>e = {event_id:int, event_value:int}</code> 这种模式。如果我们的目标是提取出每一条消息中的 <code>event_value</code>， 那么一个很简单的 <code>map</code> 操作就可以完成，这个 <code>map</code> 操作就是无状态的。但是，如果我们只想要输出那些 <code>event_value</code> 值比之前处理过的值都要高的那些消息，我们要如何实现呢？显然，我们需要记住已经处理过的消息中最大的 <code>event_value</code>，这就是有状态的操作。</p>
+<h2 id="Flink-中的状态"><a href="#Flink-中的状态" class="headerlink" title="Flink 中的状态"></a>Flink 中的状态</h2><p>在 Flink 中，状态分为两种，即 Keyed State 和 Operator State。Operator State 绑定到算子的每一个并行实例(sub-task) 中，而 Keyed State 总是和 Key 相关联，只能在 <code>KeyedStream</code> 的函数或算子中使用。 因为 Flink 中的 <code>keyBy</code> 操作保证了每一个键相关联的所有消息都会送给下游算子的同一个并行实例处理，因此 Keyed State 也可以看作是 Operator State 的一种分区(partitioned)形式，每一个键都关联一个状态分片(state-partition)。</p>
+<p>从另一个维度来看， Flink 中的状态还可以分为 Managed State 和 Raw State。Managed State 是指由 Flink 的运行时环境来管理状态，而 Raw State 则是由算子自行管理状态，Raw State 的数据结构对 Flink 是透明的。 Flink 的建议是尽量使用 Managed State, 这样 Flink 可以在并行度改变等情况下重新分布状态，并且可以更好地进行内存管理。</p>
+<p>Flink 中提供了三种形式的存储后端用来存储状态，分别是 <code>MemoryStateBackend</code>, <code>FsStateBackend</code> 和 <code>RocksDBStateBackend</code>。<code>MemoryStateBackend</code> 将状态存储在堆内存中，是默认使用的存储后端，由于存储容量限制，通常只在调试开发中使用。FsStateBackend 会将状态存储到一个持久化的存储中，如 HDFS，只在 JobManager 的内存中存储一些 metadata。<code>RocksDBStateBackend</code> 将状态存储在RockDB中，并且支持增量快照。在最新版的 Flink 中，这三种形式的存储后端都支持异步快照模式。</p>
+<h2 id="在-Flink-中使用状态"><a href="#在-Flink-中使用状态" class="headerlink" title="在 Flink 中使用状态"></a>在 Flink 中使用状态</h2><p>在 Flink 中，状态的基本类型包括 <code>ValueState&lt;T&gt;</code>, <code>ListState&lt;T&gt;</code>, <code>ReducingState&lt;T&gt;</code>, <code>MapState&lt;T&gt;</code> (<code>FoldState&lt;T&gt;</code> 已经被移除)。这些状态有对应的更新和清除的方法，具体参见 API 文档，不再赘述。</p>
+<p>要获取状态，首先需要定义状态描述符(<code>StateDescriptor</code>)。状态描述符状态的名字（保证唯一性），状态的类型，以及部分状态需要的自定义函数。根据想要获取的状态的不同，状态描述符也分为 <code>ValueStateDescriptor</code>, <code>ListStateDescriptor</code>, <code>ReducingStateDescriptor</code>, <code>MapStateDescriptor</code>。</p>
+<h3 id="CheckpointedFunction-接口"><a href="#CheckpointedFunction-接口" class="headerlink" title="CheckpointedFunction 接口"></a><code>CheckpointedFunction</code> 接口</h3><p>要在自定义的函数或算子中使用状态，可以实现 <code>CheckpointedFunction</code> 接口，这是一个比较通用的接口，既可以管理 Operator State，也可以管理 Keyed State，灵活性比较强。它要求实现如下两个方法：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//在创建检查点的时候调用</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">snapshotState</span><span class="params">(FunctionSnapshotContext context)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//在初始化的时候调用 (在从检查点恢复状态的时候也会先调用该方法)</span></span><br><span class="line"><span class="comment">//通过 FunctionInitializationContext 可以访问到 OperatorStateStore 和 KeyedStateStore</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">initializeState</span><span class="params">(FunctionInitializationContext context)</span> <span class="keyword">throws</span> Exception</span>;</span><br></pre></td></tr></table></figure></p>
+<p>例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyFunction</span>&lt;<span class="title">T</span>&gt; <span class="keyword">implements</span> <span class="title">MapFunction</span>&lt;<span class="title">T</span>, <span class="title">T</span>&gt;, <span class="title">CheckpointedFunction</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">private</span> ReducingState&lt;Long&gt; countPerKey;</span><br><span class="line">     <span class="keyword">private</span> ListState&lt;Long&gt; countPerPartition;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">private</span> <span class="keyword">long</span> localCount;</span><br><span class="line"></span><br><span class="line">     <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">initializeState</span><span class="params">(FunctionInitializationContext context)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">         <span class="comment">// get the state data structure for the keyed state</span></span><br><span class="line">         countPerKey = context.getKeyedStateStore().getReducingState(</span><br><span class="line">                 <span class="keyword">new</span> ReducingStateDescriptor&lt;&gt;(<span class="string">"perKeyCount"</span>, <span class="keyword">new</span> AddFunction&lt;&gt;(), Long.class));</span><br><span class="line"></span><br><span class="line">         <span class="comment">// get the state data structure for the operator state</span></span><br><span class="line">         countPerPartition = context.getOperatorStateStore().getListState(</span><br><span class="line">                 <span class="keyword">new</span> ListStateDescriptor&lt;&gt;(<span class="string">"perPartitionCount"</span>, Long.class));</span><br><span class="line"></span><br><span class="line">         <span class="comment">// initialize the "local count variable" based on the operator state</span></span><br><span class="line">         <span class="keyword">for</span> (Long l : countPerPartition.get()) &#123;</span><br><span class="line">             localCount += l;</span><br><span class="line">         &#125;</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">snapshotState</span><span class="params">(FunctionSnapshotContext context)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">         <span class="comment">// the keyed state is always up to date anyways</span></span><br><span class="line">         <span class="comment">// just bring the per-partition state in shape</span></span><br><span class="line">         countPerPartition.clear();</span><br><span class="line">         countPerPartition.add(localCount);</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     <span class="function"><span class="keyword">public</span> T <span class="title">map</span><span class="params">(T value)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">         <span class="comment">// update the states</span></span><br><span class="line">         countPerKey.add(<span class="number">1L</span>);</span><br><span class="line">         localCount++;</span><br><span class="line"></span><br><span class="line">         <span class="keyword">return</span> value;</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="ListCheckpointed-接口"><a href="#ListCheckpointed-接口" class="headerlink" title="ListCheckpointed 接口"></a><code>ListCheckpointed</code> 接口</h3><p>使用 Operator State 的另一种更方便的形式是实现 <code>ListCheckpointed</code> 接口。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">List&lt;T&gt; <span class="title">snapshotState</span><span class="params">(<span class="keyword">long</span> checkpointId, <span class="keyword">long</span> timestamp)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">restoreState</span><span class="params">(List&lt;T&gt; state)</span> <span class="keyword">throws</span> Exception</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="RuntimeContext"><a href="#RuntimeContext" class="headerlink" title="RuntimeContext"></a><code>RuntimeContext</code></h3><p>对于 Keyed State，通常都是通过 <code>RuntimeContext</code> 实例来获取，这通常需要在 <em>rich functions</em> 中才可以做到。 <code>RuntimeContext</code> 提供的获取状态的方法包括：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">ValueState&lt;T&gt; <span class="title">getState</span><span class="params">(ValueStateDescriptor&lt;T&gt;)</span></span></span><br><span class="line"><span class="function">ReducingState&lt;T&gt; <span class="title">getReducingState</span><span class="params">(ReducingStateDescriptor&lt;T&gt;)</span></span></span><br><span class="line"><span class="function">ListState&lt;T&gt; <span class="title">getListState</span><span class="params">(ListStateDescriptor&lt;T&gt;)</span></span></span><br><span class="line"><span class="function">MapState&lt;UK, UV&gt; <span class="title">getMapState</span><span class="params">(MapStateDescriptor&lt;UK, UV&gt;)</span></span></span><br></pre></td></tr></table></figure></p>
+<p>要记住，使用 Keyed State 一定要在 Keyed Stream 上进行操作，并且由于状态总是和 key 相关联的，同一个并行算子实例中不同消息获取到的状态并不一定相同。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CountWindowAverage</span> <span class="keyword">extends</span> <span class="title">RichFlatMapFunction</span>&lt;<span class="title">Tuple2</span>&lt;<span class="title">Long</span>, <span class="title">Long</span>&gt;, <span class="title">Tuple2</span>&lt;<span class="title">Long</span>, <span class="title">Long</span>&gt;&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * The ValueState handle. The first field is the count, the second field a running sum.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">transient</span> ValueState&lt;Tuple2&lt;Long, Long&gt;&gt; sum;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">flatMap</span><span class="params">(Tuple2&lt;Long, Long&gt; input, Collector&lt;Tuple2&lt;Long, Long&gt;&gt; out)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// access the state value</span></span><br><span class="line">        Tuple2&lt;Long, Long&gt; currentSum = sum.value();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// update the count</span></span><br><span class="line">        currentSum.f0 += <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// add the second field of the input value</span></span><br><span class="line">        currentSum.f1 += input.f1;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// update the state</span></span><br><span class="line">        sum.update(currentSum);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// if the count reaches 2, emit the average and clear the state</span></span><br><span class="line">        <span class="keyword">if</span> (currentSum.f0 &gt;= <span class="number">2</span>) &#123;</span><br><span class="line">            out.collect(<span class="keyword">new</span> Tuple2&lt;&gt;(input.f0, currentSum.f1 / currentSum.f0));</span><br><span class="line">            sum.clear();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">open</span><span class="params">(Configuration config)</span> </span>&#123;</span><br><span class="line">        ValueStateDescriptor&lt;Tuple2&lt;Long, Long&gt;&gt; descriptor =</span><br><span class="line">                <span class="keyword">new</span> ValueStateDescriptor&lt;&gt;(</span><br><span class="line">                        <span class="string">"average"</span>, <span class="comment">// the state name</span></span><br><span class="line">                        TypeInformation.of(<span class="keyword">new</span> TypeHint&lt;Tuple2&lt;Long, Long&gt;&gt;() &#123;&#125;), <span class="comment">// type information</span></span><br><span class="line">                        Tuple2.of(<span class="number">0L</span>, <span class="number">0L</span>)); <span class="comment">// default value of the state, if nothing was set</span></span><br><span class="line">        sum = getRuntimeContext().getState(descriptor);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// this can be used in a streaming program like this (assuming we have a StreamExecutionEnvironment env)</span></span><br><span class="line">env.fromElements(Tuple2.of(<span class="number">1L</span>, <span class="number">3L</span>), Tuple2.of(<span class="number">1L</span>, <span class="number">5L</span>), Tuple2.of(<span class="number">1L</span>, <span class="number">7L</span>), Tuple2.of(<span class="number">1L</span>, <span class="number">4L</span>), Tuple2.of(<span class="number">1L</span>, <span class="number">2L</span>))</span><br><span class="line">        .keyBy(<span class="number">0</span>)</span><br><span class="line">        .flatMap(<span class="keyword">new</span> CountWindowAverage())</span><br><span class="line">        .print();</span><br><span class="line"></span><br><span class="line"><span class="comment">// the printed output will be (1,4) and (1,5)</span></span><br></pre></td></tr></table></figure>
+<h2 id="检查点-Checkpint"><a href="#检查点-Checkpint" class="headerlink" title="检查点 (Checkpint)"></a>检查点 (Checkpint)</h2><p>由于 Flink 中的操作可以是有状态的，在作业失败后进行恢复的时候需要正确地还原算子的状态，这就需要依赖于 Flink 的检查点（快照）机制。实际上不仅仅是错误恢复，有时我们需要对作业运行时的并行度进行调整（缩放，Scale）这也要依赖于检查点。</p>
+<p>在进行快照的时候，需要保存算子的状态，这既包括用户自定的状态，也包括系统状态（比如数据缓冲区 window buffer）等。检查点机制还需要依赖于 1）支持数据重播的数据源 2）状态的持久存储终端。</p>
+<p>Flink 实现了一个轻量级的分布式快照机制，其核心点在于 Barrier。 Coordinator 在需要触发检查点的时候要求数据源注入向数据流中注入 barrie， barrier 和正常的数据流中的消息一起向前流动，相当于将数据流中的消息切分到了不同的检查点中。当一个 operator 从它所有的 input channel 中都收到了 barrier，则会触发当前 operator 的快照操作，并向其下游 channel 中发射 barrier。当所有的 sink 都反馈收到了 barrier 后，则当前检查点创建完毕。</p>
+<p><img src="/img/flink-state-checkpoint/stream_barriers.svg" alt="stream_barriers"></p>
+<p>完整的检查点创建流程如下：</p>
+<p><img src="/img/flink-state-checkpoint/checkpointing.svg" alt="checkpointing"></p>
+<h3 id="对齐操作"><a href="#对齐操作" class="headerlink" title="对齐操作"></a>对齐操作</h3><p>一个关键的问题在于，一些 operator 拥有多个 input channel，它往往不会同时从这些 channel 中接收到 barrier。如果 Operator 继续处理 barrier 先到达的 channel 中的消息，那么在所有 channel 的 barrier 都到达时，operator 就会处于一种混杂的状态。在这种情况下，Flink 采用对齐操作来保证 <em>Exactly Once</em> 特性。Operator 会阻塞 barrier 先到达的 channel，通常是将其流入的消息放入缓冲区中，待收到所有 input channel 的 barrier 后，进行快照操作，释放被阻塞的 channel，并向下游发射 barrier。<br><img src="/img/flink-state-checkpoint/stream_aligning.svg" alt="stream_aligning"></p>
+<p>对齐操作会对流处理造成延时，但通常不会特别明显。如果应用对一致性要求比较宽泛的话，那么也可以选择跳过对齐操作。这意味着快照中会包含一些属于下一个检查点的数据，这样就不能保证 <em>Exactly Once</em> 特性，而只能降级为 <em>At Least Once</em>。</p>
+<h3 id="异步快照"><a href="#异步快照" class="headerlink" title="异步快照"></a>异步快照</h3><p>前述的检查点创建流程中，在 operator 进行快照操作时，不再处理数据流中的消息。这种同步的方式会在每一次进行快照操作的时候引入延时。实际上，Flink 也支持采用异步的方式创建快照，这就要求 operator 在触发快照操作的时候创建一个不受后续操作影响的状态对象，通常选用 <em>copy-on-write</em> 的数据结构。Flink 中基于 RocketDB 的状态存储后端就可以支持异步操作。</p>
+<h3 id="环形数据流的快照"><a href="#环形数据流的快照" class="headerlink" title="环形数据流的快照"></a>环形数据流的快照</h3><p>对于环形数据流图创建快照，在 <code>IterationHead</code> 中会进行一个特殊的操作，在 <code>IterationHead</code> 收到来自 <code>IterationTail</code> 的 marker 后，将当前检查点范围内流过的所有记录都保存在快照中。其它的节点进行的快照和无环情况下一致。详细的介绍可参考 Flink 团队今年在 VLDB Endowment 发表的<a href="http://www.vldb.org/pvldb/vol10/p1718-carbone.pdf" target="_blank" rel="noopener">论文</a>。</p>
+<h3 id="保存点"><a href="#保存点" class="headerlink" title="保存点"></a>保存点</h3><p>所谓的保存点，其实是用户手动触发的一种特殊的检查点。其本质就是检查点，但它相比检查点有两点不同：1）用户自行触发 2）当有新的已完成的检查点产生的时候，不会自动失效。</p>
+<h2 id="可查询状态（Queryable-State）"><a href="#可查询状态（Queryable-State）" class="headerlink" title="可查询状态（Queryable State）"></a>可查询状态（Queryable State）</h2><p>Flink 自1.2起新增了一个 Queryable State 特性，允许从 Flink 系统外直接查询作业流水中的状态。这主要是来自于两方面的诉求：1）很多应用都有直接获取应用实时状态的需求，2）将状态频繁写入外部系统中可能是应用的瓶颈。</p>
+<p>有两种方式来使用 Queryable State ：</p>
+<ul>
+<li><code>QueryableStateStream</code>, 将 <code>KeyedStream</code> 转换为 <code>QueryableStateStream</code>，类似于 Sink，后续不能进行任何转换操作</li>
+<li><code>StateDescriptor#setQueryable(String queryableStateName)</code>，将 Keyed State 设置为可查询的 （不支持 Operator State）</li>
+</ul>
+<p>外部应用在查询 Flink 作业内部状态的时候要使用 <code>QueryableStateClient</code>, 提交异步查询请求来获取状态。</p>
+<p>下面的两张图大致给出了 Queryable State 的工作机制：<br><img src="/img/flink-state-checkpoint/Making_the_State_Queryable.png" alt="Making_the_State_Queryable"><br><img src="/img/flink-state-checkpoint/Querying_the_state.png" alt="Querying_the_state"></p>
+<p>目前还存在的一些局限：</p>
+<ul>
+<li>只能支持 Keyed Operator</li>
+<li>对状态大小是否有限制（不支持 ListState）</li>
+<li>作业失败后如何保证可用性</li>
+<li>Clent API 的易用性</li>
+</ul>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://ci.apache.org/projects/flink/flink-docs-master/dev/stream/state/state.html" target="_blank" rel="noopener">Working with State</a></li>
+<li><a href="https://flink.apache.org/features/2017/07/04/flink-rescalable-state.html" target="_blank" rel="noopener">A Deep Dive into Rescalable State in Apache Flink</a></li>
+<li><a href="http://vishnuviswanath.com/flink_queryable_state1.html" target="_blank" rel="noopener">Queryable States in ApacheFlink - How it works</a></li>
+</ul>
+<p>-EOF-</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Flink/" rel="tag">#Flink</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/partial-function-in-scala/" rel="prev">Partial Function in Scala</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/grpc-at-first-view/" rel="next">Google 开源 RPC 框架 gRPC 初探</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+
+        
+          <div class="comments" id="comments">
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">JR</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">31</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">19</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://music.jrwang.me" target="_blank">Music</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://jrwang.me" target="_blank">Site</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#从状态说起"><span class="nav-number">1.</span> <span class="nav-text">从状态说起</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Flink-中的状态"><span class="nav-number">2.</span> <span class="nav-text">Flink 中的状态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#在-Flink-中使用状态"><span class="nav-number">3.</span> <span class="nav-text">在 Flink 中使用状态</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CheckpointedFunction-接口"><span class="nav-number">3.1.</span> <span class="nav-text">CheckpointedFunction 接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ListCheckpointed-接口"><span class="nav-number">3.2.</span> <span class="nav-text">ListCheckpointed 接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RuntimeContext"><span class="nav-number">3.3.</span> <span class="nav-text">RuntimeContext</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#检查点-Checkpint"><span class="nav-number">4.</span> <span class="nav-text">检查点 (Checkpint)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#对齐操作"><span class="nav-number">4.1.</span> <span class="nav-text">对齐操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#异步快照"><span class="nav-number">4.2.</span> <span class="nav-text">异步快照</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#环形数据流的快照"><span class="nav-number">4.3.</span> <span class="nav-text">环形数据流的快照</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#保存点"><span class="nav-number">4.4.</span> <span class="nav-text">保存点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#可查询状态（Queryable-State）"><span class="nav-number">5.</span> <span class="nav-text">可查询状态（Queryable State）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <div class="copyright" >
+  
+  &copy; &nbsp;  2015 - 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JR</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="powered-by">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+<div class="theme-info">
+  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
+</div>
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+    
+
+  
+
+
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+</body>
+</html>

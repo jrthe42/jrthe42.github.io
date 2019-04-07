@@ -236,6 +236,575 @@
           
           
             
+              <a class="post-title-link" href="/2019/flink-source-code-executiongraph/" itemprop="url">
+                Flink 源码阅读笔记（3）- ExecutionGraph 的生成
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2019-02-23T19:38:53+08:00" content="2019-02-23">
+            2019-02-23
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            我们前面已经分析过 StreamGraph, JobGraph 的生成过程，这两个执行图都是在 client 端生成的。接下来我们将把目光头投向 Flink Job 运行时调度层核心的执行图 - ExecutionGraph。
+和 StreamGraph 以及 JobGraph 不同的是，Execu
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2019/flink-source-code-executiongraph/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2019/flink-source-code-jobgraph/" itemprop="url">
+                Flink 源码阅读笔记（2）- JobGraph 的生成
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2019-02-17T16:35:45+08:00" content="2019-02-17">
+            2019-02-17
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            前面的文章我们介绍了 StreamGraph 的生成，这个实际上只对应 Flink 作业在逻辑上的执行计划图。Flink 会进一步对 StreamGraph 进行转换，得到另一个执行计划图，即 JobGraph。
+JobVertex在 StreamGraph 中，每一个算子（Operator） 对应
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2019/flink-source-code-jobgraph/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2019/flink-source-code-streamgraph/" itemprop="url">
+                Flink 源码阅读笔记（1）- StreamGraph 的生成
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2019-02-16T20:42:38+08:00" content="2019-02-16">
+            2019-02-16
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。
+StreamExecutionEnvironmentStreamExecutionEnvironment 是 Flink 在流模式下任务执行
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2019/flink-source-code-streamgraph/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2018/container-and-kubernetes/" itemprop="url">
+                关于容器技术的小抄
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2018-12-29T20:08:21+08:00" content="2018-12-29">
+            2018-12-29
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            Docker最初风靡一时的 Paas 项目提供的“应用托管”，其最核心的组件就是一套应用的打包和分发机制。为了对多用户的应用环境进行隔离，会调用操作系统的 Cgroups 和 Namespace 机制为每一个应用单独创建一个称作“沙盒”的隔离环境，然后在“沙盒”中启动这些应用进程。这就是所谓的“容器
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2018/container-and-kubernetes/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2018/dynamic-variable-in-scala/" itemprop="url">
+                DynamicVariable in Scala
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2018-06-07T21:05:51+08:00" content="2018-06-07">
+            2018-06-07
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            scala.util.DynamicVariable，这个类有点类似于 java 里面 ThreadLocal，适合用来保存和传递上下文（Context）相关的信息。
+Scala 的官方文档 是这么介绍的：
+
+DynamicVariables 提供了一种绑定机制，即变量的当前值是通过动态范围来查找的
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2018/dynamic-variable-in-scala/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2018/parse-table-in-sql/" itemprop="url">
+                从 SQL 语句中解析出源表和结果表
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2018-05-30T15:15:57+08:00" content="2018-05-30">
+            2018-05-30
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。
+在 Calcite 中，解析出的 AST 是以 SqlNode 的形式表现的，一个 SqlNode 即是 AST 中的一个节点。SqlNode 有众多的子类，但
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2018/parse-table-in-sql/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2018/partial-function-in-scala/" itemprop="url">
+                Partial Function in Scala
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2018-03-01T20:35:18+08:00" content="2018-03-01">
+            2018-03-01
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            模式匹配和匿名函数Scala 的模式匹配可能是最常用到的代码片段，match 和 case 配合使用，应该是 Scala 程序员最常写的代码片段：
+1234v match &#123;    case Some(str) =&gt; ...    case None =&gt; ...&#125;
+
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2018/partial-function-in-scala/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2017/flink-state-checkpoint/" itemprop="url">
+                Flink 的状态管理和检查点机制
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2017-09-20T20:18:16+08:00" content="2017-09-20">
+            2017-09-20
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            从状态说起状态 (State) 是 Flink 程序中构建复杂逻辑的基本组件。流处理中的状态可以视作算子上的记忆能力，可以保留和已经处理完的输入相关的信息，并对后续输入的处理造成影响。与之相反，流处理中的无状态操作只会考虑到当前处理的元素，不会受到处理完毕的元素的影响，也不会影响到后续待处理的元素。
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2017/flink-state-checkpoint/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
               <a class="post-title-link" href="/2016/grpc-at-first-view/" itemprop="url">
                 Google 开源 RPC 框架 gRPC 初探
               </a>
@@ -296,576 +865,11 @@ RPC 框架通常使用 IDL (In
 
 
     
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-thread-states/" itemprop="url">
-                谈谈 Java 线程状态相关的几个方法
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-07-23T19:44:11+08:00" content="2016-07-23">
-            2016-07-23
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。
-Java 线程的状态先来谈一谈 Java 中线程的状态。在
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-thread-states/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-simpledateformat-multithread-threadlocal/" itemprop="url">
-                SimpleDateFormat 的线程安全问题与 ThreadLocal
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-07-09T23:14:11+08:00" content="2016-07-09">
-            2016-07-09
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            从 SimpleDateFormat 的线程安全说起SimpleDateFormat 是 Java 中非常常用的一个类，用于解析和格式化日期字符串。这个类想必大家都有用过，但是 SimpleDateFormat 在多线程环境中并不是线程安全的。我刚知道这一点的时候也觉得很奇怪，因为 SimpleDa
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-simpledateformat-multithread-threadlocal/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/gc-overhead-limit-in-putsortreducer/" itemprop="url">
-                记一次使用 PutSortReducer 时 OOM 错误的排查过程
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-04-22T15:44:11+08:00" content="2016-04-22">
-            2016-04-22
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我非常困惑。谷歌搜索了一圈也没有发现可行的解决方案，无奈只能自己解决了
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/gc-overhead-limit-in-putsortreducer/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-collections-set/" itemprop="url">
-                Java 容器源码分析之 Set
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-04-10T20:26:22+08:00" content="2016-04-10">
-            2016-04-10
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            Set 表示由无重复对象组成的集合，也是集合框架中重要的一种集合类型，直接扩展自 Collection 接口。在一个 Set 中，不能有两个引用指向同一个对象，或两个指向 null 的引用。如果对象 a 和 b 的引用满足条件 a.equals(b)，那么这两个对象也不能同时出现在集合中。
-通常 S
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-collections-set/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-collections-treemap/" itemprop="url">
-                Java 容器源码分析之 TreeMap
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-04-09T20:00:21+08:00" content="2016-04-09">
-            2016-04-09
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            TreeMap 是一种基于红黑树实现的 Key-Value 结构。在使用集合视图在 HashMap 中迭代时，是不能保证迭代顺序的； LinkedHashMap 使用了双向链表，保证按照插入顺序或者访问顺序进行迭代。但是有些时候，我们可能需要按照键的大小进行按序迭代，或者在使用哈希表的同时希望按键值
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-collections-treemap/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-enum/" itemprop="url">
-                Java 枚举源码分析
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-04-01T20:06:19+08:00" content="2016-04-01">
-            2016-04-01
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            引言枚举类型是 JDK 5 之后引进的一种非常重要的引用类型，可以用来定义一系列枚举常量。
-在没有引入 enum 关键字之前，要表示可枚举的变量，只能使用 public static final 的方式。
-1234public staic final int SPRING = 1;public st
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-enum/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-collections-linkedhashmap/" itemprop="url">
-                Java 容器源码分析之 LinkedHashMap
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-03-27T20:21:06+08:00" content="2016-03-27">
-            2016-03-27
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            同 HashMap 一样，LinkedHashMap 也是对 Map 接口的一种基于链表和哈希表的实现。实际上， LinkedHashMap 是 HashMap 的子类，其扩展了 HashMap 增加了双向链表的实现。相较于 HashMap 的迭代器中混乱的访问顺序，LinkedHashMap 可以
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-collections-linkedhashmap/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-collections-linkedlist/" itemprop="url">
-                Java 容器源码分析之 LinkedList
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-03-21T19:03:52+08:00" content="2016-03-21">
-            2016-03-21
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            概览同 ArrayList 一样，LinkedList 也是对 List 接口的一种具体实现。不同的是，ArrayList 是基于数组来实现的，而 LinkedList 是基于双向链表实现的。LinkedList 类的声明如下：
-123public class LinkedList&lt;E&gt;
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-collections-linkedlist/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/">&raquo;</a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/">&raquo;</a>
   </nav>
 
  </div>
@@ -899,7 +903,7 @@ Java 线程的状态先来谈一谈 Java 中线程的状态。在
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">23</span>
+              <span class="site-state-item-count">31</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>
@@ -908,7 +912,7 @@ Java 线程的状态先来谈一谈 Java 中线程的状态。在
 
           <div class="site-state-item site-state-tags">
             <a href="/tags">
-              <span class="site-state-item-count">13</span>
+              <span class="site-state-item-count">19</span>
               <span class="site-state-item-name">标签</span>
               </a>
           </div>
