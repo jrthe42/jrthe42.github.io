@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="920px" height="600px" viewBox="0 0 920 600" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 52.4 (67378) - http://www.bohemiancoding.com/sketch -->
+    <title>slot-request</title>
+    <desc>Created with Sketch.</desc>
+    <g id="slot-request" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group" transform="translate(40.000000, 42.000000)">
+            <g id="Group-3-Copy-2" transform="translate(0.444501, 339.500000)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="0.5" y="0.5" width="227" height="153"></rect>
+                <text id="JobMaster" font-family="PingFangSC-Semibold, PingFang SC" font-size="24" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="55.1119416" y="47.6393162">JobMaster</tspan>
+                </text>
+                <text id="Scheduler" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="68.2779416" y="105.606427">Scheduler</tspan>
+                </text>
+                <text id="SlotPool" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="75.6870592" y="139.542622">SlotPool</tspan>
+                </text>
+                <path d="M1.25,77 L226.75,77" id="Line-10" stroke="#979797" stroke-linecap="square" fill-rule="nonzero"></path>
+            </g>
+            <g id="Group-3" transform="translate(281.500000, 0.796272)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="0.5" y="0.5" width="227" height="116"></rect>
+                <text id="ResourceManager" font-family="PingFangSC-Semibold, PingFang SC" font-size="24" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="12.985236" y="42.2">ResourceManager</tspan>
+                </text>
+                <text id="SlotManager" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="55.6097064" y="95.1617095">SlotManager</tspan>
+                </text>
+                <path d="M1.25,58.5 L226.75,58.5" id="Line-10" stroke="#979797" stroke-linecap="square" fill-rule="nonzero"></path>
+            </g>
+            <g id="Group-3-Copy" transform="translate(547.629882, 358.000000)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="0.5" y="0.5" width="227" height="116"></rect>
+                <text id="TaskExecutor" font-family="PingFangSC-Semibold, PingFang SC" font-size="24" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="38.2905888" y="42.2">TaskExecutor</tspan>
+                </text>
+                <text id="SlotTable" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="70.8579416" y="95.1617095">SlotTable</tspan>
+                </text>
+                <path d="M1.25,58.5 L226.75,58.5" id="Line-10" stroke="#979797" stroke-linecap="square" fill-rule="nonzero"></path>
+            </g>
+            <path id="Line-5" d="M236.944501,396.207361 L547.629882,396.207361 L548.129882,396.207361 L548.129882,397.207361 L547.629882,397.207361 L236.944501,397.207361 L236.944501,401.207361 L227.944501,396.707361 L236.944501,392.207361 L236.944501,396.207361 Z" fill="#979797" fill-rule="nonzero"></path>
+            <text id="offerSlot" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="424.974251" y="389.707361">offerSlot</tspan>
+            </text>
+            <text id="freeSlot" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="245.417059" y="459.106427">freeSlot</tspan>
+            </text>
+            <path id="Line-6" d="M539.129882,438.606427 L228.444501,438.606427 L227.944501,438.606427 L227.944501,437.606427 L228.444501,437.606427 L539.129882,437.606427 L539.129882,433.606427 L548.129882,438.106427 L539.129882,442.606427 L539.129882,438.606427 Z" fill="#979797" fill-rule="nonzero"></path>
+            <path id="Line-7" d="M277.922164,73.2265184 L134.940596,339.736378 L134.704218,340.176975 L133.823025,339.704218 L134.059404,339.263622 L277.040971,72.7537616 L273.516199,70.8627344 L281.736378,65.0594035 L281.446935,75.1175456 L277.922164,73.2265184 Z" fill="#979797" fill-rule="nonzero"></path>
+            <text id="requestSlot" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="185.981542" y="283.238506">requestSlot</tspan>
+            </text>
+            <text id="requestSlot-Copy" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="415.194404" y="160.151595">requestSlot</tspan>
+            </text>
+            <path id="Line-8" d="M593.494262,350.033474 L509.022632,78.9067092 L508.873904,78.4293413 L509.82864,78.131886 L509.977368,78.6092539 L594.448998,349.736018 L598.267941,348.546197 L596.648728,358.477368 L589.675319,351.223295 L593.494262,350.033474 Z" fill="#979797" fill-rule="nonzero"></path>
+            <path id="Line-9" d="M512.514984,30.3193037 L614.977195,357.850718 L615.126477,358.327913 L614.172087,358.626477 L614.022805,358.149282 L511.560594,30.6178671 L507.743035,31.8121207 L509.350718,21.8790772 L516.332543,29.1250502 L512.514984,30.3193037 Z" fill="#979797" fill-rule="nonzero"></path>
+            <text id="sendSlotReport-/-hea" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="596.99206" y="270.238506">sendSlotReport / hearbeat</tspan>
+            </text>
+            <text id="notifySlotAvailable" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="604.777839" y="296.238506">notifySlotAvailable</tspan>
+            </text>
+            <text id="cancelSlotRequest" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="167.068323" y="311.238506">cancelSlotRequest</tspan>
+            </text>
+        </g>
+    </g>
+</svg>

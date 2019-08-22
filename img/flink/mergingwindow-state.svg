@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1061px" height="415px" viewBox="0 0 1061 415" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 52.4 (67378) - http://www.bohemiancoding.com/sketch -->
+    <title>Group 2</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group-2" transform="translate(0.000000, -7.000000)">
+            <rect id="Rectangle" stroke="#4A4A4A" stroke-width="2" fill-rule="nonzero" x="680" y="70.3505605" width="164" height="132"></rect>
+            <rect id="Rectangle-Copy" stroke="#4A4A4A" stroke-width="2" fill-rule="nonzero" x="680.665757" y="288.530089" width="164" height="132"></rect>
+            <path d="M682,109.34438 L845,109.34438" id="Line-2" stroke="#4A4A4A" stroke-width="2" stroke-linecap="square" fill-rule="nonzero"></path>
+            <path d="M682,155.779203 L845,155.779203" id="Line-2-Copy" stroke="#4A4A4A" stroke-width="2" stroke-linecap="square" fill-rule="nonzero"></path>
+            <text id="S1" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="743.251765" y="100">S1</tspan>
+            </text>
+            <text id="S4" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="742.017521" y="318.179529">S4</tspan>
+            </text>
+            <text id="S2" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="741.351765" y="145.578758">S2</tspan>
+            </text>
+            <text id="S3" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="741.351765" y="188.150881">S3</tspan>
+            </text>
+            <path id="Line-5" d="M670.5,136.85056 L602.5,136.85056 L602,136.85056 L602,135.85056 L602.5,135.85056 L670.5,135.85056 L670.5,131.85056 L679.5,136.35056 L670.5,140.85056 L670.5,136.85056 Z" fill="#979797" fill-rule="nonzero"></path>
+            <path id="Line-5-Copy" d="M670.5,182.650881 L602.5,182.650881 L602,182.650881 L602,181.650881 L602.5,181.650881 L670.5,181.650881 L670.5,177.650881 L679.5,182.150881 L670.5,186.650881 L670.5,182.650881 Z" fill="#979797" fill-rule="nonzero"></path>
+            <path id="Line-6" d="M670.5,86.8006555 L602.5,86.8006555 L602,86.8006555 L602,85.8006555 L602.5,85.8006555 L670.5,85.8006555 L670.5,81.8006555 L679.5,86.3006555 L670.5,90.8006555 L670.5,86.8006555 Z" fill="#979797" fill-rule="nonzero"></path>
+            <path id="Line-6-Copy" d="M671.165757,304.980184 L603.165757,304.980184 L602.665757,304.980184 L602.665757,303.980184 L603.165757,303.980184 L671.165757,303.980184 L671.165757,299.980184 L680.165757,304.480184 L671.165757,308.980184 L671.165757,304.980184 Z" fill="#979797" fill-rule="nonzero"></path>
+            <text id="W1" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="567.231765" y="91">W1</tspan>
+            </text>
+            <text id="W1-Copy" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="567.897521" y="309.179529">W1</tspan>
+            </text>
+            <text id="W2" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="565.331765" y="139.96351">W2</tspan>
+            </text>
+            <text id="W3" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="565.331765" y="188.150881">W3</tspan>
+            </text>
+            <path d="M0.5,251.5 L1070.5,251.5" id="Line-7" stroke="#979797" stroke-linecap="square" stroke-dasharray="20" fill-rule="nonzero"></path>
+            <g id="Group" transform="translate(170.000000, 58.000000)">
+                <path id="Line-3" d="M1.5,39.5 L118.5,39.5 L118.5,34.5 L118.5,33.5 L120.5,33.5 L120.5,34.5 L120.5,46.5 L120.5,47.5 L118.5,47.5 L118.5,46.5 L118.5,41.5 L1.5,41.5 L1.5,46.5 L1.5,47.5 L-0.5,47.5 L-0.5,46.5 L-0.5,34.5 L-0.5,33.5 L1.5,33.5 L1.5,34.5 L1.5,39.5 Z" fill="#4A4A4A" fill-rule="nonzero"></path>
+                <text id="W1" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="46.7317648" y="21">W1</tspan>
+                </text>
+            </g>
+            <g id="Group-Copy" transform="translate(354.190867, 95.350560)">
+                <path id="Line-3" d="M1.5,39.5 L118.5,39.5 L118.5,34.5 L118.5,33.5 L120.5,33.5 L120.5,34.5 L120.5,46.5 L120.5,47.5 L118.5,47.5 L118.5,46.5 L118.5,41.5 L1.5,41.5 L1.5,46.5 L1.5,47.5 L-0.5,47.5 L-0.5,46.5 L-0.5,34.5 L-0.5,33.5 L1.5,33.5 L1.5,34.5 L1.5,39.5 Z" fill="#4A4A4A" fill-rule="nonzero"></path>
+                <text id="W2" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="44.8317648" y="21">W2</tspan>
+                </text>
+            </g>
+            <g id="Group-Copy-2" transform="translate(249.760304, 148.701121)">
+                <path id="Line-3" d="M1.5,39.5 L118.5,39.5 L118.5,34.5 L118.5,33.5 L120.5,33.5 L120.5,34.5 L120.5,46.5 L120.5,47.5 L118.5,47.5 L118.5,46.5 L118.5,41.5 L1.5,41.5 L1.5,46.5 L1.5,47.5 L-0.5,47.5 L-0.5,46.5 L-0.5,34.5 L-0.5,33.5 L1.5,33.5 L1.5,34.5 L1.5,39.5 Z" fill="#FF3B30" fill-rule="nonzero"></path>
+                <text id="W3" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="45.8317648" y="21">W3</tspan>
+                </text>
+            </g>
+            <path id="Line-4" d="M171.5,353.530089 L472.690867,353.530089 L472.690867,348.530089 L472.690867,347.530089 L474.690867,347.530089 L474.690867,348.530089 L474.690867,360.530089 L474.690867,361.530089 L472.690867,361.530089 L472.690867,360.530089 L472.690867,355.530089 L171.5,355.530089 L171.5,360.530089 L171.5,361.530089 L169.5,361.530089 L169.5,360.530089 L169.5,348.530089 L169.5,347.530089 L171.5,347.530089 L171.5,348.530089 L171.5,353.530089 Z" fill="#000000" fill-rule="nonzero"></path>
+            <text id="W4" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="306.927198" y="318.179529">W4</tspan>
+            </text>
+            <text id="Window" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="263.800728" y="21.6494395">Window</tspan>
+            </text>
+            <text id="Namespace" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="526.307942" y="26.3204713">Namespace</tspan>
+            </text>
+            <text id="Window-State" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="701.820589" y="26.3204713">Window State</tspan>
+            </text>
+        </g>
+    </g>
+</svg>

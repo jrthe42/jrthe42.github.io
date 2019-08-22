@@ -1,0 +1,675 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="想入非非就是寻找神奇" />
+
+
+
+  <meta name="keywords" content="Flink," />
+
+
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="状态 State 是 Flink 中用于构建复杂逻辑的重要组件。本文将从源码角度来分析 Flink 的状态管理是如何实现的。状态 （State）需要配合检查点（Checkpoint）机制来保证 Flink 作业失败后能正确地进行错误恢复。由于Flink的 State 和 Checkpoint 机制相对比较复杂，这篇文章主要关注状态的管理，下一篇文章再结合 checkpoint 进行分析。 Stat">
+<meta name="keywords" content="Flink">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink 源码阅读笔记（10）- State 管理">
+<meta property="og:url" content="http://blog.jrwang.me/2019/flink-source-code-state/index.html">
+<meta property="og:site_name" content="JR&#39;s Blog">
+<meta property="og:description" content="状态 State 是 Flink 中用于构建复杂逻辑的重要组件。本文将从源码角度来分析 Flink 的状态管理是如何实现的。状态 （State）需要配合检查点（Checkpoint）机制来保证 Flink 作业失败后能正确地进行错误恢复。由于Flink的 State 和 Checkpoint 机制相对比较复杂，这篇文章主要关注状态的管理，下一篇文章再结合 checkpoint 进行分析。 Stat">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-08-14T12:56:53.668Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Flink 源码阅读笔记（10）- State 管理">
+<meta name="twitter:description" content="状态 State 是 Flink 中用于构建复杂逻辑的重要组件。本文将从源码角度来分析 Flink 的状态管理是如何实现的。状态 （State）需要配合检查点（Checkpoint）机制来保证 Flink 作业失败后能正确地进行错误恢复。由于Flink的 State 和 Checkpoint 机制相对比较复杂，这篇文章主要关注状态的管理，下一篇文章再结合 checkpoint 进行分析。 Stat">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+  <title> Flink 源码阅读笔记（10）- State 管理 | JR's Blog </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-66913886-2', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">JR's Blog</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              Flink 源码阅读笔记（10）- State 管理
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2019-06-15T20:11:24+08:00" content="2019-06-15">
+            2019-06-15
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><p>状态 State 是 Flink 中用于构建复杂逻辑的重要组件。本文将从源码角度来分析 Flink 的状态管理是如何实现的。状态 （State）需要配合检查点（Checkpoint）机制来保证 Flink 作业失败后能正确地进行错误恢复。由于Flink的 State 和 Checkpoint 机制相对比较复杂，这篇文章主要关注状态的管理，下一篇文章再结合 checkpoint 进行分析。</p>
+<h2 id="State-概述"><a href="#State-概述" class="headerlink" title="State 概述"></a>State 概述</h2><p>关于 State 的使用，Flink 的官方文档提供了详细的<a href="https://ci.apache.org/projects/flink/flink-docs-release-1.8/dev/stream/state/" target="_blank" rel="noopener">使用指导</a>，也可以参考我之前的文章<a href="http://blog.jrwang.me/2017/flink-state-checkpoint/">Flink 的状态管理和检查点机制</a>。这里简单地做一下概括性的介绍。</p>
+<h3 id="Keyed-State-和-Operator-State"><a href="#Keyed-State-和-Operator-State" class="headerlink" title="Keyed State 和 Operator State"></a>Keyed State 和 Operator State</h3><p>Flink 中的状态分为两类，<strong>Keyed State</strong> 和 <strong>Operator State</strong> 。 Keyed State 是和具体的 Key 相绑定的，只能在 <code>KeyedStream</code> 上的函数和算子中使用。 Opeartor State 则是和 Operator 的一个特定的并行实例相绑定的，例如 Kafka Connector 中，每一个并行的 Kafka Consumer 都在 Operator State 中维护当前 Consumer 订阅的 partiton 和 offset。由于 Flink 中的 <code>keyBy</code> 操作保证了每一个键相关联的所有消息都会送给下游算子的同一个并行实例处理，因此 Keyed State 也可以看作是 Operator State 的一种分区(partitioned)形式，每一个 key 都关联一个状态分区(state-partition)。</p>
+<p>从另一个角度来看，无论 Operator State 还是 Keyed State，都有两种形式，<strong>Managed State</strong> 和 <strong>Raw State</strong>。 Managed State 的数据结构由 Flink 进行托管，而 Raw State 的数据结构对 Flink 是透明的。 Flink 的建议是尽量使用 Managed State, 这样 Flink 可以在并行度改变等情况下重新分布状态，并且可以更好地进行内存管理。</p>
+<p><strong>StateBackend</strong> 定义了状态是如何存储的，不同的 State Backedn 会采用不同的方式来存储状态，目前 Flink 提供了三种不同形式的存储后端，分别是 MemoryStateBackend, FsStateBackend 和 RocksDBStateBackend。</p>
+<h3 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a>使用方法</h3><p>在自定义函数或算子中使用状态，大致有一下几种方式：</p>
+<h4 id="CheckpointedFunction-接口"><a href="#CheckpointedFunction-接口" class="headerlink" title="CheckpointedFunction 接口"></a>CheckpointedFunction 接口</h4><p> <code>CheckpointedFunction</code> 接口是一个较为通用的接口，既可以管理 Operator State， 也可以管理 Keyed State。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">//在创建检查点的时候调用</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">snapshotState</span><span class="params">(FunctionSnapshotContext context)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//在初始化的时候调用 (在从检查点恢复状态的时候也会先调用该方法)</span></span><br><span class="line"><span class="comment">//通过 FunctionInitializationContext 可以访问到 OperatorStateStore 和 KeyedStateStore，</span></span><br><span class="line"><span class="comment">// 通过 OperatorStateStore 获取 Operator State</span></span><br><span class="line"><span class="comment">// 通过 KeyedStateStore 获取 Keyed State</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">initializeState</span><span class="params">(FunctionInitializationContext context)</span> <span class="keyword">throws</span> Exception</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="RuntimeContext"><a href="#RuntimeContext" class="headerlink" title="RuntimeContext"></a>RuntimeContext</h4><p>对于 Keyed State，通常都是通过 <code>RuntimeContext</code> 实例来获取，这通常需要在 rich functions 中才可以做到。 注意，使用 Keyed State 一定要在 KeyedStream 上进行操作。RuntimeContext 提供的获取状态的方法包括：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">ValueState&lt;T&gt; <span class="title">getState</span><span class="params">(ValueStateDescriptor&lt;T&gt;)</span></span></span><br><span class="line"><span class="function">ReducingState&lt;T&gt; <span class="title">getReducingState</span><span class="params">(ReducingStateDescriptor&lt;T&gt;)</span></span></span><br><span class="line"><span class="function">ListState&lt;T&gt; <span class="title">getListState</span><span class="params">(ListStateDescriptor&lt;T&gt;)</span></span></span><br><span class="line"><span class="function">MapState&lt;UK, UV&gt; <span class="title">getMapState</span><span class="params">(MapStateDescriptor&lt;UK, UV&gt;)</span></span></span><br><span class="line"><span class="function">AggregatingState&lt;IN, OUT&gt; <span class="title">getAggregatingState</span><span class="params">(AggregatingStateDescriptor&lt;IN, ACC, OUT&gt; stateProperties)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<h4 id="ListCheckpointed-接口"><a href="#ListCheckpointed-接口" class="headerlink" title="ListCheckpointed 接口"></a>ListCheckpointed 接口</h4><p>使用 Operator State 的另一种更方便的形式是实现 <code>ListCheckpointed</code> 接口，该接口只能管理 List-Style 的状态，并且在状态恢复的时候会在 Operator 不同的并行实例之间均匀地分配状态。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">List&lt;T&gt; <span class="title">snapshotState</span><span class="params">(<span class="keyword">long</span> checkpointId, <span class="keyword">long</span> timestamp)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">restoreState</span><span class="params">(List&lt;T&gt; state)</span> <span class="keyword">throws</span> Exception</span>;</span><br></pre></td></tr></table></figure></p>
+<h2 id="StateBackend-接口"><a href="#StateBackend-接口" class="headerlink" title="StateBackend 接口"></a>StateBackend 接口</h2><p>State Backend 决定了作业的状态及检查点是如何存储的。不同的状态存储后端会采用不同的方式来处理状态和检查点。例如，对于 Flink 内置的三种不同类型的状态存储后端，<code>MemoryStateBackend</code> 会将工作状态存储在 TaskManager 的内存中，将检查点存储在 JobManager 的内存中；<code>FsStateBackend</code> 会将工作状态存储在 TaskManager 的内存中，将检查点存储在文件系统中（通常是分布式文件系统）；<code>RocksDBStateBackend</code> 则会把状态存储在 RocksDB 中，将检查点存储在文件系统中（类似 <code>FsStateBackend</code>）。</p>
+<p><code>StateBackend</code> 还负责创建 <code>OperatorStateBackend</code> 和 <code>AbstractKeyedStateBackend</code>, 分别负责存储 Operator State 和 Keyed State，以及在需要的时候生成对应的 Checkpoint。所以，实际上 <code>StateBackend</code> 可以看作是一个 Factory，由它创建的具体的 <code>OperatorStateBackend</code> 和 <code>AbstractKeyedStateBackend</code> 才负责实际的状态存储和检查点生成的工作。</p>
+<p><code>StateBackend</code> 的另一个主要作用是和检查点相关，负责为作业创建检查点的存储（检查点写入）以及根据一个检查点的 pointer 获得检查点的存储位置(检查点读取)。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">interface</span> <span class="title">StateBackend</span> </span>&#123;</span><br><span class="line">  <span class="comment">//解析检查点的存储位置</span></span><br><span class="line">  <span class="function">CompletedCheckpointStorageLocation <span class="title">resolveCheckpoint</span><span class="params">(String externalPointer)</span> <span class="keyword">throws</span> IOException</span>;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">//创建检查点存储</span></span><br><span class="line">  <span class="function">CheckpointStorage <span class="title">createCheckpointStorage</span><span class="params">(JobID jobId)</span> <span class="keyword">throws</span> IOException</span>;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">//创建AbstractKeyedStateBackend，负责 keyed state 的存储和检查点</span></span><br><span class="line">  &lt;K&gt; <span class="function">AbstractKeyedStateBackend&lt;K&gt; <span class="title">createKeyedStateBackend</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">		Environment env,</span></span></span><br><span class="line"><span class="function"><span class="params">		JobID jobID,</span></span></span><br><span class="line"><span class="function"><span class="params">		String operatorIdentifier,</span></span></span><br><span class="line"><span class="function"><span class="params">		TypeSerializer&lt;K&gt; keySerializer,</span></span></span><br><span class="line"><span class="function"><span class="params">		<span class="keyword">int</span> numberOfKeyGroups,</span></span></span><br><span class="line"><span class="function"><span class="params">		KeyGroupRange keyGroupRange,</span></span></span><br><span class="line"><span class="function"><span class="params">		TaskKvStateRegistry kvStateRegistry,</span></span></span><br><span class="line"><span class="function"><span class="params">		TtlTimeProvider ttlTimeProvider,</span></span></span><br><span class="line"><span class="function"><span class="params">		MetricGroup metricGroup,</span></span></span><br><span class="line"><span class="function"><span class="params">		@Nonnull Collection&lt;KeyedStateHandle&gt; stateHandles,</span></span></span><br><span class="line"><span class="function"><span class="params">		CloseableRegistry cancelStreamRegistry)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//OperatorStateBackend，负责 operator state 的存储和检查点</span></span><br><span class="line">  <span class="function">OperatorStateBackend <span class="title">createOperatorStateBackend</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">		Environment env,</span></span></span><br><span class="line"><span class="function"><span class="params">		String operatorIdentifier,</span></span></span><br><span class="line"><span class="function"><span class="params">		@Nonnull Collection&lt;OperatorStateHandle&gt; stateHandles,</span></span></span><br><span class="line"><span class="function"><span class="params">		CloseableRegistry cancelStreamRegistry)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="状态的注册与获取"><a href="#状态的注册与获取" class="headerlink" title="状态的注册与获取"></a>状态的注册与获取</h2><p>前面介绍如何使用状态的时候提到，通过 <code>CheckpointedFunction</code> 接口既可以获取 Operator State，也可以获取 Keyed State，这两类状态分别通过 <code>OperatorStateStore</code> 和 <code>KeyedStateStore</code> 这两个接口作为桥梁来进行管理。我们暂时先不关注 checkpoint 相关的功能，只关注状态的存储和获取。下面介绍它们的具体实现。</p>
+<h3 id="OperatorStateStore"><a href="#OperatorStateStore" class="headerlink" title="OperatorStateStore"></a>OperatorStateStore</h3><p><code>OperatorStateStore</code> 定义了用于创建和管理托管状态的方法，分别对应 <code>ListState</code>，union <code>ListState</code> 以及 <code>BroadcastState</code> 。 其中 ListState 和 Union ListState 的底层存储是一致的，只是在状态恢复的时候状态的分配模式不一致。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">interface</span> <span class="title">OperatorStateStore</span> </span>&#123;</span><br><span class="line">  &lt;K, V&gt; <span class="function">BroadcastState&lt;K, V&gt; <span class="title">getBroadcastState</span><span class="params">(MapStateDescriptor&lt;K, V&gt; stateDescriptor)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line">  &lt;S&gt; <span class="function">ListState&lt;S&gt; <span class="title">getListState</span><span class="params">(ListStateDescriptor&lt;S&gt; stateDescriptor)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line">  &lt;S&gt; <span class="function">ListState&lt;S&gt; <span class="title">getUnionListState</span><span class="params">(ListStateDescriptor&lt;S&gt; stateDescriptor)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//......</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>OperatorStateBackend</code> 接口继承了 <code>OperatorStateStore</code> 接口，其唯一的具体实现类为 <code>DefaultOperatorStateBackend</code>。</p>
+<p>在 <code>DefaultOperatorStateBackend</code> 中，使用两个 Map 来存储已经注册的状态名和状态之间的映射关系，分别对应 ListState 和 BroadcastState， </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DefaultOperatorStateBackend</span> </span>&#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Map for all registered operator states. Maps state name -&gt; state</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Map&lt;String, PartitionableListState&lt;?&gt;&gt; registeredOperatorStates;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Map for all registered operator broadcast states. Maps state name -&gt; state</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Map&lt;String, BackendWritableBroadcastState&lt;?, ?&gt;&gt; registeredBroadcastStates;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>先来看下 ListState 的注册和获取：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DefaultOperatorStateBackend</span> </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="keyword">public</span> &lt;S&gt; <span class="function">ListState&lt;S&gt; <span class="title">getListState</span><span class="params">(ListStateDescriptor&lt;S&gt; stateDescriptor)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> getListState(stateDescriptor, OperatorStateHandle.Mode.SPLIT_DISTRIBUTE);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="keyword">public</span> &lt;S&gt; <span class="function">ListState&lt;S&gt; <span class="title">getUnionListState</span><span class="params">(ListStateDescriptor&lt;S&gt; stateDescriptor)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> getListState(stateDescriptor, OperatorStateHandle.Mode.UNION);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> &lt;S&gt; <span class="function">ListState&lt;S&gt; <span class="title">getListState</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">			ListStateDescriptor&lt;S&gt; stateDescriptor,</span></span></span><br><span class="line"><span class="function"><span class="params">			OperatorStateHandle.Mode mode)</span> <span class="keyword">throws</span> StateMigrationException </span>&#123;</span><br><span class="line">    <span class="comment">//...... cache related</span></span><br><span class="line">    <span class="comment">//获取状态</span></span><br><span class="line">    PartitionableListState&lt;S&gt; partitionableListState = (PartitionableListState&lt;S&gt;) registeredOperatorStates.get(name);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> == partitionableListState) &#123;</span><br><span class="line">      <span class="comment">//状态不存在，创建一个新的状态</span></span><br><span class="line">      partitionableListState = <span class="keyword">new</span> PartitionableListState&lt;&gt;(</span><br><span class="line">        <span class="keyword">new</span> RegisteredOperatorStateBackendMetaInfo&lt;&gt;(</span><br><span class="line">          name,</span><br><span class="line">          partitionStateSerializer,</span><br><span class="line">          mode));</span><br><span class="line"></span><br><span class="line">      registeredOperatorStates.put(name, partitionableListState);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// has restored state; check compatibility of new state access</span></span><br><span class="line">      checkStateNameAndMode(</span><br><span class="line">          partitionableListState.getStateMetaInfo().getName(),</span><br><span class="line">          name,</span><br><span class="line">          partitionableListState.getStateMetaInfo().getAssignmentMode(),</span><br><span class="line">          mode);</span><br><span class="line"></span><br><span class="line">      RegisteredOperatorStateBackendMetaInfo&lt;S&gt; restoredPartitionableListStateMetaInfo =</span><br><span class="line">        partitionableListState.getStateMetaInfo();</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 状态已经存在，检查是否兼容</span></span><br><span class="line">      <span class="comment">// check compatibility to determine if new serializers are incompatible</span></span><br><span class="line">      TypeSerializer&lt;S&gt; newPartitionStateSerializer = partitionStateSerializer.duplicate();</span><br><span class="line"></span><br><span class="line">      TypeSerializerSchemaCompatibility&lt;S&gt; stateCompatibility =</span><br><span class="line">        restoredPartitionableListStateMetaInfo.updatePartitionStateSerializer(newPartitionStateSerializer);</span><br><span class="line">      <span class="keyword">if</span> (stateCompatibility.isIncompatible()) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> StateMigrationException(<span class="string">"The new state typeSerializer for operator state must not be incompatible."</span>);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      partitionableListState.setStateMetaInfo(restoredPartitionableListStateMetaInfo);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    accessedStatesByName.put(name, partitionableListState);</span><br><span class="line">    <span class="keyword">return</span> partitionableListState;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>去除掉缓存相关的代码，这里的逻辑非常清晰，就是对 <code>Map&lt;String, PartitionableListState&lt;?&gt;&gt;</code> 的插入和获取操作，<code>PartitionableListState</code> 是 <code>ListState</code> 的具体实现。Union ListState 和普通 ListState 在底层实现上的区别就在于元信息的不同。</p>
+<p>BroadcastState 在 <code>BroadcastStream</code> 中使用，它的注册和获取流程同 ListState 基本一致，是在 <code>Map&lt;String, BackendWritableBroadcastState&lt;?, ?&gt;&gt;</code> 上进行的操作， <code>BackendWritableBroadcastState</code> 是 <code>BroadcastState</code> 的具体实现。 具体流程不再赘述。</p>
+<h3 id="KeyedStateStore"><a href="#KeyedStateStore" class="headerlink" title="KeyedStateStore"></a>KeyedStateStore</h3><p><code>KeyedStateStore</code> 定义了用于创建和管理托管 keyed state 的方法，分别对应 <code>ValueState</code>, <code>ListState</code>，<code>ReducingState</code> 以及 <code>AggregatingState</code> 以及 <code>MapState</code>。相比于 operator state, Keyed state 的管理要更复杂一些 <code>KeyedStateStore</code> 接口的具体实现是 <code>DefaultKeyedStateStore</code>,<code>DefaultKeyedStateStore</code> 拥有 <code>KeyedStateBackend</code> 的引用，所有的状态获取的方法实际上都由 <code>KeyedStateBackend</code> 来完成。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//DefaultKeyedStateStore</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DefaultKeyedStateStore</span> <span class="keyword">implements</span> <span class="title">KeyedStateStore</span> </span>&#123;</span><br><span class="line">  <span class="keyword">protected</span>  &lt;S extends State&gt; <span class="function">S <span class="title">getPartitionedState</span><span class="params">(StateDescriptor&lt;S, ?&gt; stateDescriptor)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> keyedStateBackend.getPartitionedState(</span><br><span class="line">        VoidNamespace.INSTANCE,</span><br><span class="line">        VoidNamespaceSerializer.INSTANCE,</span><br><span class="line">        stateDescriptor);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>KeyedStateBackend</code> 继承了 <code>KeyedStateFactory</code> 和 <code>PriorityQueueSetFactory</code> 接口。和 <code>OperatorStateBackend</code> 不同，<code>KeyedStateBackend</code> 有不同的实现，分别对应不同的状态存储后端。<code>AbstractKeyedStateBackend</code> 为 <code>KeyedStateBackend</code> 提供了基础的实现，是所有 <code>KeyedStateBackend</code> 的抽象父类。<code>KeyedStateBackend</code> 和 <code>AbstractKeyedStateBackend</code> 中一些重要的成员变量和方法如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">interface</span> <span class="title">KeyedStateBackend</span>&lt;<span class="title">K</span>&gt;</span></span><br><span class="line"><span class="class">	<span class="keyword">extends</span> <span class="title">KeyedStateFactory</span>, <span class="title">PriorityQueueSetFactory</span>, <span class="title">Disposable</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setCurrentKey</span><span class="params">(K newKey)</span></span>;</span><br><span class="line">  <span class="function">K <span class="title">getCurrentKey</span><span class="params">()</span></span>;</span><br><span class="line">  &lt;N, S extends State, T&gt; <span class="function">S <span class="title">getOrCreateKeyedState</span><span class="params">(TypeSerializer&lt;N&gt; namespaceSerializer, StateDescriptor&lt;S, T&gt; stateDescriptor)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line">  &lt;N, S extends State&gt; <span class="function">S <span class="title">getPartitionedState</span><span class="params">(N namespace, TypeSerializer&lt;N&gt; namespaceSerializer, StateDescriptor&lt;S, ?&gt; stateDescriptor)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractKeyedStateBackend</span>&lt;<span class="title">K</span>&gt; <span class="keyword">implements</span></span></span><br><span class="line"><span class="class">	<span class="title">KeyedStateBackend</span>&lt;<span class="title">K</span>&gt;,</span></span><br><span class="line"><span class="class">	<span class="title">SnapshotStrategy</span>&lt;<span class="title">SnapshotResult</span>&lt;<span class="title">KeyedStateHandle</span>&gt;&gt;,</span></span><br><span class="line"><span class="class">	<span class="title">Closeable</span>,</span></span><br><span class="line"><span class="class">	<span class="title">CheckpointListener</span> </span>&#123;</span><br><span class="line">  <span class="comment">/** So that we can give out state when the user uses the same key. */</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> HashMap&lt;String, InternalKvState&lt;K, ?, ?&gt;&gt; keyValueStatesByName;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Range of key-groups for which this backend is responsible. */</span></span><br><span class="line">  <span class="keyword">protected</span> <span class="keyword">final</span> KeyGroupRange keyGroupRange;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** The key context for this backend. */</span></span><br><span class="line">  <span class="keyword">protected</span> <span class="keyword">final</span> InternalKeyContext&lt;K&gt; keyContext;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//......</span></span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setCurrentKey</span><span class="params">(K newKey)</span> </span>&#123;</span><br><span class="line">    notifyKeySelected(newKey);</span><br><span class="line">    <span class="keyword">this</span>.keyContext.setCurrentKey(newKey);</span><br><span class="line">    <span class="keyword">this</span>.keyContext.setCurrentKeyGroupIndex(KeyGroupRangeAssignment.assignToKeyGroup(newKey, numberOfKeyGroups));</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="meta">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)</span><br><span class="line">  <span class="keyword">public</span> &lt;N, S extends State, V&gt; <span class="function">S <span class="title">getOrCreateKeyedState</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">			<span class="keyword">final</span> TypeSerializer&lt;N&gt; namespaceSerializer,</span></span></span><br><span class="line"><span class="function"><span class="params">			StateDescriptor&lt;S, V&gt; stateDescriptor)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    checkNotNull(namespaceSerializer, <span class="string">"Namespace serializer"</span>);</span><br><span class="line">    checkNotNull(keySerializer, <span class="string">"State key serializer has not been configured in the config. "</span> +</span><br><span class="line">        <span class="string">"This operation cannot use partitioned state."</span>);</span><br><span class="line"></span><br><span class="line">    InternalKvState&lt;K, ?, ?&gt; kvState = keyValueStatesByName.get(stateDescriptor.getName());</span><br><span class="line">    <span class="keyword">if</span> (kvState == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (!stateDescriptor.isSerializerInitialized()) &#123;</span><br><span class="line">        stateDescriptor.initializeSerializerUnlessSet(executionConfig);</span><br><span class="line">      &#125;</span><br><span class="line">      kvState = TtlStateFactory.createStateAndWrapWithTtlIfEnabled(</span><br><span class="line">        namespaceSerializer, stateDescriptor, <span class="keyword">this</span>, ttlTimeProvider);</span><br><span class="line">      keyValueStatesByName.put(stateDescriptor.getName(), kvState);</span><br><span class="line">      publishQueryableStateIfEnabled(stateDescriptor, kvState);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> (S) kvState;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="keyword">public</span> &lt;N, S extends State&gt; <span class="function">S <span class="title">getPartitionedState</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">			<span class="keyword">final</span> N namespace,</span></span></span><br><span class="line"><span class="function"><span class="params">			<span class="keyword">final</span> TypeSerializer&lt;N&gt; namespaceSerializer,</span></span></span><br><span class="line"><span class="function"><span class="params">			<span class="keyword">final</span> StateDescriptor&lt;S, ?&gt; stateDescriptor)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">    checkNotNull(namespace, <span class="string">"Namespace"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (lastName != <span class="keyword">null</span> &amp;&amp; lastName.equals(stateDescriptor.getName())) &#123;</span><br><span class="line">      lastState.setCurrentNamespace(namespace);</span><br><span class="line">      <span class="keyword">return</span> (S) lastState;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    InternalKvState&lt;K, ?, ?&gt; previous = keyValueStatesByName.get(stateDescriptor.getName());</span><br><span class="line">    <span class="keyword">if</span> (previous != <span class="keyword">null</span>) &#123;</span><br><span class="line">      lastState = previous;</span><br><span class="line">      lastState.setCurrentNamespace(namespace);</span><br><span class="line">      lastName = stateDescriptor.getName();</span><br><span class="line">      <span class="keyword">return</span> (S) previous;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> S state = getOrCreateKeyedState(namespaceSerializer, stateDescriptor);</span><br><span class="line">    <span class="keyword">final</span> InternalKvState&lt;K, N, ?&gt; kvState = (InternalKvState&lt;K, N, ?&gt;) state;</span><br><span class="line"></span><br><span class="line">    lastName = stateDescriptor.getName();</span><br><span class="line">    lastState = kvState;</span><br><span class="line">    kvState.setCurrentNamespace(namespace);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> state;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// .....</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看出来，在没有开启 TTL 设置的情况下， 状态的创建最终还是在 <code>KeyedStateBackend#createInternalState</code> 方法中，这个方法在 <code>AbstractKeyedStateBackend</code> 中没有提供实现，而是交由不同的状态存储后端自行实现。</p>
+<p>注意到，在 <code>KeyedStateBackend#getPartitionedState</code> 方法中，除了 <code>StateDescriptor</code> 参数以外，还有两个参数分别为 namespace 和 namespace 类型的序列化器，而在 <code>DefaultKeyedStateBackend</code> 创建对象的时候，这两个值分别被设置为常量 <code>VoidNamespace.INSTANCE</code> 和 <code>VoidNamespaceSerializer.INSTANCE</code>。这个 namespace 的作用是什么呢？</p>
+<p>实际上，通过引入 namespace，Flink 可以确保在不同的 namespace 下存在相同名称的状态，但它们的值确不用相同。也就是说，状态实际上是和（namespace, name）这两个值相对应的。它的主要应用场景是在窗口中，比如说，假如我需要在窗口中使用状态，这个状态是和具体的窗口相关联的，假如没有 namespace 的存在，我们要如何获取窗口间互相独立的状态呢？有了 namespace，把窗口作为namespace，这个问题自然迎刃而解了。注意，只有无法合并的窗口才可以这样使用，如果窗口可以合并（如session window），无法保证 namespace 的不变性，自然不能这样使用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractPerWindowStateStore</span> <span class="keyword">extends</span> <span class="title">DefaultKeyedStateStore</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// we have this in the base class even though it's not used in MergingKeyStore so that</span></span><br><span class="line">    <span class="comment">// we can always set it and ignore what actual implementation we have</span></span><br><span class="line">    <span class="keyword">protected</span> W window;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">AbstractPerWindowStateStore</span><span class="params">(KeyedStateBackend&lt;?&gt; keyedStateBackend, ExecutionConfig executionConfig)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">super</span>(keyedStateBackend, executionConfig);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">PerWindowStateStore</span> <span class="keyword">extends</span> <span class="title">AbstractPerWindowStateStore</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">PerWindowStateStore</span><span class="params">(KeyedStateBackend&lt;?&gt; keyedStateBackend, ExecutionConfig executionConfig)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">super</span>(keyedStateBackend, executionConfig);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">protected</span>  &lt;S extends State&gt; <span class="function">S <span class="title">getPartitionedState</span><span class="params">(StateDescriptor&lt;S, ?&gt; stateDescriptor)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">      <span class="comment">//用窗口作为namespace</span></span><br><span class="line">      <span class="keyword">return</span> keyedStateBackend.getPartitionedState(</span><br><span class="line">        window,</span><br><span class="line">        windowSerializer,</span><br><span class="line">        stateDescriptor);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MergingWindowStateStore</span> <span class="keyword">extends</span> <span class="title">AbstractPerWindowStateStore</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MergingWindowStateStore</span><span class="params">(KeyedStateBackend&lt;?&gt; keyedStateBackend, ExecutionConfig executionConfig)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">super</span>(keyedStateBackend, executionConfig);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> &lt;T&gt; <span class="function">ValueState&lt;T&gt; <span class="title">getState</span><span class="params">(ValueStateDescriptor&lt;T&gt; stateProperties)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> UnsupportedOperationException(<span class="string">"Per-window state is not allowed when using merging windows."</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//.....</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="状态的具体实现"><a href="#状态的具体实现" class="headerlink" title="状态的具体实现"></a>状态的具体实现</h2><h3 id="Operator-State"><a href="#Operator-State" class="headerlink" title="Operator State"></a>Operator State</h3><p>对于 Operator State 而言，<code>ListState</code> 的具体实现是 <code>PartitionableListState</code>。Union ListState 和普通 ListState 在底层实现上的区别就在于元信息的不同。</p>
+<p>每个 State 都有一个关联的元信息，<code>RegisteredStateMetaInfoBase</code> 是所有状态元信息的抽象父类，元信息中保存了状态的名称，状态的序列化器等信息。其中， <code>RegisteredOperatorStateBackendMetaInfo</code> 和 <code>RegisteredBroadcastStateBackendMetaInfo</code> 分别对应了这里 ListState 和 BroadcastState 的元信息，它们都有一个成员变量，<code>OperatorStateHandle.Mode assignmentMode;</code>，即任务恢复时状态的分配模式。对 ListState，其分配模式为 <code>SPLIT_DISTRIBUTE</code>；对 Union ListState，其分配模式为 <code>UNION</code>；对 BroadCastState，其分配模式为 <code>BROADCAST</code>。</p>
+<p>先来看一看 <code>PartitionableListState</code> 的实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">PartitionableListState</span>&lt;<span class="title">S</span>&gt; <span class="keyword">implements</span> <span class="title">ListState</span>&lt;<span class="title">S</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Meta information of the state, including state name, assignment mode, and typeSerializer</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">private</span> RegisteredOperatorStateBackendMetaInfo&lt;S&gt; stateMetaInfo;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * The internal list the holds the elements of the state</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> ArrayList&lt;S&gt; internalList;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * A typeSerializer that allows to perform deep copies of internalList</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> ArrayListSerializer&lt;S&gt; internalListCopySerializer;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从它的成员变量可以看出来，对于 Operator ListState, 其内部就是一个 <code>ArrayList</code>。 </p>
+<p>同样，再来看看 <code>HeapBroadcastState</code>的实现:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HeapBroadcastState</span>&lt;<span class="title">K</span>, <span class="title">V</span>&gt; <span class="keyword">implements</span> <span class="title">BackendWritableBroadcastState</span>&lt;<span class="title">K</span>, <span class="title">V</span>&gt; </span>&#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Meta information of the state, including state name, assignment mode, and serializer.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">private</span> RegisteredBroadcastStateBackendMetaInfo&lt;K, V&gt; stateMetaInfo;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * The internal map the holds the elements of the state.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Map&lt;K, V&gt; backingMap;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * A serializer that allows to perform deep copies of internal map state.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> MapSerializer&lt;K, V&gt; internalMapCopySerializer;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>所以从上面的分析可以看出来，对于所有的 Operator State，都是存储在 TaskManager 的堆内存中的，底层的实现分别对应了 <code>ArrayList</code> 和 <code>HashMap</code>。</p>
+<h3 id="Keyed-State"><a href="#Keyed-State" class="headerlink" title="Keyed State"></a>Keyed State</h3><p>Keyed State 根据底层存储的不同，对应了不同的数据结构和物理存储。 和 <code>State</code> 接口相对应，有一个 <code>InternalKvState</code> 接口对应状态的内部实现：<code>State</code> 接口及其子类对应公共 API，供用户代码调用；<code>InternalKvState</code> 及其子类对应内部的具体实现，由内部代码调用。</p>
+<p>前面提到，内部状态创建的入口在 <code>KeyedStateBackend#createInternalState</code> 方法，这个方法在 <code>AbstractKeyedStateBackend</code> 中没有提供实现，而是交由不同的状态存储后端自行实现。我们就由该方法作为入口，一窥内部 State 的具体实现。</p>
+<h4 id="Heap-Keyed-State"><a href="#Heap-Keyed-State" class="headerlink" title="Heap Keyed State"></a>Heap Keyed State</h4><p><code>HeapKeyedStateBackend</code> 将 State 存放在 TaskManager 的堆内存中。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">HeapKeyedStateBackend&lt;K&gt; extends AbstractKeyedStateBackend&lt;K&gt; &#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Map&lt;Class&lt;? extends StateDescriptor&gt;, StateFactory&gt; STATE_FACTORIES =</span><br><span class="line">    Stream.of(</span><br><span class="line">      Tuple2.of(ValueStateDescriptor.class, (StateFactory) HeapValueState::create),</span><br><span class="line">      Tuple2.of(ListStateDescriptor.class, (StateFactory) HeapListState::create),</span><br><span class="line">      Tuple2.of(MapStateDescriptor.class, (StateFactory) HeapMapState::create),</span><br><span class="line">      Tuple2.of(AggregatingStateDescriptor.class, (StateFactory) HeapAggregatingState::create),</span><br><span class="line">      Tuple2.of(ReducingStateDescriptor.class, (StateFactory) HeapReducingState::create),</span><br><span class="line">      Tuple2.of(FoldingStateDescriptor.class, (StateFactory) HeapFoldingState::create)</span><br><span class="line">    ).collect(Collectors.toMap(t -&gt; t.f0, t -&gt; t.f1));</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Map&lt;String, StateTable&lt;K, ?, ?&gt;&gt; registeredKVStates;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> &lt;N, SV, SEV, S extends State, IS extends S&gt; <span class="function">IS <span class="title">createInternalState</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">		@Nonnull TypeSerializer&lt;N&gt; namespaceSerializer,</span></span></span><br><span class="line"><span class="function"><span class="params">		@Nonnull StateDescriptor&lt;S, SV&gt; stateDesc,</span></span></span><br><span class="line"><span class="function"><span class="params">		@Nonnull StateSnapshotTransformFactory&lt;SEV&gt; snapshotTransformFactory)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    StateFactory stateFactory = STATE_FACTORIES.get(stateDesc.getClass());</span><br><span class="line">    <span class="keyword">if</span> (stateFactory == <span class="keyword">null</span>) &#123;</span><br><span class="line">      String message = String.format(<span class="string">"State %s is not supported by %s"</span>,</span><br><span class="line">        stateDesc.getClass(), <span class="keyword">this</span>.getClass());</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> FlinkRuntimeException(message);</span><br><span class="line">    &#125;</span><br><span class="line">    StateTable&lt;K, N, SV&gt; stateTable = tryRegisterStateTable(</span><br><span class="line">      namespaceSerializer, stateDesc, getStateSnapshotTransformFactory(stateDesc, snapshotTransformFactory));</span><br><span class="line">    <span class="keyword">return</span> stateFactory.createState(stateDesc, stateTable, getKeySerializer());</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从上面的代码可以看出来，要创建一个 <code>InternalKVState</code>, 首先需要获得一个 <code>StateTable</code>， 然后通过 <code>StateFactory</code> 接口创建 <code>InternalKVState</code>。具体的状态的创建分别对应 <code>HeapValueState::create</code>, <code>HeapListState::create</code>, <code>HeapMapState::create</code>, <code>HeapAggregatingState::create</code>, <code>HeapReducingState::create</code>。</p>
+<p><code>StateTable</code> 和 <code>InternalKVState</code> 是什么关系呢？在 <code>HeapXXXState</code> 的公共父类 <code>AbstractHeapState</code> 中可以看出来，对于每一个基于堆内存的 State 的，其底层实际上就是一个 <code>StateTable</code>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">StateTable</span>&lt;<span class="title">K</span>, <span class="title">N</span>, <span class="title">S</span>&gt; <span class="keyword">implements</span> <span class="title">StateSnapshotRestore</span> </span>&#123;</span><br><span class="line">  <span class="keyword">protected</span> <span class="keyword">final</span> InternalKeyContext&lt;K&gt; keyContext;</span><br><span class="line">  <span class="keyword">protected</span> RegisteredKeyValueStateBackendMetaInfo&lt;N, S&gt; metaInfo;</span><br><span class="line">  <span class="comment">//......</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>StateTable</code> 有三个类型参数，分别对应 key 的类型， namespace 的类型，以及 value 的类型。可以简单地把 <code>StateTable</code> 理解成 （key， namespace） -&gt; Value 这样的存储形式。 <code>StateTable</code> 有两个具体的实现类，非别为 <code>NestedMapsStateTable</code> 和 <code>CopyOnWriteStateTable</code>。这两个类分别对应同步和异步模式checkpiont 的情况。其中 <code>NestedMapsStateTable</code> 对应同步 checkpoint 的情况，不支持异步快照；而 <code>CopyOnWriteStateTable</code> 对应异步 checkpoint 的情况。顾名思义，它的底层提供了 copy-on-write 结构，因而可以支持异步并发的操作。以较为简单的 <code>NestedMapsStateTable</code> 为例，可以看出来它是采用两层嵌套的 map 的结构，也就是我们所说的提供了 key， namespace） -&gt; Value 的映射关系。只有<code>CopyOnWriteStateTable</code>，由于提供了 copy-on-write 的支持，实现相对复杂一些，感兴趣的话可以仔细看下它的具体细节，这里就再不分析了。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NestedMapsStateTable</span>&lt;<span class="title">K</span>, <span class="title">N</span>, <span class="title">S</span>&gt; <span class="keyword">extends</span> <span class="title">StateTable</span>&lt;<span class="title">K</span>, <span class="title">N</span>, <span class="title">S</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Map&lt;N, Map&lt;K, S&gt;&gt;[] state;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> keyGroupOffset;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接着我们看下 <code>HeapKeyedStateBackend#tryRegisterStateTable</code> 的逻辑：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">HeapKeyedStateBackend</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> &lt;N, V&gt; <span class="function">StateTable&lt;K, N, V&gt; <span class="title">tryRegisterStateTable</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">		TypeSerializer&lt;N&gt; namespaceSerializer,</span></span></span><br><span class="line"><span class="function"><span class="params">		StateDescriptor&lt;?, V&gt; stateDesc,</span></span></span><br><span class="line"><span class="function"><span class="params">		@Nonnull StateSnapshotTransformFactory&lt;V&gt; snapshotTransformFactory)</span> <span class="keyword">throws</span> StateMigrationException </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)</span><br><span class="line">    StateTable&lt;K, N, V&gt; stateTable = (StateTable&lt;K, N, V&gt;) registeredKVStates.get(stateDesc.getName());</span><br><span class="line"></span><br><span class="line">    TypeSerializer&lt;V&gt; newStateSerializer = stateDesc.getSerializer();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (stateTable != <span class="keyword">null</span>) &#123;</span><br><span class="line">      RegisteredKeyValueStateBackendMetaInfo&lt;N, V&gt; restoredKvMetaInfo = stateTable.getMetaInfo();</span><br><span class="line"></span><br><span class="line">      restoredKvMetaInfo.updateSnapshotTransformFactory(snapshotTransformFactory);</span><br><span class="line"></span><br><span class="line">      TypeSerializerSchemaCompatibility&lt;N&gt; namespaceCompatibility =</span><br><span class="line">        restoredKvMetaInfo.updateNamespaceSerializer(namespaceSerializer);</span><br><span class="line">      <span class="keyword">if</span> (namespaceCompatibility.isCompatibleAfterMigration() || namespaceCompatibility.isIncompatible()) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> StateMigrationException(<span class="string">"For heap backends, the new namespace serializer must be compatible."</span>);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      restoredKvMetaInfo.checkStateMetaInfo(stateDesc);</span><br><span class="line"></span><br><span class="line">      TypeSerializerSchemaCompatibility&lt;V&gt; stateCompatibility =</span><br><span class="line">        restoredKvMetaInfo.updateStateSerializer(newStateSerializer);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (stateCompatibility.isIncompatible()) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> StateMigrationException(<span class="string">"For heap backends, the new state serializer must not be incompatible."</span>);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      stateTable.setMetaInfo(restoredKvMetaInfo);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      RegisteredKeyValueStateBackendMetaInfo&lt;N, V&gt; newMetaInfo = <span class="keyword">new</span> RegisteredKeyValueStateBackendMetaInfo&lt;&gt;(</span><br><span class="line">        stateDesc.getType(),</span><br><span class="line">        stateDesc.getName(),</span><br><span class="line">        namespaceSerializer,</span><br><span class="line">        newStateSerializer,</span><br><span class="line">        snapshotTransformFactory);</span><br><span class="line"></span><br><span class="line">      stateTable = snapshotStrategy.newStateTable(keyContext, newMetaInfo, keySerializer);</span><br><span class="line">      registeredKVStates.put(stateDesc.getName(), stateTable);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> stateTable;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这一部分的代码逻辑主要还是基于 <code>Map&lt;String, StateTable&lt;K, ?, ?&gt;&gt; registeredKVStates</code> 的 get 和 put 操作来实现，根据 checkpoint 同步或异步配置，创建的 <code>StateTable</code> 分别为 <code>NestedMapsStateTable</code> 和 <code>CopyOnWriteStateTable</code>。</p>
+<p>接着来看看 <code>HeapXXXState</code> 的具体实现。对于 <code>HeapValueState&lt;K, N, V&gt;</code>，很明显，其对应在 <code>StataTable</code> 中存储的就是状态的具体的值；对于 <code>HeapListState&lt;K, N, V&gt;</code>，对应的则是则是 List<v>；对于 <code>HeapListState&lt;K, N, V&gt;</code>，对应的是 <code>Map&lt;V&gt;</code>。</v></p>
+<p>以上几种状态都只是简单的存储和获取操作，但是 <code>HeapReducingState&lt;K, N, V&gt;</code> 和 <code>HeapAggregatingState&lt;K, N, IN, ACC, OUT&gt;</code> 需要在以前的状态的基础上进行 reduce 和聚合操作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">HeapReducingState</span>&lt;<span class="title">K</span>, <span class="title">N</span>, <span class="title">V</span>&gt;</span></span><br><span class="line"><span class="class">	<span class="keyword">extends</span> <span class="title">AbstractHeapMergingState</span>&lt;<span class="title">K</span>, <span class="title">N</span>, <span class="title">V</span>, <span class="title">V</span>, <span class="title">V</span>&gt;</span></span><br><span class="line"><span class="class">	<span class="keyword">implements</span> <span class="title">InternalReducingState</span>&lt;<span class="title">K</span>, <span class="title">N</span>, <span class="title">V</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> ReduceTransformation&lt;V&gt; reduceTransformation;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(V value)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (value == <span class="keyword">null</span>) &#123;</span><br><span class="line">      clear();</span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      stateTable.transform(currentNamespace, value, reduceTransformation);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Exception while applying ReduceFunction in reducing state"</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> V <span class="title">mergeState</span><span class="params">(V a, V b)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> reduceTransformation.apply(a, b);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">ReduceTransformation</span>&lt;<span class="title">V</span>&gt; <span class="keyword">implements</span> <span class="title">StateTransformationFunction</span>&lt;<span class="title">V</span>, <span class="title">V</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ReduceFunction&lt;V&gt; reduceFunction;</span><br><span class="line"></span><br><span class="line">    ReduceTransformation(ReduceFunction&lt;V&gt; reduceFunction) &#123;</span><br><span class="line">      <span class="keyword">this</span>.reduceFunction = Preconditions.checkNotNull(reduceFunction);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> V <span class="title">apply</span><span class="params">(V previousState, V value)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">      <span class="keyword">return</span> previousState != <span class="keyword">null</span> ? reduceFunction.reduce(previousState, value) : value;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在上面 <code>HeapReducingState</code> 中，在加入新的值的时候，会调用 <code>ReduceTransformation#apply</code> 方法进行 reduce 操作。在 <code>HeapAggregatingState</code> 中也有类似的逻辑。</p>
+<p>在 <code>ReducingStateDescriptor</code> 和 <code>AggregatingStateDescriptor</code> 中提供了对应的 <code>ReduceFunction</code> 和 <code>AggregateFunction</code>。</p>
+<h4 id="RocksDB-keyed-State"><a href="#RocksDB-keyed-State" class="headerlink" title="RocksDB keyed State"></a>RocksDB keyed State</h4><p>//TODO 对于 ROCKSDB 了解不多，后续再加以补充</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>本文对 Flink 状态管理相关的代码逻辑进行简单的梳理。Flink 中涉及状态管理相关的代码量比较多，而且和 Checkpoint 相关的逻辑杂糅在一起，读起来比较费力。这篇文章主要关注的还是状态的管理，下一篇文章将侧重于 checkpoint 相关的逻辑。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="http://blog.jrwang.me/2017/flink-state-checkpoint/">Flink 的状态管理和检查点机制</a></li>
+<li><a href="https://flink.apache.org/features/2017/07/04/flink-rescalable-state.html" target="_blank" rel="noopener">A Deep Dive into Rescalable State in Apache Flink</a></li>
+</ul>
+<p>-EOF-</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Flink/" rel="tag">#Flink</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/flink-source-code-checkpoint/" rel="prev">Flink 源码阅读笔记（11）- Checkpoint 机制和状态恢复</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/flink-source-code-task-lifecycle/" rel="next">Flink 源码阅读笔记（9）- Task 的生命周期</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+
+        
+          <div class="comments" id="comments">
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">JR</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">42</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">19</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://music.jrwang.me" target="_blank">Music</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://jrwang.me" target="_blank">Site</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#State-概述"><span class="nav-number">1.</span> <span class="nav-text">State 概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Keyed-State-和-Operator-State"><span class="nav-number">1.1.</span> <span class="nav-text">Keyed State 和 Operator State</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用方法"><span class="nav-number">1.2.</span> <span class="nav-text">使用方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#CheckpointedFunction-接口"><span class="nav-number">1.2.1.</span> <span class="nav-text">CheckpointedFunction 接口</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#RuntimeContext"><span class="nav-number">1.2.2.</span> <span class="nav-text">RuntimeContext</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ListCheckpointed-接口"><span class="nav-number">1.2.3.</span> <span class="nav-text">ListCheckpointed 接口</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#StateBackend-接口"><span class="nav-number">2.</span> <span class="nav-text">StateBackend 接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#状态的注册与获取"><span class="nav-number">3.</span> <span class="nav-text">状态的注册与获取</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#OperatorStateStore"><span class="nav-number">3.1.</span> <span class="nav-text">OperatorStateStore</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#KeyedStateStore"><span class="nav-number">3.2.</span> <span class="nav-text">KeyedStateStore</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#状态的具体实现"><span class="nav-number">4.</span> <span class="nav-text">状态的具体实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Operator-State"><span class="nav-number">4.1.</span> <span class="nav-text">Operator State</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Keyed-State"><span class="nav-number">4.2.</span> <span class="nav-text">Keyed State</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Heap-Keyed-State"><span class="nav-number">4.2.1.</span> <span class="nav-text">Heap Keyed State</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#RocksDB-keyed-State"><span class="nav-number">4.2.2.</span> <span class="nav-text">RocksDB keyed State</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <div class="copyright" >
+  
+  &copy; &nbsp;  2015 - 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JR</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="powered-by">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+<div class="theme-info">
+  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
+</div>
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+    
+
+  
+
+
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+</body>
+</html>

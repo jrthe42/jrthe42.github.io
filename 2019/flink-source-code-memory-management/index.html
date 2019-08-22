@@ -1,0 +1,682 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="想入非非就是寻找神奇" />
+
+
+
+  <meta name="keywords" content="Flink," />
+
+
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="基于 JVM 的大数据处理分析引擎面临的一个问题是，为了高效地处理数据，有大量的数据需要保存在内存中。直接使用 JVM 堆内存来管理这些数据对象是最简单的实现，但是这样会导致一系列问题：首先，在有大量的数据对象不停地创建和失效的情况下，要正常地管理和控制堆内存并非易事，很容易引发 OOM 问题；其次，GC 会严重影响性能，尤其是为了处理海量数据而分配了较大的内存空间，GC 开销很容易就能达到 50">
+<meta name="keywords" content="Flink">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink 源码阅读笔记（7）- 内存管理">
+<meta property="og:url" content="http://blog.jrwang.me/2019/flink-source-code-memory-management/index.html">
+<meta property="og:site_name" content="JR&#39;s Blog">
+<meta property="og:description" content="基于 JVM 的大数据处理分析引擎面临的一个问题是，为了高效地处理数据，有大量的数据需要保存在内存中。直接使用 JVM 堆内存来管理这些数据对象是最简单的实现，但是这样会导致一系列问题：首先，在有大量的数据对象不停地创建和失效的情况下，要正常地管理和控制堆内存并非易事，很容易引发 OOM 问题；其次，GC 会严重影响性能，尤其是为了处理海量数据而分配了较大的内存空间，GC 开销很容易就能达到 50">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-08-14T12:48:14.711Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Flink 源码阅读笔记（7）- 内存管理">
+<meta name="twitter:description" content="基于 JVM 的大数据处理分析引擎面临的一个问题是，为了高效地处理数据，有大量的数据需要保存在内存中。直接使用 JVM 堆内存来管理这些数据对象是最简单的实现，但是这样会导致一系列问题：首先，在有大量的数据对象不停地创建和失效的情况下，要正常地管理和控制堆内存并非易事，很容易引发 OOM 问题；其次，GC 会严重影响性能，尤其是为了处理海量数据而分配了较大的内存空间，GC 开销很容易就能达到 50">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+  <title> Flink 源码阅读笔记（7）- 内存管理 | JR's Blog </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-66913886-2', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">JR's Blog</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              Flink 源码阅读笔记（7）- 内存管理
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2019-05-19T14:20:53+08:00" content="2019-05-19">
+            2019-05-19
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><p>基于 JVM 的大数据处理分析引擎面临的一个问题是，为了高效地处理数据，有大量的数据需要保存在内存中。直接使用 JVM 堆内存来管理这些数据对象是最简单的实现，但是这样会导致一系列问题：首先，在有大量的数据对象不停地创建和失效的情况下，要正常地管理和控制堆内存并非易事，很容易引发 OOM 问题；其次，GC 会严重影响性能，尤其是为了处理海量数据而分配了较大的内存空间，GC 开销很容易就能达到 50% 以上；最后，Java 对象存储本身存在开销，对于那种本身是小对象的数据集而言，对象头、对齐填充这些存储开销非常浪费。</p>
+<p>为了解决上述的问题，主流的数据处理引擎如 Spark、Flink 等有一套自己的内存管理机制，这套内存管理机制看上去更贴近 C/C++，接下来我们将分析 Flink 是如何管理内存的。</p>
+<h2 id="TaskManager-的内存布局"><a href="#TaskManager-的内存布局" class="headerlink" title="TaskManager 的内存布局"></a>TaskManager 的内存布局</h2><p>Flink 内部并非直接将对象存储在堆上，而是将对象序列化到一个个预先分配的 <code>MemorySegment</code> 中。<code>MemorySegment</code> 是一段固定长度的内存（默认32KB），也是 Flink 中最小的内存分配单元。<code>MemorySegment</code> 提供了高效的读写方法，它的底层可以是堆上的 byte[], 也可以是堆外（off-heap）ByteBuffer。可以把 <code>MemorySegment</code> 看作 Java NIO 中的 ByteBuffer，Flink 还实现了 Java 的 <code>java.io.DataOutput</code> 和 <code>java.io.DataInput</code> 接口，分别是 <code>AbstractPagedInputView</code> 和 <code>AbstractPagedOutputView</code>, 可以通过一种逻辑视图的方式来操作连续的多块 <code>MemorySegment</code>。</p>
+<p>在 Flink 中，TaskManager 负责任务的实际运行，通常一个 TaskManager 对应一个 JVM 进程（非 MiniCluster 模式）。抛开 JVM 内存模型，单从 TaskManager 内存的主要使用方式来看，TaskManager 的内存主要分为三个部分：</p>
+<ul>
+<li>Network Buffers：一定数量的 <code>MemorySegment</code>, 主要用于网络传输。在 TaskManager 启动时分配， 通过 <code>NetworkEnvironment</code> 和 <code>NetworkBufferPool</code> 进行管理 </li>
+<li>Managed Memory：由 <code>MemoryManager</code> 管理的一组 <code>MemorySegment</code> 集合， 主要用于 Batch 模式下的 sorting, hashing, 和 cache 等。</li>
+<li>Remaining JVM heap：余下的堆内存留给 TaskManager 的数据结构以及用户代码处理数据时使用。TaskManager 自身的数据结构并不会占用太多内存，因而主要都是供用户代码使用，用户代码创建的对象通常生命周期都较短</li>
+</ul>
+<p>需要注意的是，上面所说的三部分的内存并非都是 JVM 堆上的内存，因为 <code>MemorySegment</code> 底层的内存可以在堆上，也可以在堆外（不由 JVM 管理）。对于 Network Buffers，这一部分内存就是在堆外（off-heap）进行分配的；对于 Managed Memory，这一部分内存可以配置在堆上，也可以配置在堆外。另外还需要注意的一点是，Managed Memory 主要是在 Batch 模式下使用，在 Streaming 模式下这一部分内存并不会预分配，因而空闲出来的内存其实都是可以给用户自定义函数使用的。</p>
+<h2 id="通过二进制数据管理对象"><a href="#通过二进制数据管理对象" class="headerlink" title="通过二进制数据管理对象"></a>通过二进制数据管理对象</h2><p>我们已经知道，Flink 是通过 <code>MemorySegment</code> 来管理数据对象的，因而对象首先需要被序列化保存到 <code>MemorySegment</code> 中。在 Java 的生态系统中，已经存在很多现有的序列化框架了，如 Java 自带的序列化机制、Kryo、Avro、Thrift、Protobuf 等，但 Flink 也实现了一套自己的序列化框架。这主要是出于以下考虑：首先，比较和操作二进制数据需要准确了解序列化的布局，针对二进制数据的操作来配置序列化的布局可以显著提升性能；其次，对于 Flink 应用而言，它所处理的数据对象类型通常是完全已知的，由于数据集对象的类型固定，对于数据集可以只保存一份对象 Schema 信息，可以进一步节省存储空间。</p>
+<p>Flink 可以处理任意的 Java 或 Scala 对象，而不必实现特定的接口。对于 Java 实现的 Flink 程序，Flink 会通过反射框架获取用户自定义函数返回的类型；而对于 Scala 实现的 Flink 程序，则通过 Scala Compiler 分析用户自定义函数返回的类型。每一种数据类型都对应一个 <code>TypeInfomation</code>。</p>
+<ul>
+<li><code>BasicTypeInfo</code>: 基本类型（装箱的）或 String 类型</li>
+<li><code>BasicArrayTypeInfo</code>: 基本类型数组（装箱的）或 String 数组</li>
+<li><code>WritableTypeInfo</code>: 任意 Hadoop Writable 接口的实现类</li>
+<li><code>TupleTypeInfo</code>: 任意的 Flink Tuple 类型 (支持Tuple1 to Tuple25)</li>
+<li><code>CaseClassTypeInfo</code>: 任意的 Scala CaseClass (包括 Scala tuples)</li>
+<li><code>PojoTypeInfo</code>: 任意的 POJO (Java or Scala)，Java对象的所有成员变量，要么是 public 修饰符定义，要么有 getter/setter 方法</li>
+<li><code>GenericTypeInfo</code>: 任意无法匹配之前几种类型的类</li>
+</ul>
+<p>通过 <code>TypeInfomation</code> 可以获取到对应数据类型的序列化器 <code>TypeSerializer</code>。对于 <code>BasicTypeInfo</code>，Flink 提供了对应的序列化器；对于 <code>WritableTypeInfo</code>, Flink 会将序列化和反序列化操作委托给 Hadoop Writable 接口的 <code>write()</code> and <code>readFields()</code>；对于 <code>GenericTypeInfo</code>， Flink 默认使用 Kyro 进行序列化；而 <code>TupleTypeInfo</code>、<code>CaseClassTypeInfo</code> 和 <code>PojoTypeInfo</code> 是一种组合类型，序列化时分别委托给成员的序列化器进行序列化即可。</p>
+<p>对于可以用作 key 的数据类型，<code>TypeInfomation</code> 还可以生成 <code>TypeComparator</code>，用来直接在序列化后的二进制数据上进行 compare、hash 等操作。</p>
+<p>Flink 的类型和序列化系统也可以方便地进行扩展，用户可以提供自定义的序列化器和比较器，具体可以参考 Flink 官方提供的文档 <a href="https://ci.apache.org/projects/flink/flink-docs-master/dev/types_serialization.html" target="_blank" rel="noopener">Data Types &amp; Serialization</a>。</p>
+<p>在批处理的场景下，诸如 group, sort, 和 join 等操作都需要访问大量的数据。借助于 MemorySegment 并直接操作二进制数据，Flink 可以高效地完成这些操作，避免了频繁地序列化/反序列化，并且这些操作是缓存友好的。具体可以参考 Flink 团队的文章<a href="https://flink.apache.org/news/2015/05/11/Juggling-with-Bits-and-Bytes.html" target="_blank" rel="noopener">Juggling with Bits and Bytes</a>。</p>
+<p>这种基于 <code>MemorySegment</code> 和二进制数据直接管理数据对象的方式可以带来如下好处：</p>
+<ul>
+<li>保证内存安全：由于分配的 MemorySegment 的数量是固定的，因而可以准确地追踪 MemorySegment 的使用情况。在 Batch 模式下，如果 MemorySegment 资源不足，会将一批 MemorySegment 写入磁盘，需要时再重新读取。这样有效地减少了 OOM 的情况。</li>
+<li>减少了 GC 的压力：因为分配的 MemorySegment 是长生命周期的对象，数据都以二进制形式存放，且 MemorySegment 可以回收重用，所以 MemorySegment 会一直保留在老年代不会被 GC；而由用户代码生成的对象基本都是短生命周期的，Minor GC 可以快速回收这部分对象，尽可能减少 Major GC 的频率。此外，MemorySegment 还可以配置为使用堆外内存，进而避免 GC。</li>
+<li>节省内存空间：数据对象序列化后以二进制形式保存在 MemorySegment 中，减少了对象存储的开销。</li>
+<li>高效的二进制操作和缓存友好的计算：可以直接基于二进制数据进行比较等操作，避免了反复进行序列化于反序列；另外，二进制形式可以把相关的值，以及 hash 值，键值和指针等相邻地放进内存中，这使得数据结构可以对高速缓存更友好。</li>
+</ul>
+<h2 id="MemorySegment"><a href="#MemorySegment" class="headerlink" title="MemorySegment"></a>MemorySegment</h2><p>前面已经介绍了，<code>MemorySegment</code> 是一段固定长度的内存，也是 Flink 中最小的内存分配单元。在早期版本的实现中，<code>MemorySegment</code> 使用的都是堆上的内存。尽管<br> Flink 的内存管理机制已经做了很多优化，但是 Flink 团队仍然加入了对堆外内存的支持。主要是考虑到以下几个方面：</p>
+<ul>
+<li>启动很大堆内存（100s of GBytes heap memory）的 JVM 需要很长时间，GC 停留时间也会很长（分钟级）。使用堆外内存的话，JVM 只需要分配较少的堆内存（只需要分配 Remaining Heap 那一块）。</li>
+<li>堆外内存在写磁盘或网络传输时是可以利用 zero-copy 特性，I/O 和网络传输的效率更高。</li>
+<li>堆外内存是进程间共享的，也就是说，即使 JVM 进程崩溃也不会丢失数据。这可以用来做故障恢复。Flink暂时没有利用起这个，不过未来有可能会利用这个特性。</li>
+</ul>
+<p>但是使用堆外内存同样存在一些潜在的问题：</p>
+<ul>
+<li>堆内存可以很方便地进行监控和分析，相较而言堆外内存则更加难以控制；</li>
+<li>Flink 有时可能需要短生命周期的 MemorySegment，在堆上申请开销会更小；</li>
+<li>一些操作在堆内存上会更快一些</li>
+</ul>
+<p>Flink 将原来的 <code>MemorySegment</code> 变成了抽象类，并提供了两个具体的子类：<code>HeapMemorySegment</code> 和 <code>HybridMemorySegment</code>。前者是用于分配堆内存，后者用来分配堆外内存和堆内存的。</p>
+<p>在早期版本中，由于 <code>MemorySegment</code> 是只基于堆内存的，因而只需要提供一种类型的 <code>MemorySegment</code> 实现即可；而在引入对堆外内存的支持后，按一般的思路是应该在新增一个基于堆外内存的实现即可。但是，这里涉及到一个 JIT 优化的性能问题。在只有一种类型的 <code>MemorySegment</code> 的情况下，通过 Class Hierarchy Analysis (CHA)，JIT 编译器能够确定方法调用的具体实现，因而方法调用可以通过去虚化（de-virtualized）和内联（inlined）来提升性能。而一旦有了两种类型的实现，在同时使用两种类型的 <code>MemorySegment</code> 的情况下，JIT 编译器就无法进行优化，这大概会导致 2.7 倍的性能差异。因而 Flink 做了这两种优化：1）确保只有一种 <code>MemorySegment</code> 的实现被加载；2）提供一种能同时处理管理堆内存和堆外内存的 <code>MemorySegment</code> 实现，从而保证频繁调用的 <code>MemorySegment</code> 能够被 JIT 优化。详细的解释和性能的评测可以参考 Flink 团队的文章<a href="https://flink.apache.org/news/2015/09/16/off-heap-memory.html" target="_blank" rel="noopener">Off-heap Memory in Apache Flink and the curious JIT compiler</a>。</p>
+<p>来看下 <code>MemorySegment</code> 的实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">MemorySegment</span> </span>&#123;</span><br><span class="line">  <span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">byte</span>[] heapMemory; <span class="comment">//堆内存引用</span></span><br><span class="line">  <span class="keyword">protected</span> <span class="keyword">long</span> address; <span class="comment">//堆外内存地址</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">//基于堆内存创建MemorySegment</span></span><br><span class="line">  MemorySegment(<span class="keyword">byte</span>[] buffer, Object owner) &#123;</span><br><span class="line">    <span class="keyword">if</span> (buffer == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> NullPointerException(<span class="string">"buffer"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">this</span>.heapMemory = buffer;</span><br><span class="line">    <span class="keyword">this</span>.address = BYTE_ARRAY_BASE_OFFSET;</span><br><span class="line">    <span class="keyword">this</span>.size = buffer.length;</span><br><span class="line">    <span class="keyword">this</span>.addressLimit = <span class="keyword">this</span>.address + <span class="keyword">this</span>.size;</span><br><span class="line">    <span class="keyword">this</span>.owner = owner;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//基于堆外内存创建MemorySegment</span></span><br><span class="line">  MemorySegment(<span class="keyword">long</span> offHeapAddress, <span class="keyword">int</span> size, Object owner) &#123;</span><br><span class="line">    <span class="keyword">if</span> (offHeapAddress &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"negative pointer or size"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (offHeapAddress &gt;= Long.MAX_VALUE - Integer.MAX_VALUE) &#123;</span><br><span class="line">      <span class="comment">// this is necessary to make sure the collapsed checks are safe against numeric overflows</span></span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"Segment initialized with too large address: "</span> + offHeapAddress</span><br><span class="line">          + <span class="string">" ; Max allowed address is "</span> + (Long.MAX_VALUE - Integer.MAX_VALUE - <span class="number">1</span>));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">this</span>.heapMemory = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">this</span>.address = offHeapAddress;</span><br><span class="line">    <span class="keyword">this</span>.addressLimit = <span class="keyword">this</span>.address + size;</span><br><span class="line">    <span class="keyword">this</span>.size = size;</span><br><span class="line">    <span class="keyword">this</span>.owner = owner;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isOffHeap</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> heapMemory == <span class="keyword">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">long</span> <span class="title">getLong</span><span class="params">(<span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> pos = address + index;</span><br><span class="line">    <span class="keyword">if</span> (index &gt;= <span class="number">0</span> &amp;&amp; pos &lt;= addressLimit - <span class="number">8</span>) &#123;</span><br><span class="line">      <span class="comment">//这是能够在一个实现中同时操作对内存和堆外内存的关键</span></span><br><span class="line">      <span class="keyword">return</span> UNSAFE.getLong(heapMemory, pos);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (address &gt; addressLimit) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"segment has been freed"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// index is in fact invalid</span></span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IndexOutOfBoundsException();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//......</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">HybridMemorySegment</span> <span class="keyword">extends</span> <span class="title">MemorySegment</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> ByteBuffer offHeapBuffer;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//堆外内存初始化</span></span><br><span class="line">  HybridMemorySegment(ByteBuffer buffer, Object owner) &#123;</span><br><span class="line">    <span class="keyword">super</span>(checkBufferAndGetAddress(buffer), buffer.capacity(), owner);</span><br><span class="line">    <span class="keyword">this</span>.offHeapBuffer = buffer;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//堆内内存初始化</span></span><br><span class="line">  HybridMemorySegment(<span class="keyword">byte</span>[] buffer, Object owner) &#123;</span><br><span class="line">    <span class="keyword">super</span>(buffer, owner);</span><br><span class="line">    <span class="keyword">this</span>.offHeapBuffer = <span class="keyword">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//......</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">HeapMemorySegment</span> <span class="keyword">extends</span> <span class="title">MemorySegment</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">byte</span>[] memory;</span><br><span class="line"></span><br><span class="line">  HeapMemorySegment(<span class="keyword">byte</span>[] memory, Object owner) &#123;</span><br><span class="line">    <span class="keyword">super</span>(Objects.requireNonNull(memory), owner);</span><br><span class="line">    <span class="keyword">this</span>.memory = memory;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//......</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>之所以能够使用同一份代码实现既能够处理堆内存又能够处理堆外内存的效果，其关键点在于 <code>sun.misc.Unsafe</code> 的一些方法会根据对象引用表现出不同的行为，例如:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sun.misc.Unsafe.getLong(Object reference, <span class="keyword">long</span> offset)</span><br></pre></td></tr></table></figure>
+<p>在 <code>reference</code> 不为 null 的情况下，则会取该对象的地址，加上后面的 <code>offset</code>，从相对地址处取出 8 字节；而在 <code>reference</code> 为 null 的情况下，则 <code>offset</code> 就是要操作的绝对地址。所以，通过控制对象引用的值，就可以灵活地管理堆外内存和堆内存。</p>
+<p>既然 <code>HybridMemorySegment</code> 可以同时管理堆内存和堆外内存，为什么还需要 <code>HeapMemorySegment</code> 呢？这是因为假如所有的 <code>MemorySegment</code> 都是在堆上分配的，使用 <code>HeapMemorySegment</code> 相比于 <code>HybridMemorySegment</code> 会有更好的性能。但实际上，由于 Flink 中 Network buffer 使用的 <code>MemorySegment</code> 一定是在堆外分配的，<code>HeapMemorySegment</code> 在 Flink 中已经不会再使用了，具体可以参考 <a href="https://issues.apache.org/jira/browse/FLINK-7310" target="_blank" rel="noopener">FLINK-7310 always use the HybridMemorySegment</a>。</p>
+<p><code>MemorySegment</code> 通常不直接构造，而是通过 <code>MemorySegmentFactory</code> 来创建</p>
+<h2 id="MemorySegment-的管理"><a href="#MemorySegment-的管理" class="headerlink" title="MemorySegment 的管理"></a>MemorySegment 的管理</h2><p>在 TaskManager 的内存布局中我们说过，TaskManager 的内存主要分为三个部分，其中 Network Buffers 和 Managed Memory 都是一组 <code>MemorySegment</code> 的集合。下面就分别介绍下这两块内存是如何管理的。</p>
+<h3 id="Buffer-和-NetworkBufferPool"><a href="#Buffer-和-NetworkBufferPool" class="headerlink" title="Buffer 和 NetworkBufferPool"></a>Buffer 和 NetworkBufferPool</h3><p><code>Buffer</code> 接口是对池化的 <code>MemorySegment</code> 的包装，带有引用计数，类似与 Netty 的 <code>ByteBuf</code>。<code>Buffer</code>也使用两个指针分别表示写入的位置和读取的位置。<code>Buffer</code> 的具体实现实现类 <code>NetworkBuffer</code> 继承自 Netty 的 <code>AbstractReferenceCountedByteBuf</code>，这使得它很容易地集成了引用计数和读写指针的功能。同时，在非 Netty 场景下使用时，<code>Buffer</code> 也提供了 <code>java.nio.ByteBuffer</code> 的包装，但需要手动设置读写指针的位置。<code>ReadOnlySlicedNetworkBuffer</code> 则提供了只读模式的 buffer 的包装。</p>
+<p><code>BufferBuilder</code> 和 <code>BufferConsumer</code> 构成了写入和消费 buffer 的通用模式：通过 <code>BufferBuilder</code> 向底层的 <code>MemorySegment</code> 写入数据，再通过 <code>BufferConsumer</code> 生成只读的 Buffer，读取 <code>BufferBuilder</code> 写入的数据。这两个类都不是线程安全的，但可以实现一个线程写入，另一个线程读取的效果。</p>
+<p><code>BufferPool</code> 接口继承了 <code>BufferProvider</code> 和 <code>BufferRecycler</code> 接口，提供了申请以及回收 <code>Buffer</code> 的功能。<code>LocalBufferPool</code> 是 <code>BufferPool</code> 的具体实现，<code>LocalBufferPool</code> 中 <code>Buffer</code> 的数量是可以动态调整的。</p>
+<p><code>BufferPoolFactory</code> 接口是 <code>BufferPool</code> 的工厂，用于创建及销毁 <code>BufferPool</code>。<code>NetworkBufferPool</code> 是 <code>BufferPoolFactory</code> 的具体实现类。所以按照 <code>BufferPoolFactory</code> -&gt; <code>BufferPool</code> -&gt; <code>Buffer</code> 这样的结构进行组织。<code>NetworkBufferPool</code> 在初始化的时候创建一组 <code>MemorySegment</code>，这些 <code>MemorySegment</code> 会在所有的 <code>LocalBufferPool</code> 之间进行均匀分配。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">NetworkBufferPool</span> <span class="keyword">implements</span> <span class="title">BufferPoolFactory</span> </span>&#123;</span><br><span class="line">  <span class="comment">//所有可用的MemorySegment，阻塞队列</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> ArrayBlockingQueue&lt;MemorySegment&gt; availableMemorySegments;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">NetworkBufferPool</span><span class="params">(<span class="keyword">int</span> numberOfSegmentsToAllocate, <span class="keyword">int</span> segmentSize)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.totalNumberOfMemorySegments = numberOfSegmentsToAllocate;</span><br><span class="line">    <span class="keyword">this</span>.memorySegmentSize = segmentSize;</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> sizeInLong = (<span class="keyword">long</span>) segmentSize;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">this</span>.availableMemorySegments = <span class="keyword">new</span> ArrayBlockingQueue&lt;&gt;(numberOfSegmentsToAllocate);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (OutOfMemoryError err) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> OutOfMemoryError(<span class="string">"Could not allocate buffer queue of length "</span></span><br><span class="line">          + numberOfSegmentsToAllocate + <span class="string">" - "</span> + err.getMessage());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; numberOfSegmentsToAllocate; i++) &#123;</span><br><span class="line">        <span class="comment">//NetworkBufferPool 使用的 MemorySegment 全是堆外内存</span></span><br><span class="line">        availableMemorySegments.add(MemorySegmentFactory.allocateUnpooledOffHeapMemory(segmentSize, <span class="keyword">null</span>));</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (OutOfMemoryError err) &#123;</span><br><span class="line">      ......</span><br><span class="line">    &#125;</span><br><span class="line">    .......</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="MemoryManager"><a href="#MemoryManager" class="headerlink" title="MemoryManager"></a>MemoryManager</h3><p><code>MemoryManager</code> 是管理 Managed Memory 的类，这部分主要是在 Batch 模式下使用，在 Streaming 模式下这一块内存不会分配。<code>MemoryManager</code> 主要通过内部接口 <code>MemoryPool</code> 来管理所有的 <code>MemorySegment</code>。Managed Memory 和管理相比于 Network Buffers 的管理更为简单，因为不需要 Buffer 的那一层封装。直接来看下相关代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MemoryManager</span> </span>&#123;</span><br><span class="line">  <span class="comment">//管理所有的 MemorySegment</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> MemoryPool memoryPool;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">MemoryManager</span><span class="params">(<span class="keyword">long</span> memorySize, <span class="keyword">int</span> numberOfSlots, <span class="keyword">int</span> pageSize,</span></span></span><br><span class="line"><span class="function"><span class="params">							MemoryType memoryType, <span class="keyword">boolean</span> preAllocateMemory)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// sanity checks</span></span><br><span class="line">    ......</span><br><span class="line">    <span class="keyword">this</span>.memoryType = memoryType;</span><br><span class="line">    <span class="keyword">this</span>.memorySize = memorySize;</span><br><span class="line">    <span class="keyword">this</span>.numberOfSlots = numberOfSlots;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// assign page size and bit utilities</span></span><br><span class="line">    <span class="keyword">this</span>.pageSize = pageSize;</span><br><span class="line">    <span class="keyword">this</span>.roundingMask = ~((<span class="keyword">long</span>) (pageSize - <span class="number">1</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> numPagesLong = memorySize / pageSize;</span><br><span class="line">    <span class="keyword">if</span> (numPagesLong &gt; Integer.MAX_VALUE) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"The given number of memory bytes ("</span> + memorySize</span><br><span class="line">          + <span class="string">") corresponds to more than MAX_INT pages."</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//所有可用的 MemorySegment 数量</span></span><br><span class="line">    <span class="keyword">this</span>.totalNumPages = (<span class="keyword">int</span>) numPagesLong;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.totalNumPages &lt; <span class="number">1</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"The given amount of memory amounted to less than one page."</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">this</span>.allocatedSegments = <span class="keyword">new</span> HashMap&lt;Object, Set&lt;MemorySegment&gt;&gt;();</span><br><span class="line">    <span class="keyword">this</span>.isPreAllocated = preAllocateMemory;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">this</span>.numNonAllocatedPages = preAllocateMemory ? <span class="number">0</span> : <span class="keyword">this</span>.totalNumPages;</span><br><span class="line">    <span class="comment">//是否需要预分配内存，Streaming 不会预分配</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> memToAllocate = preAllocateMemory ? <span class="keyword">this</span>.totalNumPages : <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> (memoryType) &#123;</span><br><span class="line">      <span class="keyword">case</span> HEAP:</span><br><span class="line">      <span class="comment">//堆上</span></span><br><span class="line">        <span class="keyword">this</span>.memoryPool = <span class="keyword">new</span> HybridHeapMemoryPool(memToAllocate, pageSize);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">case</span> OFF_HEAP:</span><br><span class="line">      <span class="comment">//堆外</span></span><br><span class="line">        <span class="keyword">if</span> (!preAllocateMemory) &#123;</span><br><span class="line">          LOG.warn(<span class="string">"It is advisable to set 'taskmanager.memory.preallocate' to true when"</span> +</span><br><span class="line">            <span class="string">" the memory type 'taskmanager.memory.off-heap' is set to true."</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">this</span>.memoryPool = <span class="keyword">new</span> HybridOffHeapMemoryPool(memToAllocate, pageSize);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">default</span>:</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"unrecognized memory type: "</span> + memoryType);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">abstract</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">MemoryPool</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">abstract</span> <span class="keyword">int</span> <span class="title">getNumberOfAvailableMemorySegments</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">abstract</span> MemorySegment <span class="title">allocateNewSegment</span><span class="params">(Object owner)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">abstract</span> MemorySegment <span class="title">requestSegmentFromPool</span><span class="params">(Object owner)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">returnSegmentToPool</span><span class="params">(MemorySegment segment)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">clear</span><span class="params">()</span></span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">HybridHeapMemoryPool</span> <span class="keyword">extends</span> <span class="title">MemoryPool</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ArrayDeque&lt;<span class="keyword">byte</span>[]&gt; availableMemory;</span><br><span class="line"></span><br><span class="line">    HybridHeapMemoryPool(<span class="keyword">int</span> numInitialSegments, <span class="keyword">int</span> segmentSize) &#123;</span><br><span class="line">      <span class="keyword">this</span>.availableMemory = <span class="keyword">new</span> ArrayDeque&lt;&gt;(numInitialSegments);</span><br><span class="line">      <span class="keyword">this</span>.segmentSize = segmentSize;</span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; numInitialSegments; i++) &#123;</span><br><span class="line">        <span class="comment">//堆上直接使用byte数组</span></span><br><span class="line">        <span class="keyword">this</span>.availableMemory.add(<span class="keyword">new</span> <span class="keyword">byte</span>[segmentSize]);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">HybridOffHeapMemoryPool</span> <span class="keyword">extends</span> <span class="title">MemoryPool</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ArrayDeque&lt;ByteBuffer&gt; availableMemory;</span><br><span class="line"></span><br><span class="line">    HybridOffHeapMemoryPool(<span class="keyword">int</span> numInitialSegments, <span class="keyword">int</span> segmentSize) &#123;</span><br><span class="line">      <span class="keyword">this</span>.availableMemory = <span class="keyword">new</span> ArrayDeque&lt;&gt;(numInitialSegments);</span><br><span class="line">      <span class="keyword">this</span>.segmentSize = segmentSize;</span><br><span class="line">      <span class="comment">//堆外使用 DirectByteBuffer</span></span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; numInitialSegments; i++) &#123;</span><br><span class="line">        <span class="keyword">this</span>.availableMemory.add(ByteBuffer.allocateDirect(segmentSize));</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Flink-on-Yarn-模式下的内存划分"><a href="#Flink-on-Yarn-模式下的内存划分" class="headerlink" title="Flink on Yarn 模式下的内存划分"></a>Flink on Yarn 模式下的内存划分</h3><p>//TODO</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>本文主要介绍了 Flink 内存管理的主要优化机制和实现方式。借助 MemeorySegment，自定义的序列化机制，利用堆外内存等手段，相比于直接在 JVM 堆上创建对象的方式，Flink 可以获得更好的性能表现，并且可以更高效地利用内存。文中还对 TaskManager 内存布局中的 Network Buffers 和 Managed Memory 的管理方式进行了简单的介绍。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://ci.apache.org/projects/flink/flink-docs-master/dev/types_serialization.html" target="_blank" rel="noopener">Data Types &amp; Serialization</a></li>
+<li><a href="https://flink.apache.org/news/2015/05/11/Juggling-with-Bits-and-Bytes.html" target="_blank" rel="noopener">Juggling with Bits and Bytes</a></li>
+<li><a href="https://flink.apache.org/news/2015/09/16/off-heap-memory.html" target="_blank" rel="noopener">Off-heap Memory in Apache Flink and the curious JIT compiler</a></li>
+<li><a href="https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=53741525" target="_blank" rel="noopener">Memory Management (Batch API)</a></li>
+</ul>
+<p>-EOF-</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Flink/" rel="tag">#Flink</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/flink-source-code-data-exchange/" rel="prev">Flink 源码阅读笔记（8）- Task 之间的数据传输</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/flink-source-code-resource-manager/" rel="next">Flink 源码阅读笔记（6）- 计算资源管理</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+
+        
+          <div class="comments" id="comments">
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">JR</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">42</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">19</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://music.jrwang.me" target="_blank">Music</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://jrwang.me" target="_blank">Site</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#TaskManager-的内存布局"><span class="nav-number">1.</span> <span class="nav-text">TaskManager 的内存布局</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通过二进制数据管理对象"><span class="nav-number">2.</span> <span class="nav-text">通过二进制数据管理对象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MemorySegment"><span class="nav-number">3.</span> <span class="nav-text">MemorySegment</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MemorySegment-的管理"><span class="nav-number">4.</span> <span class="nav-text">MemorySegment 的管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Buffer-和-NetworkBufferPool"><span class="nav-number">4.1.</span> <span class="nav-text">Buffer 和 NetworkBufferPool</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MemoryManager"><span class="nav-number">4.2.</span> <span class="nav-text">MemoryManager</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Flink-on-Yarn-模式下的内存划分"><span class="nav-number">4.3.</span> <span class="nav-text">Flink on Yarn 模式下的内存划分</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <div class="copyright" >
+  
+  &copy; &nbsp;  2015 - 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JR</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="powered-by">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+<div class="theme-info">
+  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
+</div>
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+    
+
+  
+
+
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+</body>
+</html>

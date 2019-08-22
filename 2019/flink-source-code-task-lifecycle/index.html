@@ -1,0 +1,689 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="想入非非就是寻找神奇" />
+
+
+
+  <meta name="keywords" content="Flink," />
+
+
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="一个 Flink Job 提交到集群中运行时，会被调度为不同的 Task。在前面的文章中，我们已经介绍了 Flink 如何根据用户的编写的程序生成调度用的执行图，如何为 Task 分配计算资源，以及 Task 之间如何进行数据交换。在这篇文章中，我们将跟踪一个 Task 的完整的生命周期，进一步加深对 Flink 执行过程的理解。 Task 和 OperatorChain在前面介绍如何生成 Job">
+<meta name="keywords" content="Flink">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink 源码阅读笔记（9）- Task 的生命周期">
+<meta property="og:url" content="http://blog.jrwang.me/2019/flink-source-code-task-lifecycle/index.html">
+<meta property="og:site_name" content="JR&#39;s Blog">
+<meta property="og:description" content="一个 Flink Job 提交到集群中运行时，会被调度为不同的 Task。在前面的文章中，我们已经介绍了 Flink 如何根据用户的编写的程序生成调度用的执行图，如何为 Task 分配计算资源，以及 Task 之间如何进行数据交换。在这篇文章中，我们将跟踪一个 Task 的完整的生命周期，进一步加深对 Flink 执行过程的理解。 Task 和 OperatorChain在前面介绍如何生成 Job">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-08-14T12:51:23.766Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Flink 源码阅读笔记（9）- Task 的生命周期">
+<meta name="twitter:description" content="一个 Flink Job 提交到集群中运行时，会被调度为不同的 Task。在前面的文章中，我们已经介绍了 Flink 如何根据用户的编写的程序生成调度用的执行图，如何为 Task 分配计算资源，以及 Task 之间如何进行数据交换。在这篇文章中，我们将跟踪一个 Task 的完整的生命周期，进一步加深对 Flink 执行过程的理解。 Task 和 OperatorChain在前面介绍如何生成 Job">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+  <title> Flink 源码阅读笔记（9）- Task 的生命周期 | JR's Blog </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-66913886-2', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">JR's Blog</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              Flink 源码阅读笔记（9）- Task 的生命周期
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2019-06-02T19:05:03+08:00" content="2019-06-02">
+            2019-06-02
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><p>一个 Flink Job 提交到集群中运行时，会被调度为不同的 Task。在前面的文章中，我们已经介绍了 Flink 如何根据用户的编写的程序生成调度用的执行图，如何为 Task 分配计算资源，以及 Task 之间如何进行数据交换。在这篇文章中，我们将跟踪一个 Task 的完整的生命周期，进一步加深对 Flink 执行过程的理解。</p>
+<h2 id="Task-和-OperatorChain"><a href="#Task-和-OperatorChain" class="headerlink" title="Task 和 OperatorChain"></a>Task 和 OperatorChain</h2><p>在前面介绍如何生成 <code>JobGraph</code> 的文章中，我们已经了解了 Flink 会尽可能把能够 chaining 到一起的算子串联在一起，形成 <code>OperatorChain</code>，对应一个 <code>JobVertex</code>。</p>
+<p>两个 Operator 能够串联在一起的条件包括：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">StreamingJobGraphGenerator</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">isChainable</span><span class="params">(StreamEdge edge, StreamGraph streamGraph)</span> </span>&#123;</span><br><span class="line">    StreamNode upStreamVertex = streamGraph.getSourceVertex(edge);</span><br><span class="line">    StreamNode downStreamVertex = streamGraph.getTargetVertex(edge);</span><br><span class="line"></span><br><span class="line">    StreamOperator&lt;?&gt; headOperator = upStreamVertex.getOperator();</span><br><span class="line">    StreamOperator&lt;?&gt; outOperator = downStreamVertex.getOperator();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> downStreamVertex.getInEdges().size() == <span class="number">1</span> <span class="comment">//下游节点只有一个输入</span></span><br><span class="line">        &amp;&amp; outOperator != <span class="keyword">null</span></span><br><span class="line">        &amp;&amp; headOperator != <span class="keyword">null</span></span><br><span class="line">        &amp;&amp; upStreamVertex.isSameSlotSharingGroup(downStreamVertex) <span class="comment">//在同一个 slot 共享组中</span></span><br><span class="line">        <span class="comment">//上下游算子的 chainning 策略，要允许 chainning</span></span><br><span class="line">        &amp;&amp; outOperator.getChainingStrategy() == ChainingStrategy.ALWAYS</span><br><span class="line">        &amp;&amp; (headOperator.getChainingStrategy() == ChainingStrategy.HEAD ||</span><br><span class="line">          headOperator.getChainingStrategy() == ChainingStrategy.ALWAYS)</span><br><span class="line">        <span class="comment">//上下游算子之间的数据传输方式必须是FORWARD，而不能是REBALANCE等其它模式</span></span><br><span class="line">        &amp;&amp; (edge.getPartitioner() <span class="keyword">instanceof</span> ForwardPartitioner)</span><br><span class="line">        <span class="comment">//上下游算子的并行度要一致</span></span><br><span class="line">        &amp;&amp; upStreamVertex.getParallelism() == downStreamVertex.getParallelism()</span><br><span class="line">        <span class="comment">// StreamExecutionEnvironment 配置允许 chainning</span></span><br><span class="line">        &amp;&amp; streamGraph.isChainingEnabled();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>JobGraph</code> 在 JobManager 中进一步被转换为可供调度的并行化版本的 <code>ExecutionGraph</code>，其中 <code>JobVertex</code> 被展开为并行化版本的 <code>ExecutionVertex</code>，每一个 <code>ExecutionVertex</code> 对应 <code>JobVertex</code> 的一个并行子任务，它的每一次调度对应一个 <code>Execution</code>，即 TaskManager 中的一个 <code>Task</code>。所以，一个 <code>Task</code> 运行期间的主要处理逻辑对应一个 <code>OperatorChain</code>，这个 <code>OperatorChain</code> 可能包含多个 Operator，也可能只有一个 Operator。 </p>
+<h2 id="OperatorChain-内部的数据传递"><a href="#OperatorChain-内部的数据传递" class="headerlink" title="OperatorChain 内部的数据传递"></a>OperatorChain 内部的数据传递</h2><p>在前面的文章中，我们已经介绍过不同的 <code>Task</code> 之间如何通过网络栈进行数据交换，并对 <code>Task</code> 之间应对”反压”的机制进行了分析。现在我们知道，在一个 <code>Task</code> 内部同样可能包含多个不同的算子，这些算子处理数据的主要逻辑由用户提供的自定义函数（UDF）实现，那么上游算子处理之后的记录如何传递给下游算子呢？既然一个 <code>Task</code> 是一个独立的线程，多个算子的计算逻辑是依次执行的，那么很直观的想法就是直接通过函数调用的参数来数据。我们看下 Flink 内部是如何处理的。</p>
+<p>首先，要看一下 <code>Output</code> 接口，<code>Output</code> 接口继承自 <code>Collector</code> 接口，用于接受 Operator 提交的数据:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Output</span>&lt;<span class="title">T</span>&gt; <span class="keyword">extends</span> <span class="title">Collector</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Emits a &#123;<span class="doctag">@link</span> Watermark&#125; from an operator. This watermark is broadcast to all downstream</span></span><br><span class="line"><span class="comment">	 * operators.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * &lt;p&gt;A watermark specifies that no element with a timestamp lower or equal to the watermark</span></span><br><span class="line"><span class="comment">	 * timestamp will be emitted in the future.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">emitWatermark</span><span class="params">(Watermark mark)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Emits a record the side output identified by the given &#123;<span class="doctag">@link</span> OutputTag&#125;.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> record The record to collect.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  &lt;X&gt; <span class="function"><span class="keyword">void</span> <span class="title">collect</span><span class="params">(OutputTag&lt;X&gt; outputTag, StreamRecord&lt;X&gt; record)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">emitLatencyMarker</span><span class="params">(LatencyMarker latencyMarker)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 <code>OperatorChain</code> 内部还有一个 <code>WatermarkGaugeExposingOutput</code> 接口继承自 <code>Output</code>，它主要是额外提供了一个获取 watermark 值的方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">WatermarkGaugeExposingOutput</span>&lt;<span class="title">T</span>&gt; <span class="keyword">extends</span> <span class="title">Output</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line">  <span class="function">Gauge&lt;Long&gt; <span class="title">getWatermarkGauge</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>每一个 <code>StreamOperator</code> 都有一个 <code>Output</code> 成员，用于收集当前算子处理完的记录，比如在 <code>StreamMap</code> 中：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StreamMap</span>&lt;<span class="title">IN</span>, <span class="title">OUT</span>&gt;</span></span><br><span class="line"><span class="class">		<span class="keyword">extends</span> <span class="title">AbstractUdfStreamOperator</span>&lt;<span class="title">OUT</span>, <span class="title">MapFunction</span>&lt;<span class="title">IN</span>, <span class="title">OUT</span>&gt;&gt;</span></span><br><span class="line"><span class="class">		<span class="keyword">implements</span> <span class="title">OneInputStreamOperator</span>&lt;<span class="title">IN</span>, <span class="title">OUT</span>&gt; </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">processElement</span><span class="params">(StreamRecord&lt;IN&gt; element)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    output.collect(element.replace(userFunction.map(element.getValue())));</span><br><span class="line">  &#125;	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 <code>StreamFilter</code> 中：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StreamFilter</span>&lt;<span class="title">IN</span>&gt; <span class="keyword">extends</span> <span class="title">AbstractUdfStreamOperator</span>&lt;<span class="title">IN</span>, <span class="title">FilterFunction</span>&lt;<span class="title">IN</span>&gt;&gt; <span class="keyword">implements</span> <span class="title">OneInputStreamOperator</span>&lt;<span class="title">IN</span>, <span class="title">IN</span>&gt; </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">processElement</span><span class="params">(StreamRecord&lt;IN&gt; element)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (userFunction.filter(element.getValue())) &#123;</span><br><span class="line">      output.collect(element);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在 <code>StreamFlatMap</code> 中：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StreamFlatMap</span>&lt;<span class="title">IN</span>, <span class="title">OUT</span>&gt;</span></span><br><span class="line"><span class="class">		<span class="keyword">extends</span> <span class="title">AbstractUdfStreamOperator</span>&lt;<span class="title">OUT</span>, <span class="title">FlatMapFunction</span>&lt;<span class="title">IN</span>, <span class="title">OUT</span>&gt;&gt;</span></span><br><span class="line"><span class="class">		<span class="keyword">implements</span> <span class="title">OneInputStreamOperator</span>&lt;<span class="title">IN</span>, <span class="title">OUT</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">transient</span> TimestampedCollector&lt;OUT&gt; collector;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">StreamFlatMap</span><span class="params">(FlatMapFunction&lt;IN, OUT&gt; flatMapper)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>(flatMapper);</span><br><span class="line">    chainingStrategy = ChainingStrategy.ALWAYS;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">processElement</span><span class="params">(StreamRecord&lt;IN&gt; element)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    collector.setTimestamp(element);</span><br><span class="line">    userFunction.flatMap(element.getValue(), collector);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>那么 <code>Output</code> 又是怎么处理算子提交的记录的呢？这就需要进一步看一下 <code>Output</code> 的具体实现类。</p>
+<p><code>OperatorChain</code> 的内部类 <code>ChainingOutput</code> 实现了 <code>WatermarkGaugeExposingOutput</code> 接口，它持有一个 <code>OneInputStreamOperator</code>, 即 <code>OperatorChain</code> 中当前算子的下游算子。当 <code>ChainingOutput</code> 接收到当前算子提交的数据时，直接将调用下游算子的 <code>processElement</code> 方法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ChainingOutput</span>&lt;<span class="title">T</span>&gt; <span class="keyword">implements</span> <span class="title">WatermarkGaugeExposingOutput</span>&lt;<span class="title">StreamRecord</span>&lt;<span class="title">T</span>&gt;&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">protected</span> <span class="keyword">final</span> OneInputStreamOperator&lt;T, ?&gt; operator; <span class="comment">//这是下游算子</span></span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">collect</span><span class="params">(StreamRecord&lt;T&gt; record)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.outputTag != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="comment">// we are only responsible for emitting to the main input</span></span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    pushToOperator(record);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="keyword">public</span> &lt;X&gt; <span class="function"><span class="keyword">void</span> <span class="title">collect</span><span class="params">(OutputTag&lt;X&gt; outputTag, StreamRecord&lt;X&gt; record)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//如果有 OutputTag， 则要求 OutputTag 匹配才会转发记录</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.outputTag == <span class="keyword">null</span> || !<span class="keyword">this</span>.outputTag.equals(outputTag)) &#123;</span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    pushToOperator(record);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">protected</span> &lt;X&gt; <span class="function"><span class="keyword">void</span> <span class="title">pushToOperator</span><span class="params">(StreamRecord&lt;X&gt; record)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// we know that the given outputTag matches our OutputTag so the record</span></span><br><span class="line">      <span class="comment">// must be of the type that our operator expects.</span></span><br><span class="line">      <span class="meta">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)</span><br><span class="line">      StreamRecord&lt;T&gt; castRecord = (StreamRecord&lt;T&gt;) record;</span><br><span class="line">      numRecordsIn.inc();</span><br><span class="line">      <span class="comment">//直接调用下游算子的 processElement 方法</span></span><br><span class="line">      operator.setKeyContextElement1(castRecord);</span><br><span class="line">      operator.processElement(castRecord);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> ExceptionInChainedOperatorException(e);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过在 <code>ChainingOutput</code> 中保存下游 <code>StreamOperator</code> 的引用，<code>ChainingOutput</code> 直接将对象的引用传递给下游算子。但是 <code>ExecutionConfig</code> 有一个配置项，即 <code>objectReuse</code>，在默认情况下会禁止对象重用。如果不允许对象重用，则不会使用 <code>ChainingOutput</code>，而是会使用 <code>CopyingChainingOutput</code>。顾名思义，它和 <code>ChainingOutput</code> 的区别在于，它会对记录进行拷贝后传递给下游算子。</p>
+<p><code>BroadcastingOutputCollector</code> 封装了一组 <code>Output</code>, 即 <code>Output&lt;StreamRecord&lt;T&gt;&gt;[] outputs</code>, 在接收到 <code>StreamRecord</code> 时，会将消息提交到所有的 内部所有的 <code>Output</code> 中。<code>BroadcastingOutputCollector</code> 主要用在当前算子有多个下游算子的情况下。与此对应的还有一个 <code>CopyingBroadcastingOutputCollector</code>。</p>
+<p><code>DirectedOutput</code> 基于 <code>OutputSelector&lt;OUT&gt;[] outputSelectors</code> 选择要转发的目标 <code>Output</code>，主要是在 split/select 的情况下使用。与 <code>DirectedOutput</code> 对应的也有一个 <code>CopyingDirectedOutput</code>。</p>
+<p>对于位于 <code>OperatorChain</code> 末尾的算子，它处理过的记录需要被其它 <code>Task</code> 消费，因此它的记录需要被写入 <code>ResultPartition</code> 。因此，Flink 提供了 <code>RecordWriterOutput</code>，它也实现了 <code>WatermarkGaugeExposingOutput</code>， 但是它是通过 <code>RecordWriter</code> 输出接收到的消息记录。<code>RecordWriter</code> 是 <code>ResultPartitionWriter</code> 的一层包装，提供了将记录序列化到 buffer 中的功能。</p>
+<h2 id="Task-的生命周期"><a href="#Task-的生命周期" class="headerlink" title="Task 的生命周期"></a>Task 的生命周期</h2><p>下面我们将进一步对 Task 运行的生命周期进行分析。</p>
+<h3 id="任务调度"><a href="#任务调度" class="headerlink" title="任务调度"></a>任务调度</h3><p>当 <code>JobGraph</code> 被提交到 <code>JobMaster</code> 之后，首先会生成 <code>ExecutionGraph</code>，这是任务调度时使用的调度执行图。然后通过 <code>ExecutionGraph#scheduleForExecution</code> 方法开始调度各个子任务。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ExecutionGraph</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">scheduleForExecution</span><span class="params">()</span> <span class="keyword">throws</span> JobException </span>&#123;</span><br><span class="line">    assertRunningInJobMasterMainThread();</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> currentGlobalModVersion = globalModVersion;</span><br><span class="line">    <span class="keyword">if</span> (transitionState(JobStatus.CREATED, JobStatus.RUNNING)) &#123;</span><br><span class="line">      <span class="keyword">final</span> CompletableFuture&lt;Void&gt; newSchedulingFuture;</span><br><span class="line">      <span class="keyword">switch</span> (scheduleMode) &#123;</span><br><span class="line">        <span class="comment">//调度任务</span></span><br><span class="line">        <span class="keyword">case</span> LAZY_FROM_SOURCES: <span class="comment">//只运行 source，其它的子任务由source进行通知</span></span><br><span class="line">          newSchedulingFuture = scheduleLazy(slotProvider);</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> EAGER: <span class="comment">//所有的子任务都立即进行调度，这是 streaming 模式采用的方式</span></span><br><span class="line">          newSchedulingFuture = scheduleEager(slotProvider, allocationTimeout);</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">          <span class="keyword">throw</span> <span class="keyword">new</span> JobException(<span class="string">"Schedule mode is invalid."</span>);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">if</span> (state == JobStatus.RUNNING &amp;&amp; currentGlobalModVersion == globalModVersion) &#123;</span><br><span class="line">        schedulingFuture = newSchedulingFuture;</span><br><span class="line">        newSchedulingFuture.whenComplete(</span><br><span class="line">          (Void ignored, Throwable throwable) -&gt; &#123;</span><br><span class="line">            <span class="keyword">if</span> (throwable != <span class="keyword">null</span> &amp;&amp; !(throwable <span class="keyword">instanceof</span> CancellationException)) &#123;</span><br><span class="line">              <span class="comment">// only fail if the scheduling future was not canceled</span></span><br><span class="line">              failGlobal(ExceptionUtils.stripCompletionException(throwable));</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        newSchedulingFuture.cancel(<span class="keyword">false</span>);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Job may only be scheduled from state "</span> + JobStatus.CREATED);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在调度执行的时候，首先所有的子任务都需要先向 <code>Scheduler</code> 申请 slot 资源（关于计算资源的管理可以参考前面的文章），当所有需要调度的子任务都分配到 slot 资源后，才正式开始调度任务：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ExecutionGraph</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">private</span> CompletableFuture&lt;Void&gt; <span class="title">scheduleEager</span><span class="params">(SlotProvider slotProvider, <span class="keyword">final</span> Time timeout)</span> </span>&#123;</span><br><span class="line">    assertRunningInJobMasterMainThread();</span><br><span class="line">    checkState(state == JobStatus.RUNNING, <span class="string">"job is not running currently"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// collecting all the slots may resize and fail in that operation without slots getting lost</span></span><br><span class="line">    <span class="keyword">final</span> ArrayList&lt;CompletableFuture&lt;Execution&gt;&gt; allAllocationFutures = <span class="keyword">new</span> ArrayList&lt;&gt;(getNumberOfExecutionJobVertices());</span><br><span class="line">    <span class="keyword">final</span> Set&lt;AllocationID&gt; allPreviousAllocationIds =</span><br><span class="line">      Collections.unmodifiableSet(computeAllPriorAllocationIdsIfRequiredByScheduling());</span><br><span class="line">    <span class="comment">// allocate the slots (obtain all their futures</span></span><br><span class="line">    <span class="keyword">for</span> (ExecutionJobVertex ejv : getVerticesTopologically()) &#123;</span><br><span class="line">      <span class="comment">// these calls are not blocking, they only return futures</span></span><br><span class="line">      Collection&lt;CompletableFuture&lt;Execution&gt;&gt; allocationFutures = ejv.allocateResourcesForAll(</span><br><span class="line">        slotProvider,</span><br><span class="line">        queued,</span><br><span class="line">        LocationPreferenceConstraint.ALL,</span><br><span class="line">        allPreviousAllocationIds,</span><br><span class="line">        timeout);</span><br><span class="line">      allAllocationFutures.addAll(allocationFutures);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// this future is complete once all slot futures are complete.</span></span><br><span class="line">    <span class="comment">// the future fails once one slot future fails.</span></span><br><span class="line">    <span class="comment">// 等待所有需要调度的子任务都分配到资源</span></span><br><span class="line">    <span class="keyword">final</span> ConjunctFuture&lt;Collection&lt;Execution&gt;&gt; allAllocationsFuture = FutureUtils.combineAll(allAllocationFutures);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> allAllocationsFuture.thenAccept(</span><br><span class="line">      (Collection&lt;Execution&gt; executionsToDeploy) -&gt; &#123;</span><br><span class="line">        <span class="keyword">for</span> (Execution execution : executionsToDeploy) &#123;</span><br><span class="line">          <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">//启动 Execution</span></span><br><span class="line">            execution.deploy();</span><br><span class="line">          &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> CompletionException(</span><br><span class="line">              <span class="keyword">new</span> FlinkException(</span><br><span class="line">                String.format(<span class="string">"Could not deploy execution %s."</span>, execution),</span><br><span class="line">                t));</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;)</span><br><span class="line">      .exceptionally(......)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Execution</code> 是 <code>ExecutionVertex</code> 的一次执行，在调度的时候会先生成对任务的描述 <code>TaskDeploymentDescription</code>， <code>TaskDeploymentDescription</code> 包含了对输入的描述 <code>InputGateDeploymentDescriptor</code>, 对输出的描述 <code>ResultPartitionDeploymentDescriptor</code>，以及保存了这个 Task 中运行的所有算子运行时信息的 <code>TaskInformation</code> 和 <code>JobInformation</code>。生成了 <code>TaskDeploymentDescription</code> 通过 RPC 调用提交给 <code>TaskExecutor</code> 执行。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Execution</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">deploy</span><span class="params">()</span> <span class="keyword">throws</span> JobException </span>&#123;</span><br><span class="line">    ......</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// race double check, did we fail/cancel and do we need to release the slot?</span></span><br><span class="line">      <span class="keyword">if</span> (<span class="keyword">this</span>.state != DEPLOYING) &#123;</span><br><span class="line">        slot.releaseSlot(<span class="keyword">new</span> FlinkException(<span class="string">"Actual state of execution "</span> + <span class="keyword">this</span> + <span class="string">" ("</span> + state + <span class="string">") does not match expected state DEPLOYING."</span>));</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">final</span> TaskDeploymentDescriptor deployment = vertex.createDeploymentDescriptor(</span><br><span class="line">        attemptId,</span><br><span class="line">        slot,</span><br><span class="line">        taskRestore,</span><br><span class="line">        attemptNumber);</span><br><span class="line"></span><br><span class="line">      <span class="comment">// null taskRestore to let it be GC'ed</span></span><br><span class="line">      taskRestore = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">final</span> TaskManagerGateway taskManagerGateway = slot.getTaskManagerGateway();</span><br><span class="line"></span><br><span class="line">      <span class="keyword">final</span> ComponentMainThreadExecutor jobMasterMainThreadExecutor =</span><br><span class="line">        vertex.getExecutionGraph().getJobMasterMainThreadExecutor();</span><br><span class="line"></span><br><span class="line">      <span class="comment">// We run the submission in the future executor so that the serialization of large TDDs does not block</span></span><br><span class="line">      <span class="comment">// the main thread and sync back to the main thread once submission is completed.</span></span><br><span class="line">      CompletableFuture.supplyAsync(() -&gt; taskManagerGateway.submitTask(deployment, rpcTimeout), executor)</span><br><span class="line">        .thenCompose(Function.identity())</span><br><span class="line">        .whenCompleteAsync(</span><br><span class="line">          (ack, failure) -&gt; &#123;</span><br><span class="line">            <span class="comment">// only respond to the failure case</span></span><br><span class="line">            <span class="keyword">if</span> (failure != <span class="keyword">null</span>) &#123;</span><br><span class="line">              <span class="keyword">if</span> (failure <span class="keyword">instanceof</span> TimeoutException) &#123;</span><br><span class="line">                String taskname = vertex.getTaskNameWithSubtaskIndex() + <span class="string">" ("</span> + attemptId + <span class="string">')'</span>;</span><br><span class="line"></span><br><span class="line">                markFailed(<span class="keyword">new</span> Exception(</span><br><span class="line">                  <span class="string">"Cannot deploy task "</span> + taskname + <span class="string">" - TaskManager ("</span> + getAssignedResourceLocation()</span><br><span class="line">                    + <span class="string">") not responding after a rpcTimeout of "</span> + rpcTimeout, failure));</span><br><span class="line">              &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                markFailed(failure);</span><br><span class="line">              &#125;</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;,</span><br><span class="line">          jobMasterMainThreadExecutor);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">      markFailed(t);</span><br><span class="line">      ExceptionUtils.rethrow(t);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="启动-Task-线程"><a href="#启动-Task-线程" class="headerlink" title="启动 Task 线程"></a>启动 Task 线程</h3><p>当 <code>TaskDeploymentDescription</code> 被提交到 <code>TaskExecutor</code> 后，<code>TaskExecutor</code> 会据此创建一个 <code>Task</code> 对象，并在构造函数中完成一些初始化操作，如根据 <code>InputGateDeploymentDescriptor</code> 创建 <code>InputGate</code>，根据 <code>ResultPartitionDeploymentDescriptor</code> 创建 <code>ResultPartition</code>。</p>
+<p><code>Task</code> 实现了 <code>Runnable</code> 接口，每个 Task 都会在一个单独的线程中运行，Task 的启动流程包括：</p>
+<ol>
+<li>首先完成状态的初始化 <code>ExecutionState.CREATED</code> -&gt; <code>ExecutionState.DEPLOYING</code></li>
+<li>任务装配   <ul>
+<li>创建一个用户加载用户代码的类加载器</li>
+<li>通过反序列化得到 <code>ExecutionConfig</code>，从 <code>ExecutionConfig</code> 中可以的到所有算子相关的信息</li>
+<li>向网络栈中注册 <code>Task</code>,为 <code>ResultPartition</code> 和 <code>InputGate</code> 分配缓冲池</li>
+<li>初始化用户代码，通过反射得到 <code>AbstractInvokable</code>(<code>StreamTask</code>) 实例</li>
+</ul>
+</li>
+<li>执行任务<ul>
+<li>状态转换 <code>ExecutionState.DEPLOYING</code> -&gt; <code>ExecutionState.RUNNING</code></li>
+<li>调用 <code>AbstractInvokable.invoke()</code> 启动任务</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Task</span> </span>&#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * The core work method that bootstraps the task and executes its code.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// ----------------------------</span></span><br><span class="line">    <span class="comment">//  Initial State transition</span></span><br><span class="line">    <span class="comment">// ----------------------------</span></span><br><span class="line">    <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">      ExecutionState current = <span class="keyword">this</span>.executionState;</span><br><span class="line">      <span class="keyword">if</span> (current == ExecutionState.CREATED) &#123;</span><br><span class="line">        <span class="keyword">if</span> (transitionState(ExecutionState.CREATED, ExecutionState.DEPLOYING)) &#123;</span><br><span class="line">          <span class="comment">// success, we can start our work</span></span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      ...... <span class="comment">//handle other state</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// all resource acquisitions and registrations from here on</span></span><br><span class="line">    <span class="comment">// need to be undone in the end</span></span><br><span class="line">    Map&lt;String, Future&lt;Path&gt;&gt; distributedCacheEntries = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">    AbstractInvokable invokable = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      ......</span><br><span class="line">      userCodeClassLoader = createUserCodeClassloader();</span><br><span class="line">      <span class="keyword">final</span> ExecutionConfig executionConfig = serializedExecutionConfig.deserializeValue(userCodeClassLoader);</span><br><span class="line"></span><br><span class="line">      network.registerTask(<span class="keyword">this</span>);</span><br><span class="line">      <span class="keyword">for</span> (ResultPartition partition : producedPartitions) &#123;</span><br><span class="line">        taskEventDispatcher.registerPartition(partition.getPartitionId());</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      Environment env = <span class="keyword">new</span> RuntimeEnvironment(.......)</span><br><span class="line">      <span class="comment">// now load and instantiate the task's invokable code</span></span><br><span class="line">      <span class="comment">// nameOfInvokableClass 是 JobVertex 的 invokableClassName，</span></span><br><span class="line">      <span class="comment">// 每一个 StreamNode 在添加的时候都会有一个 jobVertexClass 属性</span></span><br><span class="line">      <span class="comment">// 对于一个 operator chain，就是 head operator 对应的 invokableClassName，见 StreamingJobGraphGenerator.createChain</span></span><br><span class="line">      <span class="comment">// 通过反射创建 AbstractInvokable 对象</span></span><br><span class="line">      <span class="comment">// 对于 Stream 任务而言，就是 StreamTask 的子类，SourceStreamTask、OneInputStreamTask、TwoInputStreamTask 等</span></span><br><span class="line">      invokable = loadAndInstantiateInvokable(userCodeClassLoader, nameOfInvokableClass, env);</span><br><span class="line"></span><br><span class="line">      <span class="comment">// we must make strictly sure that the invokable is accessible to the cancel() call</span></span><br><span class="line">      <span class="comment">// by the time we switched to running.</span></span><br><span class="line">      <span class="keyword">this</span>.invokable = invokable;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// switch to the RUNNING state, if that fails, we have been canceled/failed in the meantime</span></span><br><span class="line">      <span class="keyword">if</span> (!transitionState(ExecutionState.DEPLOYING, ExecutionState.RUNNING)) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> CancelTaskException();</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// notify everyone that we switched to running</span></span><br><span class="line">      taskManagerActions.updateTaskExecutionState(<span class="keyword">new</span> TaskExecutionState(jobId, executionId, ExecutionState.RUNNING));</span><br><span class="line">      <span class="comment">// make sure the user code classloader is accessible thread-locally</span></span><br><span class="line">      executingThread.setContextClassLoader(userCodeClassLoader);</span><br><span class="line"></span><br><span class="line">      <span class="comment">// run the invokable</span></span><br><span class="line">      <span class="comment">// 运行</span></span><br><span class="line">      invokable.invoke();</span><br><span class="line"></span><br><span class="line">      <span class="comment">// make sure, we enter the catch block if the task leaves the invoke() method due</span></span><br><span class="line">      <span class="comment">// to the fact that it has been canceled</span></span><br><span class="line">      <span class="keyword">if</span> (isCanceledOrFailed()) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> CancelTaskException();</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 正常结束</span></span><br><span class="line">      <span class="comment">// finish the produced partitions. if this fails, we consider the execution failed.</span></span><br><span class="line">      <span class="keyword">for</span> (ResultPartition partition : producedPartitions) &#123;</span><br><span class="line">        <span class="keyword">if</span> (partition != <span class="keyword">null</span>) &#123;</span><br><span class="line">          partition.finish();</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// try to mark the task as finished</span></span><br><span class="line">      <span class="comment">// if that fails, the task was canceled/failed in the meantime</span></span><br><span class="line">      <span class="keyword">if</span> (!transitionState(ExecutionState.RUNNING, ExecutionState.FINISHED)) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> CancelTaskException();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">      ......</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      ......</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="StreamTask"><a href="#StreamTask" class="headerlink" title="StreamTask"></a>StreamTask</h3><p><code>AbstractInvokable</code> 是 <code>Task</code> 执行的主要逻辑，也是所有被执行的任务的基类，包括 Streaming 模式和 Batch 模式。在 Streaming 模式下，所有任务都继承自 <code>StreamTask</code>，包括 <code>StreamTask</code> 的子类包括 <code>SourceStreamTask</code>, <code>OneInputStreamTask</code>, <code>TwoInputStreamTask</code>, 以及用于迭代模式下的 <code>StreamIterationHead</code> 和 <code>StreamIterationTail</code>。</p>
+<p>每一个 <code>StreamNode</code> 在添加到 <code>StreamGraph</code> 的时候都会有一个关联的 <code>jobVertexClass</code> 属性，这个属性就是该 <code>StreamNode</code> 对应的 <code>StreamTask</code> 类型；对于一个 <code>OperatorChain</code> 而言，它所对应的 <code>StreamTask</code> 就是其  head operator 对应的 <code>StreamTask</code>。</p>
+<p><code>StreamTask</code> 完整的生命周期包括：</p>
+<ul>
+<li>创建状态存储后端，为 OperatorChain 中的所有算子提供状态</li>
+<li>加载 OperatorChain 中的所有算子</li>
+<li>所有的 operator 调用 <code>setup</code></li>
+<li>task 相关的初始化操作</li>
+<li>所有 operator 调用 <code>initializeState</code> 初始化状态</li>
+<li>所有的 operator 调用 <code>open</code></li>
+<li><code>run</code> 方法循环处理数据</li>
+<li>所有 operator 调用 <code>close</code></li>
+<li>所有 operator 调用 <code>dispose</code></li>
+<li>通用的 cleanup 操作</li>
+<li>task 相关的 cleanup 操作</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">StreamTask</span> </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">invoke</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="keyword">boolean</span> disposed = <span class="keyword">false</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// -------- Initialize ---------</span></span><br><span class="line">      <span class="comment">//创建状态存储后端</span></span><br><span class="line">      stateBackend = createStateBackend();</span><br><span class="line">      checkpointStorage = stateBackend.createCheckpointStorage(getEnvironment().getJobID());</span><br><span class="line">      <span class="comment">// if the clock is not already set, then assign a default TimeServiceProvider</span></span><br><span class="line">      <span class="keyword">if</span> (timerService == <span class="keyword">null</span>) &#123;</span><br><span class="line">        ThreadFactory timerThreadFactory = <span class="keyword">new</span> DispatcherThreadFactory(TRIGGER_THREAD_GROUP,</span><br><span class="line">          <span class="string">"Time Trigger for "</span> + getName(), getUserCodeClassLoader());</span><br><span class="line">        timerService = <span class="keyword">new</span> SystemProcessingTimeService(<span class="keyword">this</span>, getCheckpointLock(), timerThreadFactory);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">//创建 OperatorChain，会加载每一个 operator，并调用 setup 方法</span></span><br><span class="line">      operatorChain = <span class="keyword">new</span> OperatorChain&lt;&gt;(<span class="keyword">this</span>, recordWriters);</span><br><span class="line">      headOperator = operatorChain.getHeadOperator();</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 和具体 StreamTask 子类相关的初始化操作</span></span><br><span class="line">      init();</span><br><span class="line"></span><br><span class="line">      <span class="comment">// save the work of reloading state, etc, if the task is already canceled</span></span><br><span class="line">      <span class="keyword">if</span> (canceled) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> CancelTaskException();</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// we need to make sure that any triggers scheduled in open() cannot be</span></span><br><span class="line">      <span class="comment">// executed before all operators are opened</span></span><br><span class="line">      <span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">        <span class="comment">// both the following operations are protected by the lock</span></span><br><span class="line">        <span class="comment">// so that we avoid race conditions in the case that initializeState()</span></span><br><span class="line">        <span class="comment">// registers a timer, that fires before the open() is called.</span></span><br><span class="line">        <span class="comment">//状态初始化</span></span><br><span class="line">        initializeState();</span><br><span class="line">        <span class="comment">//open</span></span><br><span class="line">        openAllOperators();</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// final check to exit early before starting to run</span></span><br><span class="line">      <span class="keyword">if</span> (canceled) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> CancelTaskException();</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// let the task do its work</span></span><br><span class="line">      isRunning = <span class="keyword">true</span>;</span><br><span class="line">      <span class="comment">//开始处理数据，这里通常是个循环</span></span><br><span class="line">      run();</span><br><span class="line"></span><br><span class="line">      <span class="comment">// if this left the run() method cleanly despite the fact that this was canceled,</span></span><br><span class="line">      <span class="comment">// make sure the "clean shutdown" is not attempted</span></span><br><span class="line">      <span class="keyword">if</span> (canceled) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> CancelTaskException();</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">        <span class="comment">// this is part of the main logic, so if this fails, the task is considered failed</span></span><br><span class="line">        closeAllOperators();</span><br><span class="line">        <span class="comment">// make sure no new timers can come</span></span><br><span class="line">        timerService.quiesce();</span><br><span class="line">        <span class="comment">// only set the StreamTask to not running after all operators have been closed!</span></span><br><span class="line">        <span class="comment">// See FLINK-7430</span></span><br><span class="line">        isRunning = <span class="keyword">false</span>;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// make sure all timers finish</span></span><br><span class="line">      timerService.awaitPendingAfterQuiesce();</span><br><span class="line">      <span class="comment">// make sure all buffered data is flushed</span></span><br><span class="line">      operatorChain.flushOutputs();</span><br><span class="line">      <span class="comment">// make an attempt to dispose the operators such that failures in the dispose call</span></span><br><span class="line">      <span class="comment">// still let the computation fail</span></span><br><span class="line">      tryDisposeAllOperators();</span><br><span class="line">      disposed = <span class="keyword">true</span>;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      <span class="comment">//cleanup</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="OperatorChain"><a href="#OperatorChain" class="headerlink" title="OperatorChain"></a>OperatorChain</h3><p>前面已经提了很多次 <code>OperatorChain</code>，下面我们就看下 <code>OperatorChain</code> 是如何加载的，主要逻辑都在 <code>OperatorChain</code> 的构造函数中：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">OperatorChain</span>&lt;<span class="title">OUT</span>, <span class="title">OP</span> <span class="keyword">extends</span> <span class="title">StreamOperator</span>&lt;<span class="title">OUT</span>&gt;&gt; <span class="keyword">implements</span> <span class="title">StreamStatusMaintainer</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">OperatorChain</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">			StreamTask&lt;OUT, OP&gt; containingTask,</span></span></span><br><span class="line"><span class="function"><span class="params">			List&lt;RecordWriter&lt;SerializationDelegate&lt;StreamRecord&lt;OUT&gt;&gt;&gt;&gt; recordWriters)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> ClassLoader userCodeClassloader = containingTask.getUserCodeClassLoader();</span><br><span class="line">    <span class="keyword">final</span> StreamConfig configuration = containingTask.getConfiguration();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//head operator</span></span><br><span class="line">    headOperator = configuration.getStreamOperator(userCodeClassloader);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//OperatorChain 内部所有的 operator 的配置</span></span><br><span class="line">    <span class="comment">// we read the chained configs, and the order of record writer registrations by output name</span></span><br><span class="line">    Map&lt;Integer, StreamConfig&gt; chainedConfigs = configuration.getTransitiveChainedTaskConfigsWithSelf(userCodeClassloader);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// create the final output stream writers</span></span><br><span class="line">    <span class="comment">// we iterate through all the out edges from this job vertex and create a stream output</span></span><br><span class="line">    <span class="comment">// 所有的输出边，这是对外输出，不包含内部 operator 之间的的数据传输</span></span><br><span class="line">    List&lt;StreamEdge&gt; outEdgesInOrder = configuration.getOutEdgesInOrder(userCodeClassloader);</span><br><span class="line">    Map&lt;StreamEdge, RecordWriterOutput&lt;?&gt;&gt; streamOutputMap = <span class="keyword">new</span> HashMap&lt;&gt;(outEdgesInOrder.size());</span><br><span class="line">    <span class="keyword">this</span>.streamOutputs = <span class="keyword">new</span> RecordWriterOutput&lt;?&gt;[outEdgesInOrder.size()];</span><br><span class="line">    <span class="comment">// from here on, we need to make sure that the output writers are shut down again on failure</span></span><br><span class="line">    <span class="keyword">boolean</span> success = <span class="keyword">false</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">//对外输出的 RecordWriterOutput</span></span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; outEdgesInOrder.size(); i++) &#123;</span><br><span class="line">        StreamEdge outEdge = outEdgesInOrder.get(i);</span><br><span class="line"></span><br><span class="line">        RecordWriterOutput&lt;?&gt; streamOutput = createStreamOutput(</span><br><span class="line">          recordWriters.get(i),</span><br><span class="line">          outEdge,</span><br><span class="line">          chainedConfigs.get(outEdge.getSourceId()),</span><br><span class="line">          containingTask.getEnvironment());</span><br><span class="line"></span><br><span class="line">        <span class="keyword">this</span>.streamOutputs[i] = streamOutput;</span><br><span class="line">        streamOutputMap.put(outEdge, streamOutput);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// we create the chain of operators and grab the collector that leads into the chain</span></span><br><span class="line">      List&lt;StreamOperator&lt;?&gt;&gt; allOps = <span class="keyword">new</span> ArrayList&lt;&gt;(chainedConfigs.size());</span><br><span class="line">      <span class="comment">//这里会递归调用，为 OperatorChain 内部的所有的 Operator 都创建 output</span></span><br><span class="line">      <span class="keyword">this</span>.chainEntryPoint = createOutputCollector(</span><br><span class="line">        containingTask,</span><br><span class="line">        configuration,</span><br><span class="line">        chainedConfigs,</span><br><span class="line">        userCodeClassloader,</span><br><span class="line">        streamOutputMap,</span><br><span class="line">        allOps);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (headOperator != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">//chainEntryPoint 是 headOperator 的 output</span></span><br><span class="line">        WatermarkGaugeExposingOutput&lt;StreamRecord&lt;OUT&gt;&gt; output = getChainEntryPoint();</span><br><span class="line">        <span class="comment">//header operator 调用 setup 方法</span></span><br><span class="line">        headOperator.setup(containingTask, configuration, output);</span><br><span class="line"></span><br><span class="line">        headOperator.getMetricGroup().gauge(MetricNames.IO_CURRENT_OUTPUT_WATERMARK, output.getWatermarkGauge());</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// add head operator to end of chain</span></span><br><span class="line">      allOps.add(headOperator);</span><br><span class="line">      <span class="keyword">this</span>.allOperators = allOps.toArray(<span class="keyword">new</span> StreamOperator&lt;?&gt;[allOps.size()]);</span><br><span class="line">      success = <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">finally</span> &#123;</span><br><span class="line">      <span class="comment">// make sure we clean up after ourselves in case of a failure after acquiring</span></span><br><span class="line">      <span class="comment">// the first resources</span></span><br><span class="line">      <span class="keyword">if</span> (!success) &#123;</span><br><span class="line">        <span class="keyword">for</span> (RecordWriterOutput&lt;?&gt; output : <span class="keyword">this</span>.streamOutputs) &#123;</span><br><span class="line">          <span class="keyword">if</span> (output != <span class="keyword">null</span>) &#123;</span><br><span class="line">            output.close();</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//创建 output collector</span></span><br><span class="line">  <span class="keyword">private</span> &lt;T&gt; WatermarkGaugeExposingOutput&lt;StreamRecord&lt;T&gt;&gt; createOutputCollector(</span><br><span class="line">      StreamTask&lt;?, ?&gt; containingTask,</span><br><span class="line">      StreamConfig operatorConfig,</span><br><span class="line">      Map&lt;Integer, StreamConfig&gt; chainedConfigs,</span><br><span class="line">      ClassLoader userCodeClassloader,</span><br><span class="line">      Map&lt;StreamEdge, RecordWriterOutput&lt;?&gt;&gt; streamOutputs,</span><br><span class="line">      List&lt;StreamOperator&lt;?&gt;&gt; allOperators) &#123;</span><br><span class="line">    List&lt;Tuple2&lt;WatermarkGaugeExposingOutput&lt;StreamRecord&lt;T&gt;&gt;, StreamEdge&gt;&gt; allOutputs = <span class="keyword">new</span> ArrayList&lt;&gt;(<span class="number">4</span>);</span><br><span class="line">    <span class="comment">// create collectors for the network outputs</span></span><br><span class="line">    <span class="keyword">for</span> (StreamEdge outputEdge : operatorConfig.getNonChainedOutputs(userCodeClassloader)) &#123;</span><br><span class="line">      <span class="meta">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)</span><br><span class="line">      RecordWriterOutput&lt;T&gt; output = (RecordWriterOutput&lt;T&gt;) streamOutputs.get(outputEdge);</span><br><span class="line"></span><br><span class="line">      allOutputs.add(<span class="keyword">new</span> Tuple2&lt;&gt;(output, outputEdge));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Create collectors for the chained outputs</span></span><br><span class="line">    <span class="comment">// OperatorChain 内部 Operator 之间的边</span></span><br><span class="line">    <span class="keyword">for</span> (StreamEdge outputEdge : operatorConfig.getChainedOutputs(userCodeClassloader)) &#123;</span><br><span class="line">      <span class="keyword">int</span> outputId = outputEdge.getTargetId();</span><br><span class="line">      StreamConfig chainedOpConfig = chainedConfigs.get(outputId);</span><br><span class="line"></span><br><span class="line">      <span class="comment">//创建当前节点的下游节点，并返回当前节点的 output</span></span><br><span class="line">      <span class="comment">//createChainedOperator 在创建 operator 的时候，会调用 createOutputCollector 为 operator 创建 output</span></span><br><span class="line">      <span class="comment">//随意会形成递归调用关系，所有的 operator 以及它们的 output 都会被创建出来</span></span><br><span class="line">      WatermarkGaugeExposingOutput&lt;StreamRecord&lt;T&gt;&gt; output = createChainedOperator(</span><br><span class="line">        containingTask,</span><br><span class="line">        chainedOpConfig,</span><br><span class="line">        chainedConfigs,</span><br><span class="line">        userCodeClassloader,</span><br><span class="line">        streamOutputs,</span><br><span class="line">        allOperators,</span><br><span class="line">        outputEdge.getOutputTag());</span><br><span class="line">      allOutputs.add(<span class="keyword">new</span> Tuple2&lt;&gt;(output, outputEdge));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// if there are multiple outputs, or the outputs are directed, we need to</span></span><br><span class="line">    <span class="comment">// wrap them as one output</span></span><br><span class="line">    List&lt;OutputSelector&lt;T&gt;&gt; selectors = operatorConfig.getOutputSelectors(userCodeClassloader);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (selectors == <span class="keyword">null</span> || selectors.isEmpty()) &#123;</span><br><span class="line">      <span class="comment">// simple path, no selector necessary</span></span><br><span class="line">      <span class="comment">//只有一个输出</span></span><br><span class="line">      <span class="keyword">if</span> (allOutputs.size() == <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> allOutputs.get(<span class="number">0</span>).f0;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">//不止有一个输出，需要使用 BroadcastingOutputCollector 进行封装</span></span><br><span class="line">        <span class="comment">// send to N outputs. Note that this includes the special case</span></span><br><span class="line">        <span class="comment">// of sending to zero outputs</span></span><br><span class="line">        <span class="meta">@SuppressWarnings</span>(&#123;<span class="string">"unchecked"</span>, <span class="string">"rawtypes"</span>&#125;)</span><br><span class="line">        Output&lt;StreamRecord&lt;T&gt;&gt;[] asArray = <span class="keyword">new</span> Output[allOutputs.size()];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; allOutputs.size(); i++) &#123;</span><br><span class="line">          asArray[i] = allOutputs.get(i).f0;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// This is the inverse of creating the normal ChainingOutput.</span></span><br><span class="line">        <span class="comment">// If the chaining output does not copy we need to copy in the broadcast output,</span></span><br><span class="line">        <span class="comment">// otherwise multi-chaining would not work correctly.</span></span><br><span class="line">        <span class="keyword">if</span> (containingTask.getExecutionConfig().isObjectReuseEnabled()) &#123;</span><br><span class="line">          <span class="keyword">return</span> <span class="keyword">new</span> CopyingBroadcastingOutputCollector&lt;&gt;(asArray, <span class="keyword">this</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span>  &#123;</span><br><span class="line">          <span class="keyword">return</span> <span class="keyword">new</span> BroadcastingOutputCollector&lt;&gt;(asArray, <span class="keyword">this</span>);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// selector present, more complex routing necessary</span></span><br><span class="line">      <span class="comment">// 存在 selector，用 DirectedOutput 进行封装</span></span><br><span class="line">      <span class="comment">// This is the inverse of creating the normal ChainingOutput.</span></span><br><span class="line">      <span class="comment">// If the chaining output does not copy we need to copy in the broadcast output,</span></span><br><span class="line">      <span class="comment">// otherwise multi-chaining would not work correctly.</span></span><br><span class="line">      <span class="keyword">if</span> (containingTask.getExecutionConfig().isObjectReuseEnabled()) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> CopyingDirectedOutput&lt;&gt;(selectors, allOutputs);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> DirectedOutput&lt;&gt;(selectors, allOutputs);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> &lt;IN, OUT&gt; WatermarkGaugeExposingOutput&lt;StreamRecord&lt;IN&gt;&gt; createChainedOperator(</span><br><span class="line">      StreamTask&lt;?, ?&gt; containingTask,</span><br><span class="line">      StreamConfig operatorConfig,</span><br><span class="line">      Map&lt;Integer, StreamConfig&gt; chainedConfigs,</span><br><span class="line">      ClassLoader userCodeClassloader,</span><br><span class="line">      Map&lt;StreamEdge, RecordWriterOutput&lt;?&gt;&gt; streamOutputs,</span><br><span class="line">      List&lt;StreamOperator&lt;?&gt;&gt; allOperators,</span><br><span class="line">      OutputTag&lt;IN&gt; outputTag) &#123;</span><br><span class="line">    <span class="comment">// create the output that the operator writes to first. this may recursively create more operators</span></span><br><span class="line">    <span class="comment">// 为当前 Operator 创建 output</span></span><br><span class="line">    WatermarkGaugeExposingOutput&lt;StreamRecord&lt;OUT&gt;&gt; chainedOperatorOutput = createOutputCollector(</span><br><span class="line">      containingTask,</span><br><span class="line">      operatorConfig,</span><br><span class="line">      chainedConfigs,</span><br><span class="line">      userCodeClassloader,</span><br><span class="line">      streamOutputs,</span><br><span class="line">      allOperators);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// now create the operator and give it the output collector to write its output to</span></span><br><span class="line">    <span class="comment">//从 StreamConfig 中取出当前 Operator</span></span><br><span class="line">    OneInputStreamOperator&lt;IN, OUT&gt; chainedOperator = operatorConfig.getStreamOperator(userCodeClassloader);</span><br><span class="line"></span><br><span class="line">    chainedOperator.setup(containingTask, operatorConfig, chainedOperatorOutput);</span><br><span class="line"></span><br><span class="line">    allOperators.add(chainedOperator);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//这里是在为当前 operator 前向的 operator 创建 output</span></span><br><span class="line">    <span class="comment">//所以当前 operator 被传递给前一个 operator 的 output，这样前一个 operator 的输出就可以直接调用当前 operator</span></span><br><span class="line">    WatermarkGaugeExposingOutput&lt;StreamRecord&lt;IN&gt;&gt; currentOperatorOutput;</span><br><span class="line">    <span class="keyword">if</span> (containingTask.getExecutionConfig().isObjectReuseEnabled()) &#123;</span><br><span class="line">      currentOperatorOutput = <span class="keyword">new</span> ChainingOutput&lt;&gt;(chainedOperator, <span class="keyword">this</span>, outputTag);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">      TypeSerializer&lt;IN&gt; inSerializer = operatorConfig.getTypeSerializerIn1(userCodeClassloader);</span><br><span class="line">      currentOperatorOutput = <span class="keyword">new</span> CopyingChainingOutput&lt;&gt;(chainedOperator, inSerializer, outputTag, <span class="keyword">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// wrap watermark gauges since registered metrics must be unique</span></span><br><span class="line">    chainedOperator.getMetricGroup().gauge(MetricNames.IO_CURRENT_INPUT_WATERMARK, currentOperatorOutput.getWatermarkGauge()::getValue);</span><br><span class="line">    chainedOperator.getMetricGroup().gauge(MetricNames.IO_CURRENT_OUTPUT_WATERMARK, chainedOperatorOutput.getWatermarkGauge()::getValue);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> currentOperatorOutput;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的主要逻辑其实就是递归地创建 <code>OpeartorChain</code> 内部所有的 <code>StreamOperator</code>，并为每一个 <code>StreamOperator</code> 创建 <code>Output</code> collecto，结合本文上面对 <code>Output</code> 的介绍应该就很容易理解了。</p>
+<h3 id="几类不同的-StreamTask"><a href="#几类不同的-StreamTask" class="headerlink" title="几类不同的 StreamTask"></a>几类不同的 StreamTask</h3><p><code>StreamTask</code> 的 <code>init</code> 方法和 <code>run</code> 方法等都是在子类中自行实现的。下面我们先主要看先 <code>SourceStramTask</code>, <code>OneInputStreamTask</code> 和 <code>TwoInputStreamTask</code>。对于在迭代场景下使用的 <code>StreamIterationHead</code> 和 <code>StreamIterationTail</code> 这里先不加以介绍了，留在后面分析迭代任务的实现时再进行说明。</p>
+<h4 id="SourceStreamTask"><a href="#SourceStreamTask" class="headerlink" title="SourceStreamTask"></a>SourceStreamTask</h4><p>顾名思义，<code>SourceStreamTask</code> 负责为下游任务生成数据，因此它没有输入，只负责对外输出记录。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SourceStreamTask</span>&lt;<span class="title">OUT</span>, <span class="title">SRC</span> <span class="keyword">extends</span> <span class="title">SourceFunction</span>&lt;<span class="title">OUT</span>&gt;, <span class="title">OP</span> <span class="keyword">extends</span> <span class="title">StreamSource</span>&lt;<span class="title">OUT</span>, <span class="title">SRC</span>&gt;&gt;</span></span><br><span class="line"><span class="class">	<span class="keyword">extends</span> <span class="title">StreamTask</span>&lt;<span class="title">OUT</span>, <span class="title">OP</span>&gt; </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// we check if the source is actually inducing the checkpoints, rather</span></span><br><span class="line">    <span class="comment">// than the trigger</span></span><br><span class="line">    SourceFunction&lt;?&gt; source = headOperator.getUserFunction();</span><br><span class="line">    <span class="comment">// 如果用户提供的 SourceFunction 是 ExternallyInducedSource，则需要创建一个 CheckpointTrigger 对象提供给 ExternallyInducedSource</span></span><br><span class="line">    <span class="keyword">if</span> (source <span class="keyword">instanceof</span> ExternallyInducedSource) &#123;</span><br><span class="line">      externallyInducedCheckpoints = <span class="keyword">true</span>;</span><br><span class="line"></span><br><span class="line">      ExternallyInducedSource.CheckpointTrigger triggerHook = <span class="keyword">new</span> ExternallyInducedSource.CheckpointTrigger() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">triggerCheckpoint</span><span class="params">(<span class="keyword">long</span> checkpointId)</span> <span class="keyword">throws</span> FlinkException </span>&#123;</span><br><span class="line">          <span class="comment">// TODO - we need to see how to derive those. We should probably not encode this in the</span></span><br><span class="line">          <span class="comment">// TODO -   source's trigger message, but do a handshake in this task between the trigger</span></span><br><span class="line">          <span class="comment">// TODO -   message from the master, and the source's trigger notification</span></span><br><span class="line">          <span class="keyword">final</span> CheckpointOptions checkpointOptions = CheckpointOptions.forCheckpointWithDefaultLocation();</span><br><span class="line">          <span class="keyword">final</span> <span class="keyword">long</span> timestamp = System.currentTimeMillis();</span><br><span class="line"></span><br><span class="line">          <span class="keyword">final</span> CheckpointMetaData checkpointMetaData = <span class="keyword">new</span> CheckpointMetaData(checkpointId, timestamp);</span><br><span class="line"></span><br><span class="line">          <span class="keyword">try</span> &#123;</span><br><span class="line">            SourceStreamTask.<span class="keyword">super</span>.triggerCheckpoint(checkpointMetaData, checkpointOptions, <span class="keyword">false</span>);</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">catch</span> (RuntimeException | FlinkException e) &#123;</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> FlinkException(e.getMessage(), e);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;;</span><br><span class="line"></span><br><span class="line">      ((ExternallyInducedSource&lt;?, ?&gt;) source).setCheckpointTrigger(triggerHook);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="comment">// 对source而言，就是调用 head operator 的 run 方法</span></span><br><span class="line">    <span class="comment">//head operator 是一个 StreamSource，最终会调用用户提供的 SourceFunction 的 run 方法，一般是一个循环</span></span><br><span class="line">    <span class="comment">//head operator 通过 Output 将数据传递给下游的算子</span></span><br><span class="line">    headOperator.run(getCheckpointLock(), getStreamStatusMaintainer());</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="OneInputStreamTask"><a href="#OneInputStreamTask" class="headerlink" title="OneInputStreamTask"></a>OneInputStreamTask</h4><p>对于 <code>OneInputStreamTask</code>，它的主要执行逻辑就是不断循环调用 <code>StreamInputProcessor.processInpt()</code> 方法。</p>
+<p><code>StreamInputProcessor</code> 从缓冲区中读取记录或 watermark 等消息，然后调用 <code>streamOperator.processElement(record)</code> 交给 head operator 进行处理，并依次将处理结果交给下游算子。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">OneInputStreamTask</span>&lt;<span class="title">IN</span>, <span class="title">OUT</span>&gt; <span class="keyword">extends</span> <span class="title">StreamTask</span>&lt;<span class="title">OUT</span>, <span class="title">OneInputStreamOperator</span>&lt;<span class="title">IN</span>, <span class="title">OUT</span>&gt;&gt; </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">init</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="comment">//创建一个 StreamInputProcessor</span></span><br><span class="line">    StreamConfig configuration = getConfiguration();</span><br><span class="line"></span><br><span class="line">    TypeSerializer&lt;IN&gt; inSerializer = configuration.getTypeSerializerIn1(getUserCodeClassLoader());</span><br><span class="line">    <span class="keyword">int</span> numberOfInputs = configuration.getNumberOfInputs();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (numberOfInputs &gt; <span class="number">0</span>) &#123;</span><br><span class="line">      InputGate[] inputGates = getEnvironment().getAllInputGates();</span><br><span class="line"></span><br><span class="line">      inputProcessor = <span class="keyword">new</span> StreamInputProcessor&lt;&gt;(</span><br><span class="line">          inputGates,</span><br><span class="line">          inSerializer,</span><br><span class="line">          <span class="keyword">this</span>,</span><br><span class="line">          configuration.getCheckpointMode(),</span><br><span class="line">          getCheckpointLock(),</span><br><span class="line">          getEnvironment().getIOManager(),</span><br><span class="line">          getEnvironment().getTaskManagerInfo().getConfiguration(),</span><br><span class="line">          getStreamStatusMaintainer(),</span><br><span class="line">          <span class="keyword">this</span>.headOperator,</span><br><span class="line">          getEnvironment().getMetricGroup().getIOMetricGroup(),</span><br><span class="line">          inputWatermarkGauge);</span><br><span class="line">    &#125;</span><br><span class="line">    headOperator.getMetricGroup().gauge(MetricNames.IO_CURRENT_INPUT_WATERMARK, <span class="keyword">this</span>.inputWatermarkGauge);</span><br><span class="line">    <span class="comment">// wrap watermark gauge since registered metrics must be unique</span></span><br><span class="line">    getEnvironment().getMetricGroup().gauge(MetricNames.IO_CURRENT_INPUT_WATERMARK, <span class="keyword">this</span>.inputWatermarkGauge::getValue);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="comment">// cache processor reference on the stack, to make the code more JIT friendly</span></span><br><span class="line">    <span class="keyword">final</span> StreamInputProcessor&lt;IN&gt; inputProcessor = <span class="keyword">this</span>.inputProcessor;</span><br><span class="line">    <span class="comment">//循环调用 StreamInputProcessor.processInput 方法</span></span><br><span class="line">    <span class="keyword">while</span> (running &amp;&amp; inputProcessor.processInput()) &#123;</span><br><span class="line">      <span class="comment">// all the work happens in the "processInput" method</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StreamInputProcessor</span>&lt;<span class="title">IN</span>&gt; </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">processInput</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (isFinished) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (numRecordsIn == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        numRecordsIn = ((OperatorMetricGroup) streamOperator.getMetricGroup()).getIOMetricGroup().getNumRecordsInCounter();</span><br><span class="line">      &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        LOG.warn(<span class="string">"An exception occurred during the metrics setup."</span>, e);</span><br><span class="line">        numRecordsIn = <span class="keyword">new</span> SimpleCounter();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//这里虽然是一个while循环，但其实只会处理一条记录，因为单条记录可能需要多个 buffer 传输</span></span><br><span class="line">    <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (currentRecordDeserializer != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">//反序列化</span></span><br><span class="line">        DeserializationResult result = currentRecordDeserializer.getNextRecord(deserializationDelegate);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (result.isBufferConsumed()) &#123;</span><br><span class="line">          <span class="comment">//如果buffer里面的数据已经被消费了，则归还buffer</span></span><br><span class="line">          currentRecordDeserializer.getCurrentBuffer().recycleBuffer();</span><br><span class="line">          currentRecordDeserializer = <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (result.isFullRecord()) &#123;</span><br><span class="line">          <span class="comment">//得到了一条完整的记录</span></span><br><span class="line">          StreamElement recordOrMark = deserializationDelegate.getInstance();</span><br><span class="line"></span><br><span class="line">          <span class="keyword">if</span> (recordOrMark.isWatermark()) &#123;</span><br><span class="line">            <span class="comment">// handle watermark</span></span><br><span class="line">            statusWatermarkValve.inputWatermark(recordOrMark.asWatermark(), currentChannel);</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">          &#125; <span class="keyword">else</span> <span class="keyword">if</span> (recordOrMark.isStreamStatus()) &#123;</span><br><span class="line">            <span class="comment">// handle stream status</span></span><br><span class="line">            statusWatermarkValve.inputStreamStatus(recordOrMark.asStreamStatus(), currentChannel);</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">          &#125; <span class="keyword">else</span> <span class="keyword">if</span> (recordOrMark.isLatencyMarker()) &#123;</span><br><span class="line">            <span class="comment">// handle latency marker</span></span><br><span class="line">            <span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">              streamOperator.processLatencyMarker(recordOrMark.asLatencyMarker());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">          &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// now we can do the actual processing</span></span><br><span class="line">            <span class="comment">//是一条正常的记录，调用 operator 的处理方法，最终会调用用户自定义的函数的处理方法</span></span><br><span class="line">            StreamRecord&lt;IN&gt; record = recordOrMark.asRecord();</span><br><span class="line">            <span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">              numRecordsIn.inc();</span><br><span class="line">              streamOperator.setKeyContextElement1(record);</span><br><span class="line">              streamOperator.processElement(record);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//处理完一条记录，结束本次调用</span></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">//获取下一个 BufferOrEvent，这是个阻塞的调用</span></span><br><span class="line">      <span class="keyword">final</span> BufferOrEvent bufferOrEvent = barrierHandler.getNextNonBlocked();</span><br><span class="line">      <span class="keyword">if</span> (bufferOrEvent != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (bufferOrEvent.isBuffer()) &#123;</span><br><span class="line">          <span class="comment">//如果是Buffer，要确定是哪个 channel 的，然后用对应 channel 的反序列化器解析</span></span><br><span class="line">          <span class="comment">//不同channel在反序列化的时候不能混淆</span></span><br><span class="line">          currentChannel = bufferOrEvent.getChannelIndex();</span><br><span class="line">          currentRecordDeserializer = recordDeserializers[currentChannel];</span><br><span class="line">          currentRecordDeserializer.setNextBuffer(bufferOrEvent.getBuffer());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">          <span class="comment">// Event received</span></span><br><span class="line">          <span class="keyword">final</span> AbstractEvent event = bufferOrEvent.getEvent();</span><br><span class="line">          <span class="keyword">if</span> (event.getClass() != EndOfPartitionEvent.class) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Unexpected event: "</span> + event);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">//表明上游结束了</span></span><br><span class="line">        isFinished = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">if</span> (!barrierHandler.isEmpty()) &#123;</span><br><span class="line">          <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Trailing data in checkpoint barrier handler."</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="TwoInputStreamTask"><a href="#TwoInputStreamTask" class="headerlink" title="TwoInputStreamTask"></a>TwoInputStreamTask</h4><p><code>TwoInputStreamTask</code> 和 <code>OneInputStreamTask</code> 的处理逻辑类似，只是要对两个上游的输入分别调用 <code>TwoInputStreamOperator.processElement1</code> 和 <code>TwoInputStreamOperator.processElement2</code> 进行处理。这里就不再赘述了。</p>
+<h2 id="小节"><a href="#小节" class="headerlink" title="小节"></a>小节</h2><p>Task 是 Flink 任务调度的最小单位。本文简要地介绍了 Task 的生命周期以及数据的处理的基本模式。通过 StreamTask -&gt; StreamOperator -&gt; User-define-function 这样的封装，用户自定义的数据处理逻辑最终得以调度执行。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://ci.apache.org/projects/flink/flink-docs-master/internals/task_lifecycle.html#interrupted-execution" target="_blank" rel="noopener">Task Lifecycle</a></li>
+</ul>
+<p>-EOF-</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Flink/" rel="tag">#Flink</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/flink-source-code-state/" rel="prev">Flink 源码阅读笔记（10）- State 管理</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/flink-source-code-data-exchange/" rel="next">Flink 源码阅读笔记（8）- Task 之间的数据传输</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+
+        
+          <div class="comments" id="comments">
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">JR</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">42</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">19</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://music.jrwang.me" target="_blank">Music</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://jrwang.me" target="_blank">Site</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Task-和-OperatorChain"><span class="nav-number">1.</span> <span class="nav-text">Task 和 OperatorChain</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#OperatorChain-内部的数据传递"><span class="nav-number">2.</span> <span class="nav-text">OperatorChain 内部的数据传递</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Task-的生命周期"><span class="nav-number">3.</span> <span class="nav-text">Task 的生命周期</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#任务调度"><span class="nav-number">3.1.</span> <span class="nav-text">任务调度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#启动-Task-线程"><span class="nav-number">3.2.</span> <span class="nav-text">启动 Task 线程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#StreamTask"><span class="nav-number">3.3.</span> <span class="nav-text">StreamTask</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OperatorChain"><span class="nav-number">3.4.</span> <span class="nav-text">OperatorChain</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#几类不同的-StreamTask"><span class="nav-number">3.5.</span> <span class="nav-text">几类不同的 StreamTask</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#SourceStreamTask"><span class="nav-number">3.5.1.</span> <span class="nav-text">SourceStreamTask</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#OneInputStreamTask"><span class="nav-number">3.5.2.</span> <span class="nav-text">OneInputStreamTask</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#TwoInputStreamTask"><span class="nav-number">3.5.3.</span> <span class="nav-text">TwoInputStreamTask</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小节"><span class="nav-number">4.</span> <span class="nav-text">小节</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <div class="copyright" >
+  
+  &copy; &nbsp;  2015 - 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JR</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="powered-by">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+<div class="theme-info">
+  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
+</div>
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+    
+
+  
+
+
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+</body>
+</html>

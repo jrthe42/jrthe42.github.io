@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1350px" height="800px" viewBox="0 0 1350 800" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 52.4 (67378) - http://www.bohemiancoding.com/sketch -->
+    <title>task slots</title>
+    <desc>Created with Sketch.</desc>
+    <g id="task-slots" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group" transform="translate(124.599304, 229.569010)">
+            <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="0.5" y="0.5" width="168" height="57"></rect>
+            <text id="PhysicalSlot" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="28.5505888" y="35">PhysicalSlot</tspan>
+            </text>
+        </g>
+        <g id="Group-4" transform="translate(639.004505, 67.861980)">
+            <g id="Group-Copy-3" transform="translate(0.371549, 0.000000)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="0.5" y="0.5" width="168" height="57"></rect>
+                <text id="PhysicalSlot" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="28.5505888" y="35">PhysicalSlot</tspan>
+                </text>
+            </g>
+            <g id="Group-Copy-4" transform="translate(0.371549, 121.192790)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="0.5" y="0.5" width="168" height="57"></rect>
+                <text id="MultiTaskSlot" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="21.7714712" y="35">MultiTaskSlot</tspan>
+                </text>
+            </g>
+            <path id="Line-12-Copy" d="M79.9207408,112.69279 L79.9207408,58 L79.9207408,57.5 L80.9207408,57.5 L80.9207408,58 L80.9207408,112.69279 L84.9207408,112.69279 L80.4207408,121.69279 L75.9207408,112.69279 L79.9207408,112.69279 Z" fill="#979797" fill-rule="nonzero"></path>
+            <text id="payload-copy" font-family="PingFangSC-Medium, PingFang SC" font-size="20" font-weight="400" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="84.1869176" y="95.5963951">payload</tspan>
+            </text>
+        </g>
+        <g id="Group-Copy" transform="translate(124.599304, 350.761800)">
+            <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="0.5" y="0.5" width="168" height="57"></rect>
+            <text id="SingleLogicalSlot" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="5.0450008" y="35">SingleLogicalSlot</tspan>
+            </text>
+        </g>
+        <g id="Group-Copy-2" transform="translate(124.599304, 463.000000)">
+            <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="0.5" y="0.5" width="168" height="57"></rect>
+            <text id="Execution" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="39.0579416" y="35">Execution</tspan>
+            </text>
+        </g>
+        <g id="Group-3" transform="translate(417.000000, 291.000000)">
+            <g id="Group-Copy-5" transform="translate(0.471297, 171.430990)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="0.5" y="0.5" width="168" height="57"></rect>
+                <text id="Execution" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="39.0579416" y="35">Execution</tspan>
+                </text>
+            </g>
+            <path id="Line-Copy" d="M84.4712967,162.93099 L84.4712967,131.31189 L84.4712967,130.81189 L85.4712967,130.81189 L85.4712967,131.31189 L85.4712967,162.93099 L89.4712967,162.93099 L84.9712967,171.93099 L80.4712967,162.93099 L84.4712967,162.93099 Z" fill="#979797" fill-rule="nonzero"></path>
+            <text id="payload-copy-2" font-family="PingFangSC-Medium, PingFang SC" font-size="20" font-weight="400" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="92.7374735" y="156.37144">payload</tspan>
+            </text>
+            <g id="Group-2" transform="translate(0.471297, 0.311890)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="1.41587791" y="0.705270645" width="166.880795" height="129"></rect>
+                <text id="SingleLogicalSlot" font-family="PingFangSC-Light, PingFang SC" font-size="18" font-weight="300" letter-spacing="-0.3255883" fill="#000000">
+                    <tspan x="20.8639944" y="115.44347">SingleLogicalSlot</tspan>
+                </text>
+                <text id="JobVertexID_1" font-family="PingFangSC-Light, PingFang SC" font-size="18" font-weight="300" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="29.5537465" y="84.2052706">JobVertexID_1</tspan>
+                </text>
+                <text id="SingleTaskSlot" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="16.7686289" y="35.6362606">SingleTaskSlot</tspan>
+                </text>
+                <path d="M0.915877907,58.4309899 L168.796673,58.4309899" id="Line-13" stroke="#979797" stroke-linecap="square" fill-rule="nonzero"></path>
+                <path d="M0.915877907,96.4434704 L168.796673,96.4434704" id="Line-14" stroke="#979797" stroke-linecap="square" fill-rule="nonzero"></path>
+            </g>
+        </g>
+        <g id="Group-3-Copy" transform="translate(639.516417, 291.311890)">
+            <g id="Group-Copy-5" transform="translate(0.471297, 171.430990)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="0.5" y="0.5" width="168" height="57"></rect>
+                <text id="Execution" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="39.0579416" y="35">Execution</tspan>
+                </text>
+            </g>
+            <path id="Line-Copy" d="M84.4712967,162.93099 L84.4712967,131.31189 L84.4712967,130.81189 L85.4712967,130.81189 L85.4712967,131.31189 L85.4712967,162.93099 L89.4712967,162.93099 L84.9712967,171.93099 L80.4712967,162.93099 L84.4712967,162.93099 Z" fill="#979797" fill-rule="nonzero"></path>
+            <text id="payload-copy-2" font-family="PingFangSC-Medium, PingFang SC" font-size="20" font-weight="400" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="92.7374735" y="156.37144">payload</tspan>
+            </text>
+            <g id="Group-2" transform="translate(0.471297, 0.311890)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="1.41587791" y="0.705270645" width="166.880795" height="129"></rect>
+                <text id="SingleLogicalSlot" font-family="PingFangSC-Light, PingFang SC" font-size="18" font-weight="300" letter-spacing="-0.3255883" fill="#000000">
+                    <tspan x="20.8639944" y="115.44347">SingleLogicalSlot</tspan>
+                </text>
+                <text id="JobVertexID_2" font-family="PingFangSC-Light, PingFang SC" font-size="18" font-weight="300" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="27.7177465" y="84.2052706">JobVertexID_2</tspan>
+                </text>
+                <text id="SingleTaskSlot" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="16.7686289" y="35.6362606">SingleTaskSlot</tspan>
+                </text>
+                <path d="M0.915877907,58.4309899 L168.796673,58.4309899" id="Line-13" stroke="#979797" stroke-linecap="square" fill-rule="nonzero"></path>
+                <path d="M0.915877907,96.4434704 L168.796673,96.4434704" id="Line-14" stroke="#979797" stroke-linecap="square" fill-rule="nonzero"></path>
+            </g>
+        </g>
+        <path id="Line-12" d="M208.599304,342.2618 L208.599304,287.56901 L208.599304,287.06901 L209.599304,287.06901 L209.599304,287.56901 L209.599304,342.2618 L213.599304,342.2618 L209.099304,351.2618 L204.599304,342.2618 L208.599304,342.2618 Z" fill="#979797" fill-rule="nonzero"></path>
+        <path id="Line" d="M208.599304,454.5 L208.599304,408.7618 L208.599304,408.2618 L209.599304,408.2618 L209.599304,408.7618 L209.599304,454.5 L213.599304,454.5 L209.099304,463.5 L204.599304,454.5 L208.599304,454.5 Z" fill="#979797" fill-rule="nonzero"></path>
+        <text id="payload" font-family="PingFangSC-Medium, PingFang SC" font-size="20" font-weight="400" letter-spacing="-0.3617648" fill="#000000">
+            <tspan x="212.865481" y="325.165405">payload</tspan>
+        </text>
+        <text id="payload" font-family="PingFangSC-Medium, PingFang SC" font-size="20" font-weight="400" letter-spacing="-0.3617648" fill="#000000">
+            <tspan x="212.865481" y="441.8809">payload</tspan>
+        </text>
+        <path id="Line-15" d="M510.213948,289.756997 L715.046997,246.565528 L715.536239,246.462366 L715.742564,247.440849 L715.253322,247.544012 L510.420273,290.735481 L511.245572,294.649415 L501.510758,292.103162 L509.388649,285.843063 L510.213948,289.756997 Z" fill="#979797" fill-rule="nonzero"></path>
+        <path id="Line-2" d="M714.650159,283.5 L714.650159,247.86198 L714.650159,247.36198 L715.650159,247.36198 L715.650159,247.86198 L715.650159,283.5 L719.650159,283.5 L715.150159,292.5 L710.650159,283.5 L714.650159,283.5 Z" fill="#979797" fill-rule="nonzero"></path>
+        <g id="Group-3-Copy-2" transform="translate(827.160354, 468.311890)">
+            <g id="Group-Copy-5" transform="translate(0.471297, 171.430990)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="0.5" y="0.5" width="168" height="57"></rect>
+                <text id="Execution" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="39.0579416" y="35">Execution</tspan>
+                </text>
+            </g>
+            <path id="Line-Copy" d="M84.4712967,162.93099 L84.4712967,131.31189 L84.4712967,130.81189 L85.4712967,130.81189 L85.4712967,131.31189 L85.4712967,162.93099 L89.4712967,162.93099 L84.9712967,171.93099 L80.4712967,162.93099 L84.4712967,162.93099 Z" fill="#979797" fill-rule="nonzero"></path>
+            <text id="payload-copy-2" font-family="PingFangSC-Medium, PingFang SC" font-size="20" font-weight="400" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="92.7374735" y="156.37144">payload</tspan>
+            </text>
+            <g id="Group-2" transform="translate(0.471297, 0.311890)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="1.41587791" y="0.705270645" width="166.880795" height="129"></rect>
+                <text id="SingleLogicalSlot" font-family="PingFangSC-Light, PingFang SC" font-size="18" font-weight="300" letter-spacing="-0.3255883" fill="#000000">
+                    <tspan x="20.8639944" y="115.44347">SingleLogicalSlot</tspan>
+                </text>
+                <text id="JobVertexID_3" font-family="PingFangSC-Light, PingFang SC" font-size="18" font-weight="300" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="27.7177465" y="84.2052706">JobVertexID_3</tspan>
+                </text>
+                <text id="SingleTaskSlot" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="16.7686289" y="35.6362606">SingleTaskSlot</tspan>
+                </text>
+                <path d="M0.915877907,58.4309899 L168.796673,58.4309899" id="Line-13" stroke="#979797" stroke-linecap="square" fill-rule="nonzero"></path>
+                <path d="M0.915877907,96.4434704 L168.796673,96.4434704" id="Line-14" stroke="#979797" stroke-linecap="square" fill-rule="nonzero"></path>
+            </g>
+        </g>
+        <g id="Group-3-Copy-3" transform="translate(1038.676771, 468.311890)">
+            <g id="Group-Copy-5" transform="translate(0.471297, 171.430990)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="0.5" y="0.5" width="168" height="57"></rect>
+                <text id="Execution" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="39.0579416" y="35">Execution</tspan>
+                </text>
+            </g>
+            <path id="Line-Copy" d="M84.4712967,162.93099 L84.4712967,131.31189 L84.4712967,130.81189 L85.4712967,130.81189 L85.4712967,131.31189 L85.4712967,162.93099 L89.4712967,162.93099 L84.9712967,171.93099 L80.4712967,162.93099 L84.4712967,162.93099 Z" fill="#979797" fill-rule="nonzero"></path>
+            <text id="payload-copy-2" font-family="PingFangSC-Medium, PingFang SC" font-size="20" font-weight="400" letter-spacing="-0.3617648" fill="#000000">
+                <tspan x="92.7374735" y="156.37144">payload</tspan>
+            </text>
+            <g id="Group-2" transform="translate(0.471297, 0.311890)">
+                <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="1.41587791" y="0.705270645" width="166.880795" height="129"></rect>
+                <text id="SingleLogicalSlot" font-family="PingFangSC-Light, PingFang SC" font-size="18" font-weight="300" letter-spacing="-0.3255883" fill="#000000">
+                    <tspan x="20.8639944" y="115.44347">SingleLogicalSlot</tspan>
+                </text>
+                <text id="JobVertexID_4" font-family="PingFangSC-Light, PingFang SC" font-size="18" font-weight="300" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="27.7177465" y="84.2052706">JobVertexID_4</tspan>
+                </text>
+                <text id="SingleTaskSlot" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+                    <tspan x="16.7686289" y="35.6362606">SingleTaskSlot</tspan>
+                </text>
+                <path d="M0.915877907,58.4309899 L168.796673,58.4309899" id="Line-13" stroke="#979797" stroke-linecap="square" fill-rule="nonzero"></path>
+                <path d="M0.915877907,96.4434704 L168.796673,96.4434704" id="Line-14" stroke="#979797" stroke-linecap="square" fill-rule="nonzero"></path>
+            </g>
+        </g>
+        <path id="Line-4" d="M1116.12036,464.90468 L993.904248,392.01668 L993.474819,391.760574 L993.98703,390.901715 L994.41646,391.157821 L1116.63257,464.045821 L1118.68142,460.610384 L1124.1062,469.085157 L1114.07152,468.340117 L1116.12036,464.90468 Z" fill="#979797" fill-rule="nonzero"></path>
+        <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" fill-rule="nonzero" x="909.5" y="292.5" width="169.160354" height="100"></rect>
+        <text id="CoLocationGroup-ID_1" font-family="PingFangSC-Light, PingFang SC" font-size="16" font-weight="300" letter-spacing="-0.3617648" fill="#000000">
+            <tspan x="915.906002" y="380.43099">CoLocationGroup ID_1</tspan>
+        </text>
+        <path d="M909,349.74288 L1079.16035,350.05477" id="Line-3" stroke="#979797" stroke-linecap="square" fill-rule="nonzero"></path>
+        <text id="MultiTaskSlot" font-family="PingFangSC-Semibold, PingFang SC" font-size="20" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+            <tspan x="931.431825" y="326.43099">MultiTaskSlot</tspan>
+        </text>
+        <path id="Line-16" d="M985.686632,291.165717 L715.072033,248.355838 L714.578175,248.277713 L714.734427,247.289995 L715.228285,247.368121 L985.842884,290.178 L986.467891,286.227131 L994.654213,292.078126 L985.061624,295.116586 L985.686632,291.165717 Z" fill="#979797" fill-rule="nonzero"></path>
+        <path id="Line-17" d="M921.012029,462.080146 L993.734875,392.638383 L994.096492,392.293081 L994.787096,393.016315 L994.425479,393.361617 L921.702632,462.80338 L924.465045,465.696315 L914.848226,468.657192 L918.249616,459.18721 L921.012029,462.080146 Z" fill="#979797" fill-rule="nonzero"></path>
+        <text id="children" font-family="PingFangSC-Light, PingFang SC" font-size="18" font-weight="300" letter-spacing="-0.3617648" fill="#000000">
+            <tspan x="725.160509" y="274.327385">children</tspan>
+        </text>
+        <text id="children-copy" font-family="PingFangSC-Light, PingFang SC" font-size="18" font-weight="300" letter-spacing="-0.3617648" fill="#000000">
+            <tspan x="973.23003" y="438.466243">children</tspan>
+        </text>
+        <text id="ROOT-Node" font-family="PingFangSC-Semibold, PingFang SC" font-size="18" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+            <tspan x="813.946371" y="226.48576">ROOT Node</tspan>
+        </text>
+        <text id="LEAF-Node" font-family="PingFangSC-Semibold, PingFang SC" font-size="18" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+            <tspan x="1211.61998" y="502.440986">LEAF Node</tspan>
+        </text>
+        <text id="a.-独享资源" font-family="PingFangSC-Semibold, PingFang SC" font-size="24" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+            <tspan x="127.106177" y="736">a. 独享资源</tspan>
+        </text>
+        <text id="b.-共享资源" font-family="PingFangSC-Semibold, PingFang SC" font-size="24" font-weight="500" letter-spacing="-0.3617648" fill="#000000">
+            <tspan x="687.246177" y="736">b. 共享资源</tspan>
+        </text>
+    </g>
+</svg>
