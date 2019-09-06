@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 384" width="1024" height="384">
+  <defs>
+    <font-face font-family="Helvetica Neue" font-size="24" panose-1="2 0 5 3 0 0 0 2 0 4" units-per-em="1000" underline-position="-100" underline-thickness="50" slope="0" x-height="517" cap-height="714" ascent="951.9958" descent="-212.99744" font-weight="400">
+      <font-face-src>
+        <font-face-name name="HelveticaNeue"/>
+      </font-face-src>
+    </font-face>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.8 
+    <dc:date>2019-09-04 03:16:13 +0000</dc:date>
+  </metadata>
+  <g id="Canvas_1" fill-opacity="1" stroke-dasharray="none" stroke="none" stroke-opacity="1" fill="none">
+    <title>Canvas 1</title>
+    <rect fill="#eff2f4" x="0" y="0" width="1024" height="384"/>
+    <g id="Canvas_1: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_20">
+        <circle cx="157.66667" cy="192" r="75.0001198426422" fill="#6b6774"/>
+        <text transform="translate(102.66667 177.664)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="24" font-weight="400" fill="black" x="24.34" y="23">Parse</tspan>
+        </text>
+      </g>
+      <g id="Graphic_21">
+        <circle cx="391" cy="192" r="75.0001198426422" fill="#24c687"/>
+        <text transform="translate(336 177.664)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="24" font-weight="400" fill="black" x="12.772" y="23">Validate</tspan>
+        </text>
+      </g>
+      <g id="Graphic_22">
+        <circle cx="624.3333" cy="192" r="75.0001198426422" fill="#f9d987"/>
+        <text transform="translate(569.3333 177.664)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="24" font-weight="400" fill="black" x="7.216" y="23">Optimize</tspan>
+        </text>
+      </g>
+      <g id="Graphic_23">
+        <circle cx="857.6667" cy="192" r="75.0001198426422" fill="#ff9fa0"/>
+        <text transform="translate(802.6667 177.664)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="24" font-weight="400" fill="black" x="11.668" y="23">Execute</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>

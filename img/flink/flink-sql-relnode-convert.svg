@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 768" width="1024" height="768">
+  <defs>
+    <font-face font-family="Helvetica Neue" font-size="16" panose-1="2 0 5 3 0 0 0 2 0 4" units-per-em="1000" underline-position="-100" underline-thickness="50" slope="0" x-height="517" cap-height="714" ascent="951.9958" descent="-212.99744" font-weight="400">
+      <font-face-src>
+        <font-face-name name="HelveticaNeue"/>
+      </font-face-src>
+    </font-face>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -3 7 6" markerWidth="7" markerHeight="6" color="#7f8080">
+      <g>
+        <path d="M 4.8 0 L 0 -1.8 L 0 1.8 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_2" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -4 10 8" markerWidth="10" markerHeight="8" color="#7f8080">
+      <g>
+        <path d="M 8 0 L 0 -3 L 0 3 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.8 
+    <dc:date>2019-09-04 03:16:13 +0000</dc:date>
+  </metadata>
+  <g id="Canvas_3" fill-opacity="1" stroke-dasharray="none" stroke="none" stroke-opacity="1" fill="none">
+    <title>Canvas 3</title>
+    <rect fill="#eff2f4" x="0" y="0" width="1024" height="768"/>
+    <g id="Canvas_3: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_30">
+        <circle cx="198" cy="165" r="61.0000974720157" fill="#79d9cf"/>
+        <text transform="translate(154.2 146.552)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="19.064" y="15">Calcite</tspan>
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="12.84" y="33.448">RelNode</tspan>
+        </text>
+      </g>
+      <g id="Graphic_31">
+        <circle cx="515.7528" cy="165" r="61.0000974720157" fill="#f19b97"/>
+        <text transform="translate(471.9528 146.552)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="1.28" y="15">FlinkLogical</tspan>
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="32.248" y="33.448">Rel</tspan>
+        </text>
+      </g>
+      <g id="Graphic_32">
+        <circle cx="833.5056" cy="165" r="61.0000974720157" fill="#fcd866"/>
+        <text transform="translate(789.7056 146.552)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="3.352" y="15">FlinkPhysic</tspan>
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="26.176" y="33.448">alRel</tspan>
+        </text>
+      </g>
+      <g id="Line_33">
+        <line x1="259.00003" y1="165" x2="441.8528" y2="165" marker-end="url(#FilledArrow_Marker)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="16.0,10.0" stroke-width="2"/>
+      </g>
+      <g id="Line_34">
+        <line x1="576.75284" y1="165" x2="759.6056" y2="165" marker-end="url(#FilledArrow_Marker)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="16.0,10.0" stroke-width="2"/>
+      </g>
+      <g id="Graphic_35">
+        <text transform="translate(268.33095 132.64679)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x=".288" y="15">LOGICAL_OPT_RULES</tspan>
+        </text>
+      </g>
+      <g id="Graphic_36">
+        <text transform="translate(587.6444 132.64679)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x=".06" y="15">PHYSICAL_OPT_RULES</tspan>
+        </text>
+      </g>
+      <g id="Group_48">
+        <g id="Graphic_37">
+          <path d="M 126 320 L 239 320 C 241.76142 320 244 322.23858 244 325 L 244 354 C 244 356.76142 241.76142 359 239 359 L 126 359 C 123.23858 359 121 356.76142 121 354 L 121 325 C 121 322.23858 123.23858 320 126 320 Z" fill="#79d9cf"/>
+          <path d="M 126 320 L 239 320 C 241.76142 320 244 322.23858 244 325 L 244 354 C 244 356.76142 241.76142 359 239 359 L 126 359 C 123.23858 359 121 356.76142 121 354 L 121 325 C 121 322.23858 123.23858 320 126 320 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(126 330.276)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="15.164" y="15">LogicalSink</tspan>
+          </text>
+        </g>
+        <g id="Graphic_38">
+          <path d="M 126 394.33333 L 239 394.33333 C 241.76142 394.33333 244 396.5719 244 399.33333 L 244 428.33333 C 244 431.09476 241.76142 433.33333 239 433.33333 L 126 433.33333 C 123.23858 433.33333 121 431.09476 121 428.33333 L 121 399.33333 C 121 396.5719 123.23858 394.33333 126 394.33333 Z" fill="#79d9cf"/>
+          <path d="M 126 394.33333 L 239 394.33333 C 241.76142 394.33333 244 396.5719 244 399.33333 L 244 428.33333 C 244 431.09476 241.76142 433.33333 239 433.33333 L 126 433.33333 C 123.23858 433.33333 121 431.09476 121 428.33333 L 121 399.33333 C 121 396.5719 123.23858 394.33333 126 394.33333 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(126 404.60933)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="5.54" y="15">LogicalProject</tspan>
+          </text>
+        </g>
+        <g id="Graphic_39">
+          <path d="M 126 468.66667 L 239 468.66667 C 241.76142 468.66667 244 470.90524 244 473.66667 L 244 502.66667 C 244 505.4281 241.76142 507.66667 239 507.66667 L 126 507.66667 C 123.23858 507.66667 121 505.4281 121 502.66667 L 121 473.66667 C 121 470.90524 123.23858 468.66667 126 468.66667 Z" fill="#79d9cf"/>
+          <path d="M 126 468.66667 L 239 468.66667 C 241.76142 468.66667 244 470.90524 244 473.66667 L 244 502.66667 C 244 505.4281 241.76142 507.66667 239 507.66667 L 126 507.66667 C 123.23858 507.66667 121 505.4281 121 502.66667 L 121 473.66667 C 121 470.90524 123.23858 468.66667 126 468.66667 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(126 478.94267)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="15.756" y="15">LogicalJoin</tspan>
+          </text>
+        </g>
+        <g id="Group_42">
+          <g id="Graphic_40">
+            <path d="M 37 543 L 164 543 C 166.76142 543 169 545.2386 169 548 L 169 577 C 169 579.7614 166.76142 582 164 582 L 37 582 C 34.238576 582 32 579.7614 32 577 L 32 548 C 32 545.2386 34.238576 543 37 543 Z" fill="#79d9cf"/>
+            <path d="M 37 543 L 164 543 C 166.76142 543 169 545.2386 169 548 L 169 577 C 169 579.7614 166.76142 582 164 582 L 37 582 C 34.238576 582 32 579.7614 32 577 L 32 548 C 32 545.2386 34.238576 543 37 543 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+            <text transform="translate(37 553.276)" fill="black">
+              <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x=".684" y="15">LogicalTableScan</tspan>
+            </text>
+          </g>
+          <g id="Graphic_41">
+            <path d="M 201 543 L 328 543 C 330.76142 543 333 545.2386 333 548 L 333 577 C 333 579.7614 330.76142 582 328 582 L 201 582 C 198.23858 582 196 579.7614 196 577 L 196 548 C 196 545.2386 198.23858 543 201 543 Z" fill="#79d9cf"/>
+            <path d="M 201 543 L 328 543 C 330.76142 543 333 545.2386 333 548 L 333 577 C 333 579.7614 330.76142 582 328 582 L 201 582 C 198.23858 582 196 579.7614 196 577 L 196 548 C 196 545.2386 198.23858 543 201 543 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+            <text transform="translate(201 553.276)" fill="black">
+              <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x=".684" y="15">LogicalTableScan</tspan>
+            </text>
+          </g>
+        </g>
+        <g id="Line_44">
+          <line x1="182.5" y1="359" x2="182.5" y2="384.43333" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Line_45">
+          <line x1="182.5" y1="433.33333" x2="182.5" y2="458.76667" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Line_46">
+          <line x1="160.98879" y1="507.66667" x2="129.34605" y2="536.35093" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Line_47">
+          <line x1="204.0112" y1="507.66667" x2="235.65395" y2="536.35093" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+      </g>
+      <g id="Group_65">
+        <g id="Graphic_59">
+          <path d="M 453.0028 279 L 573.0028 279 C 575.7642 279 578.0028 281.23858 578.0028 284 L 578.0028 313 C 578.0028 315.76142 575.7642 318 573.0028 318 L 453.0028 318 C 450.2414 318 448.0028 315.76142 448.0028 313 L 448.0028 284 C 448.0028 281.23858 450.2414 279 453.0028 279 Z" fill="#f19b98"/>
+          <path d="M 453.0028 279 L 573.0028 279 C 575.7642 279 578.0028 281.23858 578.0028 284 L 578.0028 313 C 578.0028 315.76142 575.7642 318 573.0028 318 L 453.0028 318 C 450.2414 318 448.0028 315.76142 448.0028 313 L 448.0028 284 C 448.0028 281.23858 450.2414 279 453.0028 279 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(453.0028 289.276)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="1.92" y="15">FlinkLogicalSink</tspan>
+          </text>
+        </g>
+        <g id="Graphic_58">
+          <path d="M 453.0028 353.33333 L 573.0028 353.33333 C 575.7642 353.33333 578.0028 355.5719 578.0028 358.33333 L 578.0028 387.33333 C 578.0028 390.09476 575.7642 392.33333 573.0028 392.33333 L 453.0028 392.33333 C 450.2414 392.33333 448.0028 390.09476 448.0028 387.33333 L 448.0028 358.33333 C 448.0028 355.5719 450.2414 353.33333 453.0028 353.33333 Z" fill="#f19b98"/>
+          <path d="M 453.0028 353.33333 L 573.0028 353.33333 C 575.7642 353.33333 578.0028 355.5719 578.0028 358.33333 L 578.0028 387.33333 C 578.0028 390.09476 575.7642 392.33333 573.0028 392.33333 L 453.0028 392.33333 C 450.2414 392.33333 448.0028 390.09476 448.0028 387.33333 L 448.0028 358.33333 C 448.0028 355.5719 450.2414 353.33333 453.0028 353.33333 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(453.0028 363.60933)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="1.336" y="15">FlinkLogicalCalc</tspan>
+          </text>
+        </g>
+        <g id="Graphic_57">
+          <path d="M 453.0028 427.66667 L 573.0028 427.66667 C 575.7642 427.66667 578.0028 429.90524 578.0028 432.66667 L 578.0028 461.66667 C 578.0028 464.4281 575.7642 466.66667 573.0028 466.66667 L 453.0028 466.66667 C 450.2414 466.66667 448.0028 464.4281 448.0028 461.66667 L 448.0028 432.66667 C 448.0028 429.90524 450.2414 427.66667 453.0028 427.66667 Z" fill="#f19b98"/>
+          <path d="M 453.0028 427.66667 L 573.0028 427.66667 C 575.7642 427.66667 578.0028 429.90524 578.0028 432.66667 L 578.0028 461.66667 C 578.0028 464.4281 575.7642 466.66667 573.0028 466.66667 L 453.0028 466.66667 C 450.2414 466.66667 448.0028 464.4281 448.0028 461.66667 L 448.0028 432.66667 C 448.0028 429.90524 450.2414 427.66667 453.0028 427.66667 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(453.0028 437.94267)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="2.512" y="15">FlinkLogicalJoin</tspan>
+          </text>
+        </g>
+        <g id="Graphic_56">
+          <path d="M 367.5028 502 L 502.0028 502 C 504.76423 502 507.0028 504.2386 507.0028 507 L 507.0028 536 C 507.0028 538.7614 504.76423 541 502.0028 541 L 367.5028 541 C 364.7414 541 362.5028 538.7614 362.5028 536 L 362.5028 507 C 362.5028 504.2386 364.7414 502 367.5028 502 Z" fill="#f19b98"/>
+          <path d="M 367.5028 502 L 502.0028 502 C 504.76423 502 507.0028 504.2386 507.0028 507 L 507.0028 536 C 507.0028 538.7614 504.76423 541 502.0028 541 L 367.5028 541 C 364.7414 541 362.5028 538.7614 362.5028 536 L 362.5028 507 C 362.5028 504.2386 364.7414 502 367.5028 502 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(367.5028 512.276)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="8.586" y="15">FlinkLogicalCalc</tspan>
+          </text>
+        </g>
+        <g id="Graphic_55">
+          <path d="M 529.5028 502 L 664.0028 502 C 666.7642 502 669.0028 504.2386 669.0028 507 L 669.0028 536 C 669.0028 538.7614 666.7642 541 664.0028 541 L 529.5028 541 C 526.7414 541 524.5028 538.7614 524.5028 536 L 524.5028 507 C 524.5028 504.2386 526.7414 502 529.5028 502 Z" fill="#f19b98"/>
+          <path d="M 529.5028 502 L 664.0028 502 C 666.7642 502 669.0028 504.2386 669.0028 507 L 669.0028 536 C 669.0028 538.7614 666.7642 541 664.0028 541 L 529.5028 541 C 526.7414 541 524.5028 538.7614 524.5028 536 L 524.5028 507 C 524.5028 504.2386 526.7414 502 529.5028 502 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(529.5028 512.276)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="8.586" y="15">FlinkLogicalCalc</tspan>
+          </text>
+        </g>
+        <g id="Line_53">
+          <line x1="513.0028" y1="318" x2="513.0028" y2="343.43333" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Line_52">
+          <line x1="513.0028" y1="392.33333" x2="513.0028" y2="417.76667" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Line_51">
+          <line x1="492.47534" y1="466.66667" x2="462.45796" y2="495.1816" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Line_50">
+          <line x1="534.9731" y1="466.66667" x2="567.3783" y2="495.4283" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Graphic_60">
+          <path d="M 367.5028 572 L 502.0028 572 C 504.76423 572 507.0028 574.2386 507.0028 577 L 507.0028 606 C 507.0028 608.7614 504.76423 611 502.0028 611 L 367.5028 611 C 364.7414 611 362.5028 608.7614 362.5028 606 L 362.5028 577 C 362.5028 574.2386 364.7414 572 367.5028 572 Z" fill="#f19b98"/>
+          <path d="M 367.5028 572 L 502.0028 572 C 504.76423 572 507.0028 574.2386 507.0028 577 L 507.0028 606 C 507.0028 608.7614 504.76423 611 502.0028 611 L 367.5028 611 C 364.7414 611 362.5028 608.7614 362.5028 606 L 362.5028 577 C 362.5028 574.2386 364.7414 572 367.5028 572 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(367.5028 573.052)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x=".282" y="15">FlinkLogicalDataSt</tspan>
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="12.274" y="33.448">reamTableScan</tspan>
+          </text>
+        </g>
+        <g id="Graphic_61">
+          <path d="M 529.5028 572 L 664.0028 572 C 666.7642 572 669.0028 574.2386 669.0028 577 L 669.0028 606 C 669.0028 608.7614 666.7642 611 664.0028 611 L 529.5028 611 C 526.7414 611 524.5028 608.7614 524.5028 606 L 524.5028 577 C 524.5028 574.2386 526.7414 572 529.5028 572 Z" fill="#f19b98"/>
+          <path d="M 529.5028 572 L 664.0028 572 C 666.7642 572 669.0028 574.2386 669.0028 577 L 669.0028 606 C 669.0028 608.7614 666.7642 611 664.0028 611 L 529.5028 611 C 526.7414 611 524.5028 608.7614 524.5028 606 L 524.5028 577 C 524.5028 574.2386 526.7414 572 529.5028 572 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(529.5028 573.052)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x=".282" y="15">FlinkLogicalDataSt</tspan>
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="12.274" y="33.448">reamTableScan</tspan>
+          </text>
+        </g>
+        <g id="Line_62">
+          <line x1="434.7528" y1="541" x2="434.7528" y2="562.1" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Line_63">
+          <line x1="596.9972" y1="541" x2="596.8951" y2="562.1001" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+      </g>
+      <g id="Group_66">
+        <g id="Graphic_79">
+          <path d="M 794.0056 279 L 914.0056 279 C 916.767 279 919.0056 281.23858 919.0056 284 L 919.0056 313 C 919.0056 315.76142 916.767 318 914.0056 318 L 794.0056 318 C 791.2442 318 789.0056 315.76142 789.0056 313 L 789.0056 284 C 789.0056 281.23858 791.2442 279 794.0056 279 Z" fill="#fcd866"/>
+          <path d="M 794.0056 279 L 914.0056 279 C 916.767 279 919.0056 281.23858 919.0056 284 L 919.0056 313 C 919.0056 315.76142 916.767 318 914.0056 318 L 794.0056 318 C 791.2442 318 789.0056 315.76142 789.0056 313 L 789.0056 284 C 789.0056 281.23858 791.2442 279 794.0056 279 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(794.0056 289.276)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="1.176" y="15">StreamExecSink</tspan>
+          </text>
+        </g>
+        <g id="Graphic_78">
+          <path d="M 794.0056 353.33333 L 914.0056 353.33333 C 916.767 353.33333 919.0056 355.5719 919.0056 358.33333 L 919.0056 387.33333 C 919.0056 390.09476 916.767 392.33333 914.0056 392.33333 L 794.0056 392.33333 C 791.2442 392.33333 789.0056 390.09476 789.0056 387.33333 L 789.0056 358.33333 C 789.0056 355.5719 791.2442 353.33333 794.0056 353.33333 Z" fill="#fcd866"/>
+          <path d="M 794.0056 353.33333 L 914.0056 353.33333 C 916.767 353.33333 919.0056 355.5719 919.0056 358.33333 L 919.0056 387.33333 C 919.0056 390.09476 916.767 392.33333 914.0056 392.33333 L 794.0056 392.33333 C 791.2442 392.33333 789.0056 390.09476 789.0056 387.33333 L 789.0056 358.33333 C 789.0056 355.5719 791.2442 353.33333 794.0056 353.33333 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(794.0056 363.60933)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x=".592" y="15">StreamExecCalc</tspan>
+          </text>
+        </g>
+        <g id="Graphic_77">
+          <path d="M 794.0056 427.66667 L 914.0056 427.66667 C 916.767 427.66667 919.0056 429.90524 919.0056 432.66667 L 919.0056 461.66667 C 919.0056 464.4281 916.767 466.66667 914.0056 466.66667 L 794.0056 466.66667 C 791.2442 466.66667 789.0056 464.4281 789.0056 461.66667 L 789.0056 432.66667 C 789.0056 429.90524 791.2442 427.66667 794.0056 427.66667 Z" fill="#fcd866"/>
+          <path d="M 794.0056 427.66667 L 914.0056 427.66667 C 916.767 427.66667 919.0056 429.90524 919.0056 432.66667 L 919.0056 461.66667 C 919.0056 464.4281 916.767 466.66667 914.0056 466.66667 L 794.0056 466.66667 C 791.2442 466.66667 789.0056 464.4281 789.0056 461.66667 L 789.0056 432.66667 C 789.0056 429.90524 791.2442 427.66667 794.0056 427.66667 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(794.0056 437.94267)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="1.768" y="15">StreamExecJoin</tspan>
+          </text>
+        </g>
+        <g id="Graphic_76">
+          <path d="M 708.5056 502 L 843.0056 502 C 845.767 502 848.0056 504.2386 848.0056 507 L 848.0056 536 C 848.0056 538.7614 845.767 541 843.0056 541 L 708.5056 541 C 705.7442 541 703.5056 538.7614 703.5056 536 L 703.5056 507 C 703.5056 504.2386 705.7442 502 708.5056 502 Z" fill="#fcd866"/>
+          <path d="M 708.5056 502 L 843.0056 502 C 845.767 502 848.0056 504.2386 848.0056 507 L 848.0056 536 C 848.0056 538.7614 845.767 541 843.0056 541 L 708.5056 541 C 705.7442 541 703.5056 538.7614 703.5056 536 L 703.5056 507 C 703.5056 504.2386 705.7442 502 708.5056 502 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(708.5056 512.276)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="7.842" y="15">StreamExecCalc</tspan>
+          </text>
+        </g>
+        <g id="Graphic_75">
+          <path d="M 870.5056 502 L 1005.0056 502 C 1007.767 502 1010.0056 504.2386 1010.0056 507 L 1010.0056 536 C 1010.0056 538.7614 1007.767 541 1005.0056 541 L 870.5056 541 C 867.7442 541 865.5056 538.7614 865.5056 536 L 865.5056 507 C 865.5056 504.2386 867.7442 502 870.5056 502 Z" fill="#fcd866"/>
+          <path d="M 870.5056 502 L 1005.0056 502 C 1007.767 502 1010.0056 504.2386 1010.0056 507 L 1010.0056 536 C 1010.0056 538.7614 1007.767 541 1005.0056 541 L 870.5056 541 C 867.7442 541 865.5056 538.7614 865.5056 536 L 865.5056 507 C 865.5056 504.2386 867.7442 502 870.5056 502 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(870.5056 512.276)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="7.842" y="15">StreamExecCalc</tspan>
+          </text>
+        </g>
+        <g id="Line_74">
+          <line x1="854.0056" y1="318" x2="854.0056" y2="343.43333" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Line_73">
+          <line x1="854.0056" y1="392.33333" x2="854.0056" y2="417.76667" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Line_72">
+          <line x1="833.4782" y1="466.66667" x2="803.4608" y2="495.1816" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Line_71">
+          <line x1="875.9759" y1="466.66667" x2="908.3811" y2="495.4283" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Graphic_70">
+          <path d="M 708.5056 572 L 843.0056 572 C 845.767 572 848.0056 574.2386 848.0056 577 L 848.0056 606 C 848.0056 608.7614 845.767 611 843.0056 611 L 708.5056 611 C 705.7442 611 703.5056 608.7614 703.5056 606 L 703.5056 577 C 703.5056 574.2386 705.7442 572 708.5056 572 Z" fill="#fcd866"/>
+          <path d="M 708.5056 572 L 843.0056 572 C 845.767 572 848.0056 574.2386 848.0056 577 L 848.0056 606 C 848.0056 608.7614 845.767 611 843.0056 611 L 708.5056 611 C 705.7442 611 703.5056 608.7614 703.5056 606 L 703.5056 577 C 703.5056 574.2386 705.7442 572 708.5056 572 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(708.5056 573.052)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="2.058" y="15">StreamExecDataS</tspan>
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="28.57" y="33.448">treamScan</tspan>
+          </text>
+        </g>
+        <g id="Graphic_69">
+          <path d="M 870.5056 572 L 1005.0056 572 C 1007.767 572 1010.0056 574.2386 1010.0056 577 L 1010.0056 606 C 1010.0056 608.7614 1007.767 611 1005.0056 611 L 870.5056 611 C 867.7442 611 865.5056 608.7614 865.5056 606 L 865.5056 577 C 865.5056 574.2386 867.7442 572 870.5056 572 Z" fill="#fcd866"/>
+          <path d="M 870.5056 572 L 1005.0056 572 C 1007.767 572 1010.0056 574.2386 1010.0056 577 L 1010.0056 606 C 1010.0056 608.7614 1007.767 611 1005.0056 611 L 870.5056 611 C 867.7442 611 865.5056 608.7614 865.5056 606 L 865.5056 577 C 865.5056 574.2386 867.7442 572 870.5056 572 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(870.5056 573.052)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="2.058" y="15">StreamExecDataS</tspan>
+            <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="28.57" y="33.448">treamScan</tspan>
+          </text>
+        </g>
+        <g id="Line_68">
+          <line x1="775.7556" y1="541" x2="775.7556" y2="562.1" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Line_67">
+          <line x1="938" y1="541" x2="937.8979" y2="562.1001" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

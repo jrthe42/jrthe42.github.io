@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512">
+  <defs>
+    <font-face font-family="Helvetica Neue" font-size="24" panose-1="2 0 5 3 0 0 0 2 0 4" units-per-em="1000" underline-position="-100" underline-thickness="50" slope="0" x-height="517" cap-height="714" ascent="951.9958" descent="-212.99744" font-weight="400">
+      <font-face-src>
+        <font-face-name name="HelveticaNeue"/>
+      </font-face-src>
+    </font-face>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-6 -3 7 6" markerWidth="7" markerHeight="6" color="#7f8080">
+      <g>
+        <path d="M -4.8 0 L 0 1.8 L 0 -1.8 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_2" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -4 10 8" markerWidth="10" markerHeight="8" color="#7f8080">
+      <g>
+        <path d="M 8 0 L 0 -3 L 0 3 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.8 
+    <dc:date>2019-09-04 03:16:13 +0000</dc:date>
+  </metadata>
+  <g id="Canvas_2" fill-opacity="1" stroke-dasharray="none" stroke="none" stroke-opacity="1" fill="none">
+    <title>Canvas 2</title>
+    <rect fill="#eff2f4" x="0" y="0" width="1024" height="512"/>
+    <g id="Canvas_2: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_18">
+        <path d="M 104 136 L 267 136 C 275.28427 136 282 142.71573 282 151 L 282 208 C 282 216.28427 275.28427 223 267 223 L 104 223 C 95.71573 223 89 216.28427 89 208 L 89 151 C 89 142.71573 95.71573 136 104 136 Z" fill="#00bfc0"/>
+        <path d="M 104 136 L 267 136 C 275.28427 136 282 142.71573 282 151 L 282 208 C 282 216.28427 275.28427 223 267 223 L 104 223 C 95.71573 223 89 216.28427 89 208 L 89 151 C 89 142.71573 95.71573 136 104 136 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(94 165.164)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="24" font-weight="400" fill="black" x="6.144" y="23">QueryOperation</tspan>
+        </text>
+      </g>
+      <g id="Graphic_19">
+        <path d="M 99 319 L 272 319 C 277.52285 319 282 323.47715 282 329 L 282 362.5 C 282 368.02285 277.52285 372.5 272 372.5 L 99 372.5 C 93.47715 372.5 89 368.02285 89 362.5 L 89 329 C 89 323.47715 93.47715 319 99 319 Z" fill="#00bfc0"/>
+        <path d="M 99 319 L 272 319 C 277.52285 319 282 323.47715 282 329 L 282 362.5 C 282 368.02285 277.52285 372.5 272 372.5 L 99 372.5 C 93.47715 372.5 89 368.02285 89 362.5 L 89 329 C 89 323.47715 93.47715 319 99 319 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(94 331.414)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="24" font-weight="400" fill="black" x="32.388" y="23">Expression</tspan>
+        </text>
+      </g>
+      <g id="Line_20">
+        <line x1="185.5" y1="306.1" x2="185.5" y2="223" marker-start="url(#FilledArrow_Marker)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+      </g>
+      <g id="Graphic_21">
+        <path d="M 734 136 L 897 136 C 905.2843 136 912 142.71573 912 151 L 912 208 C 912 216.28427 905.2843 223 897 223 L 734 223 C 725.7157 223 719 216.28427 719 208 L 719 151 C 719 142.71573 725.7157 136 734 136 Z" fill="#ff914d"/>
+        <path d="M 734 136 L 897 136 C 905.2843 136 912 142.71573 912 151 L 912 208 C 912 216.28427 905.2843 223 897 223 L 734 223 C 725.7157 223 719 216.28427 719 208 L 719 151 C 719 142.71573 725.7157 136 734 136 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(724 165.164)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="24" font-weight="400" fill="black" x="45.06" y="23">RelNode</tspan>
+        </text>
+      </g>
+      <g id="Graphic_23">
+        <path d="M 729 319 L 902 319 C 907.5228 319 912 323.47715 912 329 L 912 362.5 C 912 368.02285 907.5228 372.5 902 372.5 L 729 372.5 C 723.47715 372.5 719 368.02285 719 362.5 L 719 329 C 719 323.47715 723.47715 319 729 319 Z" fill="#ff914d"/>
+        <path d="M 729 319 L 902 319 C 907.5228 319 912 323.47715 912 329 L 912 362.5 C 912 368.02285 907.5228 372.5 902 372.5 L 729 372.5 C 723.47715 372.5 719 368.02285 719 362.5 L 719 329 C 719 323.47715 723.47715 319 729 319 Z" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(724 331.414)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="24" font-weight="400" fill="black" x="41.508" y="23">RexNode</tspan>
+        </text>
+      </g>
+      <g id="Line_24">
+        <line x1="815.5" y1="306.1" x2="815.5" y2="223" marker-start="url(#FilledArrow_Marker)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+      </g>
+      <g id="Line_25">
+        <line x1="282" y1="179.5" x2="709.1" y2="179.5" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8.0,5.0" stroke-width="1"/>
+      </g>
+      <g id="Line_26">
+        <line x1="282" y1="345.75" x2="709.1" y2="345.75" marker-end="url(#FilledArrow_Marker_2)" stroke="#7f8080" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8.0,5.0" stroke-width="1"/>
+      </g>
+      <g id="Graphic_27">
+        <text transform="translate(357.5 135.164)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="24" font-weight="400" fill="black" x=".26" y="23">QueryOperationConverter</tspan>
+        </text>
+      </g>
+      <g id="Graphic_28">
+        <text transform="translate(388 278.164)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="24" font-weight="400" fill="black" x=".444" y="23">LookupCallResolver</tspan>
+        </text>
+      </g>
+      <g id="Graphic_29">
+        <text transform="translate(393 317.164)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="24" font-weight="400" fill="black" x=".124" y="23">RexNodeConverter</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>

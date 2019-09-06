@@ -1,0 +1,664 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="想入非非就是寻找神奇" />
+
+
+
+  <meta name="keywords" content="Flink,实时计算,SQL," />
+
+
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="在数据处理领域，无论是实时数据处理还是离线数据处理，使用 SQL 简化开发将会是未来的整体发展趋势。尽管 SQL 简化了使用的门槛，但是如何将 SQL 等价转换到现有的数据处理引擎中却并非易事，尤其是在流式数据处理框架中。 最近，Flink 发布了备受瞩目的 1.9 版本，由于阿里开源了其内部的 Blink 分支，Flink SQL 的功能得到了进一步的改进和增强。尽管在这个版本中，Blink 仍">
+<meta name="keywords" content="Flink,实时计算,SQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink 源码阅读笔记（15） - Flink SQL 整体执行框架">
+<meta property="og:url" content="http://blog.jrwang.me/2019/flink-source-code-sql-overview/index.html">
+<meta property="og:site_name" content="JR&#39;s Blog">
+<meta property="og:description" content="在数据处理领域，无论是实时数据处理还是离线数据处理，使用 SQL 简化开发将会是未来的整体发展趋势。尽管 SQL 简化了使用的门槛，但是如何将 SQL 等价转换到现有的数据处理引擎中却并非易事，尤其是在流式数据处理框架中。 最近，Flink 发布了备受瞩目的 1.9 版本，由于阿里开源了其内部的 Blink 分支，Flink SQL 的功能得到了进一步的改进和增强。尽管在这个版本中，Blink 仍">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://blog.jrwang.me/img/flink/sql-process.svg">
+<meta property="og:image" content="http://blog.jrwang.me/img/flink/flink-sql-relnode-convert.svg">
+<meta property="og:image" content="http://blog.jrwang.me/img/flink/flink-sql-operation-and-relnode.svg">
+<meta property="og:updated_time" content="2019-09-06T06:22:55.706Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Flink 源码阅读笔记（15） - Flink SQL 整体执行框架">
+<meta name="twitter:description" content="在数据处理领域，无论是实时数据处理还是离线数据处理，使用 SQL 简化开发将会是未来的整体发展趋势。尽管 SQL 简化了使用的门槛，但是如何将 SQL 等价转换到现有的数据处理引擎中却并非易事，尤其是在流式数据处理框架中。 最近，Flink 发布了备受瞩目的 1.9 版本，由于阿里开源了其内部的 Blink 分支，Flink SQL 的功能得到了进一步的改进和增强。尽管在这个版本中，Blink 仍">
+<meta name="twitter:image" content="http://blog.jrwang.me/img/flink/sql-process.svg">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+  <title> Flink 源码阅读笔记（15） - Flink SQL 整体执行框架 | JR's Blog </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-66913886-2', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">JR's Blog</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              Flink 源码阅读笔记（15） - Flink SQL 整体执行框架
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2019-09-04T21:31:00+08:00" content="2019-09-04">
+            2019-09-04
+          </time>
+        </span>
+
+        
+
+        
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><p>在数据处理领域，无论是实时数据处理还是离线数据处理，使用 SQL 简化开发将会是未来的整体发展趋势。尽管 SQL 简化了使用的门槛，但是如何将 SQL 等价转换到现有的数据处理引擎中却并非易事，尤其是在流式数据处理框架中。</p>
+<p>最近，Flink 发布了备受瞩目的 1.9 版本，由于阿里开源了其内部的 Blink 分支，Flink SQL 的功能得到了进一步的改进和增强。尽管在这个版本中，Blink 仍然只是作为一个预览的版本发布，但是 Blink 后续将会成为 Flink 社区的主要开发方向。接下来，我们将主要基于 Blink 来介绍 Flink SQL 的整体执行流程。</p>
+<h2 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h2><p>SQL 的执行流程一般分为四个主要的阶段，Flink 主要依赖于 Calicte 来完成这一流程：</p>
+<p><img src="/img/flink/sql-process.svg" alt="sql-process"></p>
+<p><strong>Parse</strong>：语法解析，把 SQL 语句转换成为一个抽象语法树（AST），在 Calcite 中用 <code>SqlNode</code> 来表示；<br><strong>Validate</strong>：语法校验，根据元数据信息进行验证，例如查询的表、使用的函数是否存在等，校验之后仍然是 <code>SqlNode</code> 构成的语法树；<br><strong>Optimize</strong>：查询计划优化，这里其实包含了两部分，1）首先将 <code>SqlNode</code> 语法树转换成关系表达式 <code>RelNode</code> 构成的逻辑树，2）然后使用优化器基于规则进行等价变换，例如我们比较熟悉的谓词下推、列裁剪等，经过优化器优化后得到最优的查询计划；<br><strong>Execute</strong>：将逻辑查询计划翻译成物理执行计划，生成对应的可执行代码，提交运行。</p>
+<p>Flink SQL 的处理也大体遵循上述处理流程。Calcite 自身的概念较为庞杂，尤其是其内部使用的 HepPlanner 和 VolcanoPlanner 优化器更是非常复杂，但好在 Calcite 的可扩展性很强，优化器的优化规则也可以很容易地进行扩展，因此如果只是了解 Flink SQL 的基本原理和扩展方法，也无需对 Calcite 的代码了解的非常透彻。关于 Calcite 的基本介绍可以参考这个<a href="https://www.slideshare.net/JordanHalterman/introduction-to-apache-calcite" target="_blank" rel="noopener">Slide</a>。</p>
+<h2 id="可插拔的-SQL-Runner"><a href="#可插拔的-SQL-Runner" class="headerlink" title="可插拔的 SQL Runner"></a>可插拔的 SQL Runner</h2><p>通过对 table 模块进行拆分和重构，Flink SQL 抽象出了 <code>Planner</code> 接口和 <code>Executor</code> 接口，可以支持多个不同的 Runner，用户可以自行选择希望使用的 Runner。不同的 Runner 只需要正确地实现这两个接口即可。在 1.9 版本中，Flink 提供了两套 SQL Runner，分别对应之前社区已有的 Flink SQL Runner 和新的 Blink Runner，Blink Runner 目前只是一个预览版本，在后续的迭代中会取代现有的 Flink Runner。</p>
+<h3 id="Planner-接口"><a href="#Planner-接口" class="headerlink" title="Planner 接口"></a><code>Planner</code> 接口</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Planner</span> </span>&#123;</span><br><span class="line">  <span class="function">List&lt;Operation&gt; <span class="title">parse</span><span class="params">(String statement)</span></span>;</span><br><span class="line">  List&lt;Transformation&lt;?&gt;&gt; translate(List&lt;ModifyOperation&gt; modifyOperations);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Planner</code> 接口完成 SQL 的解析和逻辑计划的转换，最终得到构建 Flink 计算逻辑的转换算子。</p>
+<h3 id="Executor-接口"><a href="#Executor-接口" class="headerlink" title="Executor 接口"></a><code>Executor</code> 接口</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Executor</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">apply</span><span class="params">(List&lt;Transformation&lt;?&gt;&gt; transformations)</span></span>;</span><br><span class="line">  <span class="function">JobExecutionResult <span class="title">execute</span><span class="params">(String jobName)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Executor</code> 接口将 <code>Planner</code> 接口翻译出的算子应用到底层运行时环境中，并提供启动程序的入口。</p>
+<h2 id="Blink-Runner"><a href="#Blink-Runner" class="headerlink" title="Blink Runner"></a>Blink Runner</h2><h3 id="SQL-解析"><a href="#SQL-解析" class="headerlink" title="SQL 解析"></a>SQL 解析</h3><p>SQL 的解析在 <code>PlannerBase.parse()</code> 中实现：1）首先使用 Calcite 的解析出抽象语法树 <code>SqlNode</code>，2）然后结合元数据对 SQL 语句进行验证，3）将 <code>SqlNode</code> 转换为 <code>RelNode</code>，4）并最终封装为 Flink 内部对查询操作的抽象 <code>QueryOperation</code>。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">PlannerBase</span>(<span class="params"></span></span></span><br><span class="line"><span class="class"><span class="params">    executor: <span class="type">Executor</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">    config: <span class="type">TableConfig</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">    val functionCatalog: <span class="type">FunctionCatalog</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">    catalogManager: <span class="type">CatalogManager</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">    isStreamingMode: <span class="type">Boolean</span></span>)</span></span><br><span class="line"><span class="class">  <span class="keyword">extends</span> <span class="title">Planner</span> </span>&#123;</span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">parse</span></span>(stmt: <span class="type">String</span>): util.<span class="type">List</span>[<span class="type">Operation</span>] = &#123;</span><br><span class="line">    <span class="keyword">val</span> planner = createFlinkPlanner</span><br><span class="line">    <span class="comment">// 1）这一步解析得到 SqlNode</span></span><br><span class="line">    <span class="keyword">val</span> parsed = planner.parse(stmt)</span><br><span class="line">    <span class="comment">// 使用 SqlToOperationConverter 将 SqlNode 转化为 Operation</span></span><br><span class="line">    parsed <span class="keyword">match</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> insert: <span class="type">RichSqlInsert</span> =&gt;</span><br><span class="line">        <span class="type">List</span>(<span class="type">SqlToOperationConverter</span>.convert(planner, insert))</span><br><span class="line">      <span class="keyword">case</span> query <span class="keyword">if</span> query.getKind.belongsTo(<span class="type">SqlKind</span>.<span class="type">QUERY</span>) =&gt;</span><br><span class="line">        <span class="comment">//查询语句</span></span><br><span class="line">        <span class="type">List</span>(<span class="type">SqlToOperationConverter</span>.convert(planner, query))</span><br><span class="line">      <span class="keyword">case</span> ddl <span class="keyword">if</span> ddl.getKind.belongsTo(<span class="type">SqlKind</span>.<span class="type">DDL</span>) =&gt;</span><br><span class="line">        <span class="type">List</span>(<span class="type">SqlToOperationConverter</span>.convert(planner, ddl))</span><br><span class="line">      <span class="keyword">case</span> _ =&gt;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">TableException</span>(<span class="string">s"Unsupported query: <span class="subst">$stmt</span>"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SqlToOperationConverter</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Operation <span class="title">convert</span><span class="params">(FlinkPlannerImpl flinkPlanner, SqlNode sqlNode)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 2) 结合元数据验证 Sql 的合法性</span></span><br><span class="line">    <span class="keyword">final</span> SqlNode validated = flinkPlanner.validate(sqlNode);</span><br><span class="line">    <span class="comment">// 将 SqlNode 转化为 Operation</span></span><br><span class="line">    SqlToOperationConverter converter = <span class="keyword">new</span> SqlToOperationConverter(flinkPlanner);</span><br><span class="line">    <span class="keyword">if</span> (validated <span class="keyword">instanceof</span> SqlCreateTable) &#123;</span><br><span class="line">      <span class="keyword">return</span> converter.convertCreateTable((SqlCreateTable) validated);</span><br><span class="line">    &#125; <span class="keyword">if</span> (validated <span class="keyword">instanceof</span> SqlDropTable) &#123;</span><br><span class="line">      <span class="keyword">return</span> converter.convertDropTable((SqlDropTable) validated);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (validated <span class="keyword">instanceof</span> RichSqlInsert) &#123;</span><br><span class="line">      <span class="keyword">return</span> converter.convertSqlInsert((RichSqlInsert) validated);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (validated.getKind().belongsTo(SqlKind.QUERY)) &#123;</span><br><span class="line">      <span class="keyword">return</span> converter.convertSqlQuery(validated);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> TableException(<span class="string">"Unsupported node type "</span></span><br><span class="line">        + validated.getClass().getSimpleName());</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Fallback method for sql query. */</span></span><br><span class="line">  <span class="function"><span class="keyword">private</span> Operation <span class="title">convertSqlQuery</span><span class="params">(SqlNode node)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> toQueryOperation(flinkPlanner, node);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> PlannerQueryOperation <span class="title">toQueryOperation</span><span class="params">(FlinkPlannerImpl planner, SqlNode validated)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 3） 使用 SqlToRelConverter 将 SqlNode 转换成 RelNode</span></span><br><span class="line">    RelRoot relational = planner.rel(validated);</span><br><span class="line">    <span class="comment">// 4) 将 RelNode 封装成 PlannerQueryOperation</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> PlannerQueryOperation(relational.project());</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们知道，Flink 借助于 Calcite 完成 SQl 的解析和优化，而后续的优化部分其实都是直接基于 <code>RelNode</code> 来完成的，那么这里为什么又多出了一个 <code>QueryOperation</code> 的概念呢？这主要是因为，Flink SQL 是支持 SQL 语句和 Table Api 接口混合使用的，在 Table Api 接口中，主要的操作都是基于 <code>Operation</code> 接口来完成的。</p>
+<h3 id="SQL-转换及优化"><a href="#SQL-转换及优化" class="headerlink" title="SQL 转换及优化"></a>SQL 转换及优化</h3><p>在将 SQL 语句解析成 <code>Operation</code> 后，为了得到 Flink 运行时的具体操作算子，需要进一步将 <code>ModifyOperation</code> 转换为 <code>Transformation</code>。在 Blink 之前的 SQL Planner 中，都是基于 <code>DataStream</code> 或 <code>DataSet</code> API 完成运行时逻辑的构建；而 Blink 则使用更底层的 <code>Transformation</code> 算子。</p>
+<p>注意，<code>Planner.translate(List&lt;ModifyOperation&gt; modifyOperations)</code> 方法接收的参数是 <code>ModifyOperation</code>，<code>ModifyOperation</code> 对应的是一个 DML 的操作，在将查询结果插入到一张结果表或者转换为 <code>DataStream</code> 时，就会得到 <code>ModifyOperation</code>。</p>
+<p>转换的流程主要分为四个部分，即 1）将 Operation 转换为 RelNode，2）优化 RelNode，3）转换成 ExecNode，4）转换为底层的 Transformation 算子。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">PlannerBase</span>(<span class="params"></span></span></span><br><span class="line"><span class="class"><span class="params">    executor: <span class="type">Executor</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">    config: <span class="type">TableConfig</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">    val functionCatalog: <span class="type">FunctionCatalog</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">    catalogManager: <span class="type">CatalogManager</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">    isStreamingMode: <span class="type">Boolean</span></span>)</span></span><br><span class="line"><span class="class">  <span class="keyword">extends</span> <span class="title">Planner</span> </span>&#123;</span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">translate</span></span>(</span><br><span class="line">      modifyOperations: util.<span class="type">List</span>[<span class="type">ModifyOperation</span>]): util.<span class="type">List</span>[<span class="type">Transformation</span>[_]] = &#123;</span><br><span class="line">    <span class="keyword">if</span> (modifyOperations.isEmpty) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="type">List</span>.empty[<span class="type">Transformation</span>[_]]</span><br><span class="line">    &#125;</span><br><span class="line">    mergeParameters()</span><br><span class="line">    <span class="comment">// 1）将 Operation 转换为 RelNode</span></span><br><span class="line">    <span class="keyword">val</span> relNodes = modifyOperations.map(translateToRel)</span><br><span class="line">    <span class="comment">// 2）优化 RelNode</span></span><br><span class="line">    <span class="keyword">val</span> optimizedRelNodes = optimize(relNodes)</span><br><span class="line">    <span class="comment">// 3）转换成 ExecNode</span></span><br><span class="line">    <span class="keyword">val</span> execNodes = translateToExecNodePlan(optimizedRelNodes)</span><br><span class="line">    <span class="comment">// 4）转换为底层的 Transformation 算子</span></span><br><span class="line">    translateToPlan(execNodes)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先需要进行的操作是将 <code>Operation</code> 转换为 <code>RelNode</code>，这个转换操作借助 <code>QueryOperationConverter</code> 完成。<code>Operation</code> 其实类似于 SQL 语法树，也构成一个树形结构，并实现了访问者模式，支持使用 <code>QueryOperationVisitor</code> 遍历整棵树，<code>QueryOperationConverter</code> 实现了 <code>QueryOperationVisitor</code> 接口。对于 <code>PlannerQueryOperation</code>，其内部封装的就是已经构建好的 <code>RelNode</code>，直接取出即可；对于其它类型的 <code>Operation</code>，则按需转换为对应的 <code>RelNode</code>。</p>
+<p>在得到 <code>RelNode</code> 后，就进入 Calcite 对 <code>RelNode</code> 的优化流程。在 Blink 中有一点特殊的地方在于，由于多个 <code>RelNode</code> 构成的树可能存在共同的“子树”（例如将相同的查询结果输出到不同的结果表中，那么两个 <code>LogicalSink</code> 的子树就可能是共用的），Blink 使用了一种 <code>CommonSubGraphBasedOptimizer</code> 优化器，将拥有共同子树的 <code>RelNode</code> 看作一个 DAG 结构，并将 DAG 划分成 <code>RelNodeBlock</code>，然后在<code>RelNodeBlock</code> 的基础上进行优化工作。每一个 <code>RelNodeBlock</code> 可以看作一个 <code>RelNode</code> 树进行优化，这和正常的 Calcite 处理流程还是保持一致的。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">CommonSubGraphBasedOptimizer</span> <span class="keyword">extends</span> <span class="title">Optimizer</span> </span>&#123;</span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">optimize</span></span>(roots: <span class="type">Seq</span>[<span class="type">RelNode</span>]): <span class="type">Seq</span>[<span class="type">RelNode</span>] = &#123;</span><br><span class="line">    <span class="comment">//以RelNodeBlock为单位进行优化，在子类中实现，StreamCommonSubGraphBasedOptimizer，BatchCommonSubGraphBasedOptimizer</span></span><br><span class="line">    <span class="keyword">val</span> sinkBlocks = doOptimize(roots)</span><br><span class="line">    <span class="comment">//获得优化后的逻辑计划</span></span><br><span class="line">    <span class="keyword">val</span> optimizedPlan = sinkBlocks.map &#123; block =&gt;</span><br><span class="line">      <span class="keyword">val</span> plan = block.getOptimizedPlan</span><br><span class="line">      require(plan != <span class="literal">null</span>)</span><br><span class="line">      plan</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//将 RelNodeBlock 使用的中间表展开</span></span><br><span class="line">    expandIntermediateTableScan(optimizedPlan)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Caclite 对逻辑计划的优化是一套基于规则的框架，用户可以通过添加规则进行扩展，Flink 就是基于自定义规则来实现整个的优化过程。Flink 构造了一个链式的优化程序，可以按顺序使用多套规则集合完成 <code>RelNode</code> 的优化过程。在 <code>FlinkStreamProgram</code> 和 <code>FlinkBatchProgram</code> 中定义了一系列扩展规则，用于构造逻辑计划的优化器。与此同时，Flink 扩展了 <code>RelNode</code>，增加了 <code>FlinkLogicRel</code> 和 <code>FlinkPhysicRel</code> 这两类 <code>RelNode</code>，对应的 <code>Convention</code> 分别为 <code>FlinkConventions.LOGICAL</code> 和 <code>FlinkConventions.STREAM_PHYSICAL</code> (或<code>FlinkConventions.BATCH_PHYSICAL</code>)。在优化器的处理过程中，<code>RelNode</code> 会从 Calcite 内部定义的节点转换为 <code>FlinkLogicRel</code> 节点（<code>FlinkConventions.LOGICAL</code>），并最终被转换为 <code>FlinkPhysicRel</code> 节点（<code>FlinkConventions.STREAM_PHYSICAL</code>）。这两类转换规则分别对应 <code>FlinkStreamRuleSets.LOGICAL_OPT_RULES</code> 和 <code>FlinkStreamRuleSets.PHYSICAL_OPT_RULES</code>。在不考虑其它更复杂的性能优化的情况下，如果要扩展 Flink SQL 的语法规则，可以参考这两类规则来增加节点和转换规则。</p>
+<p>以 <code>Join</code> 操作为例，首先经过 Calcite 解析后得到的节点为 <code>LogicalJoin</code>。 <code>LogicalJoin</code> 会匹配转换规则中的 <code>FlinkLogicalJoinConverter</code> 规则，在该规则中被转换为 <code>FlinkLogicalJoin</code>。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="class"><span class="keyword">class</span> <span class="title">FlinkLogicalJoinConverter</span></span></span><br><span class="line"><span class="class">  <span class="keyword">extends</span> <span class="title">ConverterRule</span>(<span class="params"></span></span></span><br><span class="line"><span class="class"><span class="params">    classOf[<span class="type">LogicalJoin</span>],</span></span></span><br><span class="line"><span class="class"><span class="params">    <span class="type">Convention</span>.<span class="type">NONE</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">    <span class="type">FlinkConventions</span>.<span class="type">LOGICAL</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">    "<span class="type">FlinkLogicalJoinConverter</span>"</span>) </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">convert</span></span>(rel: <span class="type">RelNode</span>): <span class="type">RelNode</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> join = rel.asInstanceOf[<span class="type">LogicalJoin</span>]</span><br><span class="line">    <span class="comment">//转换左子树</span></span><br><span class="line">    <span class="keyword">val</span> newLeft = <span class="type">RelOptRule</span>.convert(join.getLeft, <span class="type">FlinkConventions</span>.<span class="type">LOGICAL</span>)</span><br><span class="line">    <span class="comment">//转换右子树</span></span><br><span class="line">    <span class="keyword">val</span> newRight = <span class="type">RelOptRule</span>.convert(join.getRight, <span class="type">FlinkConventions</span>.<span class="type">LOGICAL</span>)</span><br><span class="line">    <span class="comment">//创建 FlinkLogicalJoin 节点，Convention 被替换为 FlinkConventions.LOGICAL</span></span><br><span class="line">    <span class="type">FlinkLogicalJoin</span>.create(newLeft, newRight, join.getCondition, join.getJoinType)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">FlinkLogicalJoin</span> </span>&#123;</span><br><span class="line">  <span class="keyword">val</span> <span class="type">CONVERTER</span>: <span class="type">ConverterRule</span> = <span class="keyword">new</span> <span class="type">FlinkLogicalJoinConverter</span></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">create</span></span>(</span><br><span class="line">      left: <span class="type">RelNode</span>,</span><br><span class="line">      right: <span class="type">RelNode</span>,</span><br><span class="line">      conditionExpr: <span class="type">RexNode</span>,</span><br><span class="line">      joinType: <span class="type">JoinRelType</span>): <span class="type">FlinkLogicalJoin</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> cluster = left.getCluster</span><br><span class="line">    <span class="keyword">val</span> traitSet = cluster.traitSetOf(<span class="type">FlinkConventions</span>.<span class="type">LOGICAL</span>).simplify()</span><br><span class="line">    <span class="keyword">new</span> <span class="type">FlinkLogicalJoin</span>(cluster, traitSet, left, right, conditionExpr, joinType)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>FlinkLogicalJoin</code> 会匹配 <code>StreamExecJoinRule</code> 规则，经过这一步转换会得到 <code>StreamExecJoin</code> 节点：<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">StreamExecJoinRule</span></span></span><br><span class="line"><span class="class">  <span class="keyword">extends</span> <span class="title">RelOptRule</span>(<span class="params"></span></span></span><br><span class="line"><span class="class"><span class="params">    operand(classOf[<span class="type">FlinkLogicalJoin</span>],</span></span></span><br><span class="line"><span class="class"><span class="params">      operand(classOf[<span class="type">FlinkLogicalRel</span>], any(</span>)),</span></span><br><span class="line"><span class="class">      <span class="title">operand</span>(<span class="params">classOf[<span class="type">FlinkLogicalRel</span>], any(</span>))),</span></span><br><span class="line"><span class="class">    "<span class="title">StreamExecJoinRule</span>") </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">matches</span></span>(call: <span class="type">RelOptRuleCall</span>): <span class="type">Boolean</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> join: <span class="type">FlinkLogicalJoin</span> = call.rel(<span class="number">0</span>)</span><br><span class="line">    ......</span><br><span class="line">    <span class="comment">// 判断节点是否匹配规则</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">onMatch</span></span>(call: <span class="type">RelOptRuleCall</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> join: <span class="type">FlinkLogicalJoin</span> = call.rel(<span class="number">0</span>)</span><br><span class="line">    <span class="keyword">val</span> left = join.getLeft</span><br><span class="line">    <span class="keyword">val</span> right = join.getRight</span><br><span class="line"></span><br><span class="line">    .......</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> providedTraitSet = join.getTraitSet.replace(<span class="type">FlinkConventions</span>.<span class="type">STREAM_PHYSICAL</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> newLeft: <span class="type">RelNode</span> = <span class="type">RelOptRule</span>.convert(left, leftRequiredTrait)</span><br><span class="line">    <span class="keyword">val</span> newRight: <span class="type">RelNode</span> = <span class="type">RelOptRule</span>.convert(right, rightRequiredTrait)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//生成 StreamExecJoin 节点</span></span><br><span class="line">    <span class="keyword">val</span> newJoin = <span class="keyword">new</span> <span class="type">StreamExecJoin</span>(</span><br><span class="line">      join.getCluster,</span><br><span class="line">      providedTraitSet,</span><br><span class="line">      newLeft,</span><br><span class="line">      newRight,</span><br><span class="line">      join.getCondition,</span><br><span class="line">      join.getJoinType)</span><br><span class="line">    call.transformTo(newJoin)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><img src="/img/flink/flink-sql-relnode-convert.svg" alt="flink-sql-relnode-convert"></p>
+<p>经过优化器处理后，得到的逻辑树中的所有节点都应该是 <code>FlinkPhysicRel</code>，这之后就可以用于生成物理执行计划了。首先要将 <code>FlinkPhysicalRel</code> 构成的 DAG 转换成 <code>ExecNode</code> 构成的 DAG，因为可能存在共用子树的情况，这里还会尝试共用相同的子逻辑计划。由于通常 <code>FlinkPhysicalRel</code> 的具体实现类通常也实现了 <code>ExecNode</code> 接口，所以这一步转换较为简单。</p>
+<p>在得到由 <code>ExecNode</code> 构成的 DAG 后，就可以尝试生成物理执行计划了，也就是将 <code>ExecNode</code> 节点转换为 Flink 内部的 <code>Transformation</code> 算子。不同的 <code>ExecNode</code> 按照各自的需求生成不同的 <code>Transformation</code>，基于这些 <code>Transformation</code> 构建 Flink 的 DAG。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">trait</span> <span class="title">ExecNode</span>[<span class="type">E</span> &lt;: <span class="type">Planner</span>, <span class="type">T</span>] </span>&#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">    * Translates this node into a Flink operator.</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">translateToPlan</span></span>(planner: <span class="type">E</span>): <span class="type">Transformation</span>[<span class="type">T</span>] = &#123;</span><br><span class="line">    <span class="keyword">if</span> (transformation == <span class="literal">null</span>) &#123;</span><br><span class="line">      transformation = translateToPlanInternal(planner)</span><br><span class="line">    &#125;</span><br><span class="line">    transformation</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="SQL-执行"><a href="#SQL-执行" class="headerlink" title="SQL 执行"></a>SQL 执行</h3><p>在得到 <code>Transformation</code> 后，利用 <code>Trasnformation</code> 生成 <code>StreamGraph</code> 后就可以提交 Flink 任务了。根据 <code>Trasnformation</code> 列表生成 <code>StreamGraph</code> 比较简单，依次将算子添加到 <code>StreamExecutionEnvironment</code> 即可。这里值得一提的一点在于，在 Blink Runner 中，Stream SQL 和 Batch SQL 都基于同样的 Streaming Runtime 架构，统一使用 <code>StreamExecutionEnvironment</code> 和 <code>Transformation</code> DAG。后续社区会统一 Stream 和 Batch 这两种模式的运行时环境、算子和 API 接口，Blink SQL Runner 算是率先的一个尝试。当然，在 Stream 和 Batch 模式下，算子内部的处理逻辑肯定是要单独进行优化的。Batch 任务运行在 <code>StreamExecutionEnvironment</code> 中需要进行一些特殊的设置，如调度模式，Shuffle 模式等等。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BatchExecutor</span> <span class="keyword">extends</span> <span class="title">ExecutorBase</span> </span>&#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Sets batch configs.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">setBatchProperties</span><span class="params">(StreamExecutionEnvironment execEnv)</span> </span>&#123;</span><br><span class="line">    ExecutionConfig executionConfig = execEnv.getConfig();</span><br><span class="line">    executionConfig.enableObjectReuse();</span><br><span class="line">    executionConfig.setLatencyTrackingInterval(-<span class="number">1</span>);</span><br><span class="line">    execEnv.setStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);</span><br><span class="line">    execEnv.setBufferTimeout(-<span class="number">1</span>);</span><br><span class="line">    <span class="keyword">if</span> (isShuffleModeAllBatch()) &#123;</span><br><span class="line">      executionConfig.setDefaultInputDependencyConstraint(InputDependencyConstraint.ALL);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> StreamGraph <span class="title">generateStreamGraph</span><span class="params">(List&lt;Transformation&lt;?&gt;&gt; transformations, String jobName)</span> </span>&#123;</span><br><span class="line">    StreamExecutionEnvironment execEnv = getExecutionEnvironment();</span><br><span class="line">    setBatchProperties(execEnv);</span><br><span class="line">    transformations.forEach(execEnv::addOperator);</span><br><span class="line">    StreamGraph streamGraph;</span><br><span class="line">    streamGraph = execEnv.getStreamGraph(getNonEmptyJobName(jobName));</span><br><span class="line">    <span class="comment">// All transformations should set managed memory size.</span></span><br><span class="line">    ResourceSpec managedResourceSpec = NodeResourceUtil.fromManagedMem(<span class="number">0</span>);</span><br><span class="line">    streamGraph.getStreamNodes().forEach(sn -&gt; &#123;</span><br><span class="line">      <span class="keyword">if</span> (sn.getMinResources().equals(ResourceSpec.DEFAULT)) &#123;</span><br><span class="line">        sn.setResources(managedResourceSpec, managedResourceSpec);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">    streamGraph.setChaining(<span class="keyword">true</span>);</span><br><span class="line">    <span class="comment">//设置调度模式为 LAZY_FROM_SOURCES_WITH_BATCH_SLOT_REQUEST</span></span><br><span class="line">    streamGraph.setScheduleMode(ScheduleMode.LAZY_FROM_SOURCES_WITH_BATCH_SLOT_REQUEST);</span><br><span class="line">    streamGraph.setStateBackend(<span class="keyword">null</span>);</span><br><span class="line">    <span class="keyword">if</span> (streamGraph.getCheckpointConfig().isCheckpointingEnabled()) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"Checkpoint is not supported for batch jobs."</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (isShuffleModeAllBatch()) &#123;</span><br><span class="line">      streamGraph.setBlockingConnectionsBetweenChains(<span class="keyword">true</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> streamGraph;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">isShuffleModeAllBatch</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">//不允许 ShuffleMode 模式为 PIPELINED</span></span><br><span class="line">    String value = tableConfig.getConfiguration().getString(ExecutionConfigOptions.TABLE_EXEC_SHUFFLE_MODE);</span><br><span class="line">    <span class="keyword">if</span> (value.equalsIgnoreCase(ShuffleMode.BATCH.toString())) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!value.equalsIgnoreCase(ShuffleMode.PIPELINED.toString())) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(ExecutionConfigOptions.TABLE_EXEC_SHUFFLE_MODE.key() +</span><br><span class="line">          <span class="string">" can only be set to "</span> + ShuffleMode.BATCH.toString() + <span class="string">" or "</span> + ShuffleMode.PIPELINED.toString());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Table-API"><a href="#Table-API" class="headerlink" title="Table API"></a>Table API</h2><p>除了使用纯 SQL 语句的方式外， Flink 还支持 Table API 编程，对 Table API 的支持主要借助 <code>Table</code>, <code>Operation</code> 和 <code>Expression</code> 等接口。</p>
+<p><code>Operation</code> 和 <code>Expression</code> 是对操作和表达式的抽象，<code>Operation</code> 和 <code>Expression</code> 都有一套各自的类继承层次，可以等同于 Calcite 中的 <code>RelNode</code> 和 <code>RexNode</code>。通过 Table API 接口，可以构建出语法树，这颗 <code>Operation</code> 树最终被转换为 <code>RelNode</code> 树，之后就是进入前面提到的转换和优化逻辑了。</p>
+<p><code>Table</code> 是对于表的抽象，除了 schema 等信息外，其底层对应的是一个 <code>QueryOperaion</code>,<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Table</span> </span>&#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Returns the schema of this table.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="function">TableSchema <span class="title">getSchema</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Returns underlying logical representation of this table.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="function">QueryOperation <span class="title">getQueryOperation</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>通过 Table API 构建出由 <code>Operation</code> 和 <code>Expression</code> 组成的查询树，例如：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TableImpl</span> </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Table <span class="title">select</span><span class="params">(String fields)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//先解析获取 Expression</span></span><br><span class="line">    <span class="keyword">return</span> select(ExpressionParser.parseExpressionList(fields).toArray(<span class="keyword">new</span> Expression[<span class="number">0</span>]));</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Table <span class="title">select</span><span class="params">(Expression... fields)</span> </span>&#123;</span><br><span class="line">    List&lt;Expression&gt; expressionsWithResolvedCalls = Arrays.stream(fields)</span><br><span class="line">      .map(f -&gt; f.accept(lookupResolver))</span><br><span class="line">      .collect(Collectors.toList());</span><br><span class="line">    CategorizedExpressions extracted = OperationExpressionsUtils.extractAggregationsAndProperties(</span><br><span class="line">      expressionsWithResolvedCalls</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!extracted.getWindowProperties().isEmpty()) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> ValidationException(<span class="string">"Window properties can only be used on windowed tables."</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//构建 QueryOperation 并以此为基础创建 Table</span></span><br><span class="line">    <span class="keyword">if</span> (!extracted.getAggregations().isEmpty()) &#123;</span><br><span class="line">      QueryOperation aggregate = operationTreeBuilder.aggregate(</span><br><span class="line">        Collections.emptyList(),</span><br><span class="line">        extracted.getAggregations(),</span><br><span class="line">        operationTree</span><br><span class="line">      );</span><br><span class="line">      <span class="keyword">return</span> createTable(operationTreeBuilder.project(extracted.getProjections(), aggregate, <span class="keyword">false</span>));</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> createTable(operationTreeBuilder.project(expressionsWithResolvedCalls, operationTree, <span class="keyword">false</span>));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>而我们在使用 Scala Api 时经常使用如下更方便的形式：<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">table.select(<span class="symbol">'key</span>, <span class="symbol">'value</span>.avg + <span class="string">" The average"</span> as <span class="symbol">'average</span>)</span><br></pre></td></tr></table></figure></p>
+<p>这是由于在 flink-table-api-scala 中提供了很多方法和隐式转换，可以直接用于生成 <code>Expression</code>:<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">trait</span> <span class="title">ImplicitExpressionOperations</span> </span>&#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">    * Returns left plus right.</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">+</span> </span>(other: <span class="type">Expression</span>): <span class="type">Expression</span> = unresolvedCall(<span class="type">PLUS</span>, expr, other)</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">    * Specifies a name for an expression i.e. a field.</span></span><br><span class="line"><span class="comment">    *</span></span><br><span class="line"><span class="comment">    * @param name name for one field</span></span><br><span class="line"><span class="comment">    * @param extraNames additional names if the expression expands to multiple fields</span></span><br><span class="line"><span class="comment">    * @return field with an alias</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">as</span></span>(name: <span class="type">Symbol</span>, extraNames: <span class="type">Symbol</span>*): <span class="type">Expression</span> =</span><br><span class="line">    unresolvedCall(</span><br><span class="line">      <span class="type">AS</span>,</span><br><span class="line">      expr +: valueLiteral(name.name) +: extraNames.map(name =&gt; valueLiteral(name.name)): _*)</span><br><span class="line"></span><br><span class="line">  <span class="comment">//Symbol 转换成 UnresolvedReferenceExpression</span></span><br><span class="line">  <span class="keyword">implicit</span> <span class="function"><span class="keyword">def</span> <span class="title">symbol2FieldExpression</span></span>(sym: <span class="type">Symbol</span>): <span class="type">Expression</span> =</span><br><span class="line">    unresolvedRef(sym.name)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>Operation</code> 和 <code>Expression</code> 实现了访问者模式，通过 <code>QueryOperationConverter</code> 和 <code>RexNodeConverter</code> 转换为 <code>RelNode</code> 和 <code>RexNode</code>。</p>
+<p><img src="/img/flink/flink-sql-operation-and-relnode.svg" alt="flink-sql-operation-and-relnode"></p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>在这篇文章中，我们主要对 Flink 1.9 版本中 SQL 的整体执行框架进行了介绍。在这个版本中，Flink 提供了两套 SQL Runner，其中 Blink 将会在后续版本中取代已有的 SQL Runner 成为新的标准，因此我们主要是以 Blink Runner 为例介绍 SQL 的解析和优化流程。在后续的文章中，我们将更详细了解元数据管理、 SQL 算子的实现原理、代码生成等具体的实现细节。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://www.slideshare.net/JordanHalterman/introduction-to-apache-calcite" target="_blank" rel="noopener">Introduction to Apache Calcite</a></li>
+<li><a href="https://flink.apache.org/news/2019/08/22/release-1.9.0.html" target="_blank" rel="noopener">Apache Flink 1.9.0 Release Announcement</a></li>
+</ul>
+<p>-EOF-</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Flink/" rel="tag">#Flink</a>
+          
+            <a href="/tags/实时计算/" rel="tag">#实时计算</a>
+          
+            <a href="/tags/SQL/" rel="tag">#SQL</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/flink-source-code-async-io/" rel="next">Flink 源码阅读笔记（14）- Async I/O 的实现</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+
+        
+          <div class="comments" id="comments">
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">JR</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">43</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">21</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://music.jrwang.me" target="_blank">Music</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://jrwang.me" target="_blank">Site</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景知识"><span class="nav-number">1.</span> <span class="nav-text">背景知识</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#可插拔的-SQL-Runner"><span class="nav-number">2.</span> <span class="nav-text">可插拔的 SQL Runner</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Planner-接口"><span class="nav-number">2.1.</span> <span class="nav-text">Planner 接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Executor-接口"><span class="nav-number">2.2.</span> <span class="nav-text">Executor 接口</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Blink-Runner"><span class="nav-number">3.</span> <span class="nav-text">Blink Runner</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SQL-解析"><span class="nav-number">3.1.</span> <span class="nav-text">SQL 解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SQL-转换及优化"><span class="nav-number">3.2.</span> <span class="nav-text">SQL 转换及优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SQL-执行"><span class="nav-number">3.3.</span> <span class="nav-text">SQL 执行</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Table-API"><span class="nav-number">4.</span> <span class="nav-text">Table API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <div class="copyright" >
+  
+  &copy; &nbsp;  2015 - 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JR</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="powered-by">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+<div class="theme-info">
+  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
+</div>
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+    
+
+  
+
+
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+</body>
+</html>
