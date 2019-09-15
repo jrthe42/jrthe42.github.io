@@ -1,630 +1,472 @@
-<!doctype html>
-<html class="theme-next use-motion theme-next-mist">
+<!DOCTYPE html>
+<html lang="zh-cn">
 <head>
-  
-
-<meta charset="UTF-8"/>
-<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>从 SQL 语句中解析出源表和结果表 - JR&#39;s Blog</title>
+  <meta name="renderer" content="webkit" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-
 
 <meta http-equiv="Cache-Control" content="no-transform" />
 <meta http-equiv="Cache-Control" content="no-siteapp" />
 
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="jrthe42" /><meta name="description" content="SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。 在 Calcite 中，解析出的 AST 是" /><meta name="keywords" content="jrthe42, Blog, Programming" />
 
 
 
 
 
-  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+<meta name="generator" content="Hugo 0.58.0 with theme even" />
+
+
+<link rel="canonical" href="https://blog.jrwang.me/2018/parse-table-in-sql/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+<link href="/dist/even.7d171193.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="从 SQL 语句中解析出源表和结果表" />
+<meta property="og:description" content="SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。 在 Calcite 中，解析出的 AST 是" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.jrwang.me/2018/parse-table-in-sql/" />
+<meta property="article:published_time" content="2018-05-30T15:15:57+00:00" />
+<meta property="article:modified_time" content="2018-05-30T15:15:57+00:00" />
+<meta itemprop="name" content="从 SQL 语句中解析出源表和结果表">
+<meta itemprop="description" content="SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。 在 Calcite 中，解析出的 AST 是">
+
+
+<meta itemprop="datePublished" content="2018-05-30T15:15:57&#43;00:00" />
+<meta itemprop="dateModified" content="2018-05-30T15:15:57&#43;00:00" />
+<meta itemprop="wordCount" content="1004">
 
 
 
+<meta itemprop="keywords" content="Calcite,SQL," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="从 SQL 语句中解析出源表和结果表"/>
+<meta name="twitter:description" content="SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。 在 Calcite 中，解析出的 AST 是"/>
 
-<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
-
-
-    <meta name="description" content="想入非非就是寻找神奇" />
-
-
-
-  <meta name="keywords" content="SQL,Calcite," />
-
-
-
-
-
-  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
-
-
-<meta name="description" content="SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。 在 Calcite 中，解析出的 AST 是以 SqlNode 的形式表现的，一个 SqlNode 即是 AST 中的一个节点。SqlNode 有众多的子类，但是因为我们的目标只是为了找出语句中涉及到的表，因而我们重点关注会出现对表的引用的节点。表名在 AST">
-<meta name="keywords" content="SQL,Calcite">
-<meta property="og:type" content="article">
-<meta property="og:title" content="从 SQL 语句中解析出源表和结果表">
-<meta property="og:url" content="http://blog.jrwang.me/2018/parse-table-in-sql/index.html">
-<meta property="og:site_name" content="JR&#39;s Blog">
-<meta property="og:description" content="SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。 在 Calcite 中，解析出的 AST 是以 SqlNode 的形式表现的，一个 SqlNode 即是 AST 中的一个节点。SqlNode 有众多的子类，但是因为我们的目标只是为了找出语句中涉及到的表，因而我们重点关注会出现对表的引用的节点。表名在 AST">
-<meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-04-07T16:39:45.736Z">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="从 SQL 语句中解析出源表和结果表">
-<meta name="twitter:description" content="SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。 在 Calcite 中，解析出的 AST 是以 SqlNode 的形式表现的，一个 SqlNode 即是 AST 中的一个节点。SqlNode 有众多的子类，但是因为我们的目标只是为了找出语句中涉及到的表，因而我们重点关注会出现对表的引用的节点。表名在 AST">
-
-
-<script type="text/javascript" id="hexo.configuration">
-  var CONFIG = {
-    scheme: 'Mist',
-    sidebar: 'hide'
-  };
-</script>
-
-  <title> 从 SQL 语句中解析出源表和结果表 | JR's Blog </title>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
-
-  <!--[if lte IE 8]>
-  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
-    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
-      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
-           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
-           style='margin-left:auto;margin-right:auto;display: block;'/>
-    </a>
-  </div>
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
 <![endif]-->
-  
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-  ga('create', 'UA-66913886-2', 'auto');
-  ga('send', 'pageview');
-</script>
 
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
 
-
-
-  <div class="container one-column page-post-detail">
-    <div class="headband"></div>
-
-    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
-      <div class="header-inner"><h1 class="site-meta">
-  <span class="logo-line-before"><i></i></span>
-  <a href="/" class="brand" rel="start">
-      <span class="logo">
-        <i class="icon-next-logo"></i>
-      </span>
-      <span class="site-title">JR's Blog</span>
-  </a>
-  <span class="logo-line-after"><i></i></span>
-</h1>
-
-<div class="site-nav-toggle">
-  <button>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-  </button>
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">JRTHE42</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">JRTHE42</a>
 </div>
 
-<nav class="site-nav">
-  
-
-  
-    <ul id="menu" class="menu ">
-      
-        
-        <li class="menu-item menu-item-home">
-          <a href="/" rel="section">
-            <i class="menu-item-icon icon-next-home"></i> <br />
-            首页
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-archives">
-          <a href="/archives" rel="section">
-            <i class="menu-item-icon icon-next-archives"></i> <br />
-            归档
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-tags">
-          <a href="/tags" rel="section">
-            <i class="menu-item-icon icon-next-tags"></i> <br />
-            标签
-          </a>
-        </li>
-      
-
-      
-      
-    </ul>
-  
-
-  
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
 </nav>
-
- </div>
     </header>
 
     <main id="main" class="main">
-      <div class="main-inner">
-        <div id="content" class="content"> 
-
-  <div id="posts" class="posts-expand">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
     
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              从 SQL 语句中解析出源表和结果表
-            
-          
-        </h1>
-      
+      <h1 class="post-title">从 SQL 语句中解析出源表和结果表</h1>
 
       <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2018-05-30T15:15:57+08:00" content="2018-05-30">
-            2018-05-30
-          </time>
-        </span>
-
+        <span class="post-time"> 2018-05-30 </span>
         
-
-        
-          
         
       </div>
     </header>
 
-    <div class="post-body">
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content always-active">
+    
+  </div>
+</div>
+    <div class="post-content">
+      <p>SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。</p>
 
-      
-      
-
-      
-        <span itemprop="articleBody"><p>SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。</p>
 <p>在 Calcite 中，解析出的 AST 是以 <code>SqlNode</code> 的形式表现的，一个 <code>SqlNode</code> 即是 AST 中的一个节点。SqlNode 有众多的子类，但是因为我们的目标只是为了找出语句中涉及到的表，因而我们重点关注会出现对表的引用的节点。表名在 AST 中会是一个 <code>SqlIdentifier</code> 的叶子结点，但并非所有 <code>SqlIdentifier</code> 叶子结点都对应表，列名也对应 <code>SqlIdentifier</code>。</p>
+
 <p>在一条 SQL 中，最终出现表的引用的情况归结于以下两种情况：</p>
+
 <ol>
 <li><code>SELECT</code> 语句的 <code>FROM</code> clause 中的直接引用</li>
 <li><code>JOIN</code> 语句中 LEFT 和 RIGHT clause 中的直接引用</li>
 </ol>
+
 <p>嵌套子查询的 SQL 语句中，最终进入到子查询的 AST 子树中，只要出现了对表的引用，一定会分解出以上两种结构。因此，对于一个 <code>SqlIdentifier</code> 类型的叶子节点，在：</p>
+
 <ol>
 <li>父节点是 <code>SqlSelect</code>，且当前节点是父节点的 FROM 子句派生出的子节点</li>
 <li>父节点是 <code>SqlJoin</code></li>
 </ol>
+
 <p>这两种情况下，该叶子结点就是一个表的引用。</p>
+
 <p>另外，一种特殊的情况需要加以考虑。在 SQL 中 <code>AS</code> 常用作起别名，因而可能 <code>SqlIdentifier</code> 的父节点是 <code>AS</code>，而 <code>AS</code> 的父节点是 <code>SELECT</code> 或 <code>JOIN</code>。这种情况下，我们可以将 <code>AS</code> 看作一种 <strong>“转发”</strong> 结点，即 <code>AS</code> 的父节点和子节点忽略掉 <code>AS</code> 结点，直接构成父子关系。</p>
+
 <p>从根结点开始遍历 AST，解析所有的子查询，找到符合上述两种情况的子结构，就可以提取出所有对表的引用。</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment">  * get source tables and target tables from AST (SqlNode)</span></span><br><span class="line"><span class="comment">  *</span></span><br><span class="line"><span class="comment">  * @param sqlNode a top level SqlNode, aka Root of AST, can only be SELECT OR INSERT</span></span><br><span class="line"><span class="comment">  * @return a tuple contains source tables and target tables name</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">extractTablesInSql</span></span>(sqlNode: <span class="type">SqlNode</span>): (<span class="type">Set</span>[<span class="type">String</span>], <span class="type">Set</span>[<span class="type">String</span>]) = &#123;</span><br><span class="line">  sqlNode.getKind <span class="keyword">match</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="type">SqlKind</span>.<span class="type">INSERT</span> =&gt;</span><br><span class="line">      extractTablesInSqlInsert(sqlNode.asInstanceOf[<span class="type">SqlInsert</span>])</span><br><span class="line">    <span class="keyword">case</span> <span class="type">SqlKind</span>.<span class="type">SELECT</span> =&gt;</span><br><span class="line">      extractTablesInSqlSelect(sqlNode.asInstanceOf[<span class="type">SqlSelect</span>])</span><br><span class="line">    <span class="keyword">case</span> _ =&gt;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">IllegalArgumentException</span>(<span class="string">s"Can not parse tables in <span class="subst">$sqlNode</span>"</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">extractTablesInSqlSelect</span></span>(sqlSelect: <span class="type">SqlSelect</span>): (<span class="type">Set</span>[<span class="type">String</span>], <span class="type">Set</span>[<span class="type">String</span>]) = &#123;</span><br><span class="line">  <span class="keyword">val</span> sourceTables = extractSourceTableInSql(sqlSelect,<span class="literal">false</span>)</span><br><span class="line">  <span class="keyword">val</span> targetTables = <span class="type">Set</span>[<span class="type">String</span>]() <span class="comment">//target tables is empty</span></span><br><span class="line">  (sourceTables,targetTables)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">extractTablesInSqlInsert</span></span>(sqlInsert: <span class="type">SqlInsert</span>): (<span class="type">Set</span>[<span class="type">String</span>],<span class="type">Set</span>[<span class="type">String</span>]) = &#123;</span><br><span class="line">  <span class="keyword">val</span> sourceTables = extractSourceTableInSql(sqlInsert.getSource,<span class="literal">false</span>)</span><br><span class="line">  require(sqlInsert.getTargetTable.isInstanceOf[<span class="type">SqlIdentifier</span>])</span><br><span class="line">  <span class="keyword">val</span> targetTables = <span class="type">Set</span>(sqlInsert.getTargetTable.asInstanceOf[<span class="type">SqlIdentifier</span>].toString)</span><br><span class="line">  (sourceTables,targetTables)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * parse source tables recursively</span></span><br><span class="line"><span class="comment">  *</span></span><br><span class="line"><span class="comment">  * @param sqlNode      a sqlNode may contains source table</span></span><br><span class="line"><span class="comment">  * @param fromOrJoin   a boolean value indicate this node is</span></span><br><span class="line"><span class="comment">  *                     1. A FROM child of a SELECT node,</span></span><br><span class="line"><span class="comment">  *                     or</span></span><br><span class="line"><span class="comment">  *                     2. A child of a JOIN node</span></span><br><span class="line"><span class="comment">  *                     source table only occurred in SubQuery</span></span><br><span class="line"><span class="comment">  * @return a set of source table names</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">extractSourceTableInSql</span></span>(sqlNode: <span class="type">SqlNode</span>, fromOrJoin: <span class="type">Boolean</span>): <span class="type">Set</span>[<span class="type">String</span>] = &#123;</span><br><span class="line">  <span class="keyword">if</span> (sqlNode == <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">//no source table</span></span><br><span class="line">    <span class="type">Set</span>[<span class="type">String</span>]()</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    sqlNode.getKind <span class="keyword">match</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> <span class="type">SqlKind</span>.<span class="type">SELECT</span> =&gt;</span><br><span class="line">        <span class="comment">//may have subQuery in FROM, SELECT list, WHERE, HAVING</span></span><br><span class="line">        <span class="keyword">val</span> selectNode = sqlNode.asInstanceOf[<span class="type">SqlSelect</span>]</span><br><span class="line">        <span class="keyword">val</span> sourceInFromClause = extractSourceTableInSql(selectNode.getFrom,<span class="literal">true</span>)</span><br><span class="line">        <span class="keyword">val</span> sourceInSelectListClause = selectNode.getSelectList.getList.asScala</span><br><span class="line">          .filter(_.isInstanceOf[<span class="type">SqlCall</span>]) <span class="comment">//if not SqlCall, just ignore it</span></span><br><span class="line">          .foldLeft[<span class="type">Set</span>[<span class="type">String</span>]](<span class="type">Set</span>())((s,node) =&gt; &#123;</span><br><span class="line">          s ++ extractSourceTableInSql(node,<span class="literal">false</span>)</span><br><span class="line">        &#125;)</span><br><span class="line">        <span class="keyword">val</span> sourceInWhereClause = extractSourceTableInSql(selectNode.getWhere,<span class="literal">false</span>)</span><br><span class="line">        <span class="keyword">val</span> sourceInHavingClause = extractSourceTableInSql(selectNode.getHaving,<span class="literal">false</span>)</span><br><span class="line">        sourceInFromClause ++ sourceInSelectListClause ++ sourceInWhereClause ++ sourceInHavingClause</span><br><span class="line">      <span class="keyword">case</span> <span class="type">SqlKind</span>.<span class="type">JOIN</span> =&gt;</span><br><span class="line">        <span class="keyword">val</span> left = extractSourceTableInSql(sqlNode.asInstanceOf[<span class="type">SqlJoin</span>].getLeft,<span class="literal">true</span>)</span><br><span class="line">        <span class="keyword">val</span> right = extractSourceTableInSql(sqlNode.asInstanceOf[<span class="type">SqlJoin</span>].getRight,<span class="literal">true</span>)</span><br><span class="line">        left ++ right</span><br><span class="line">      <span class="keyword">case</span> <span class="type">SqlKind</span>.<span class="type">AS</span> =&gt;</span><br><span class="line">        <span class="comment">//AS node should at least 2 operand</span></span><br><span class="line">        require(sqlNode.asInstanceOf[<span class="type">SqlCall</span>].operandCount() &gt;= <span class="number">2</span>)</span><br><span class="line">        <span class="comment">//AS only consider operand[0], forward fromOrJoin relation to next level</span></span><br><span class="line">        extractSourceTableInSql(sqlNode.asInstanceOf[<span class="type">SqlCall</span>].operand(<span class="number">0</span>),fromOrJoin)</span><br><span class="line">      <span class="keyword">case</span> <span class="type">SqlKind</span>.<span class="type">IDENTIFIER</span> =&gt;</span><br><span class="line">        <span class="keyword">if</span> (fromOrJoin) &#123;</span><br><span class="line">          <span class="comment">//If this IDENTIFIER is one of</span></span><br><span class="line">          <span class="comment">// 1. A FROM child of a SELECT node,</span></span><br><span class="line">          <span class="comment">// 2. A child of a JOIN node</span></span><br><span class="line">          <span class="comment">// then it is a table name.</span></span><br><span class="line">          <span class="type">Set</span>(sqlNode.asInstanceOf[<span class="type">SqlIdentifier</span>].toString)</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          <span class="comment">//NOT a table name, may be column name or other identifier</span></span><br><span class="line">          <span class="type">Set</span>()</span><br><span class="line">        &#125;</span><br><span class="line">      <span class="keyword">case</span> _ <span class="keyword">if</span> sqlNode.isInstanceOf[<span class="type">SqlCall</span>] =&gt;</span><br><span class="line">        <span class="comment">//If is a SqlCall, find tables in all child node.</span></span><br><span class="line">        sqlNode.asInstanceOf[<span class="type">SqlCall</span>].getOperandList.asScala</span><br><span class="line">          .foldLeft[<span class="type">Set</span>[<span class="type">String</span>]](<span class="type">Set</span>())((s,node) =&gt; &#123;</span><br><span class="line">          s ++ extractSourceTableInSql(node,<span class="literal">false</span>)</span><br><span class="line">        &#125;)</span><br><span class="line">      <span class="keyword">case</span> _ =&gt;</span><br><span class="line">        <span class="comment">//all other kind of SqlNode, no source table</span></span><br><span class="line">        <span class="type">Set</span>[<span class="type">String</span>]()</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</span>
-      
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span><span class="lnt">83
+</span><span class="lnt">84
+</span><span class="lnt">85
+</span><span class="lnt">86
+</span><span class="lnt">87
+</span><span class="lnt">88
+</span><span class="lnt">89
+</span><span class="lnt">90
+</span><span class="lnt">91
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala">   <span class="cm">/**
+</span><span class="cm">    * get source tables and target tables from AST (SqlNode)
+</span><span class="cm">    *
+</span><span class="cm">    * @param sqlNode a top level SqlNode, aka Root of AST, can only be SELECT OR INSERT
+</span><span class="cm">    * @return a tuple contains source tables and target tables name
+</span><span class="cm">    */</span>
+  <span class="k">def</span> <span class="n">extractTablesInSql</span><span class="o">(</span><span class="n">sqlNode</span><span class="k">:</span> <span class="kt">SqlNode</span><span class="o">)</span><span class="k">:</span> <span class="o">(</span><span class="kt">Set</span><span class="o">[</span><span class="kt">String</span><span class="o">],</span> <span class="nc">Set</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="n">sqlNode</span><span class="o">.</span><span class="n">getKind</span> <span class="k">match</span> <span class="o">{</span>
+      <span class="k">case</span> <span class="nc">SqlKind</span><span class="o">.</span><span class="nc">INSERT</span> <span class="k">=&gt;</span>
+        <span class="n">extractTablesInSqlInsert</span><span class="o">(</span><span class="n">sqlNode</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">SqlInsert</span><span class="o">])</span>
+      <span class="k">case</span> <span class="nc">SqlKind</span><span class="o">.</span><span class="nc">SELECT</span> <span class="k">=&gt;</span>
+        <span class="n">extractTablesInSqlSelect</span><span class="o">(</span><span class="n">sqlNode</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">SqlSelect</span><span class="o">])</span>
+      <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nc">IllegalArgumentException</span><span class="o">(</span><span class="s">s&#34;Can not parse tables in </span><span class="si">$sqlNode</span><span class="s">&#34;</span><span class="o">)</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="k">private</span> <span class="k">def</span> <span class="n">extractTablesInSqlSelect</span><span class="o">(</span><span class="n">sqlSelect</span><span class="k">:</span> <span class="kt">SqlSelect</span><span class="o">)</span><span class="k">:</span> <span class="o">(</span><span class="kt">Set</span><span class="o">[</span><span class="kt">String</span><span class="o">],</span> <span class="nc">Set</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">sourceTables</span> <span class="k">=</span> <span class="n">extractSourceTableInSql</span><span class="o">(</span><span class="n">sqlSelect</span><span class="o">,</span><span class="kc">false</span><span class="o">)</span>
+    <span class="k">val</span> <span class="n">targetTables</span> <span class="k">=</span> <span class="nc">Set</span><span class="o">[</span><span class="kt">String</span><span class="o">]()</span> <span class="c1">//target tables is empty
+</span><span class="c1"></span>    <span class="o">(</span><span class="n">sourceTables</span><span class="o">,</span><span class="n">targetTables</span><span class="o">)</span>
+  <span class="o">}</span>
+
+  <span class="k">private</span> <span class="k">def</span> <span class="n">extractTablesInSqlInsert</span><span class="o">(</span><span class="n">sqlInsert</span><span class="k">:</span> <span class="kt">SqlInsert</span><span class="o">)</span><span class="k">:</span> <span class="o">(</span><span class="kt">Set</span><span class="o">[</span><span class="kt">String</span><span class="o">],</span><span class="nc">Set</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">sourceTables</span> <span class="k">=</span> <span class="n">extractSourceTableInSql</span><span class="o">(</span><span class="n">sqlInsert</span><span class="o">.</span><span class="n">getSource</span><span class="o">,</span><span class="kc">false</span><span class="o">)</span>
+    <span class="n">require</span><span class="o">(</span><span class="n">sqlInsert</span><span class="o">.</span><span class="n">getTargetTable</span><span class="o">.</span><span class="n">isInstanceOf</span><span class="o">[</span><span class="kt">SqlIdentifier</span><span class="o">])</span>
+    <span class="k">val</span> <span class="n">targetTables</span> <span class="k">=</span> <span class="nc">Set</span><span class="o">(</span><span class="n">sqlInsert</span><span class="o">.</span><span class="n">getTargetTable</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">SqlIdentifier</span><span class="o">].</span><span class="n">toString</span><span class="o">)</span>
+    <span class="o">(</span><span class="n">sourceTables</span><span class="o">,</span><span class="n">targetTables</span><span class="o">)</span>
+  <span class="o">}</span>
+
+  <span class="cm">/**
+</span><span class="cm">    * parse source tables recursively
+</span><span class="cm">    *
+</span><span class="cm">    * @param sqlNode      a sqlNode may contains source table
+</span><span class="cm">    * @param fromOrJoin   a boolean value indicate this node is
+</span><span class="cm">    *                     1. A FROM child of a SELECT node,
+</span><span class="cm">    *                     or
+</span><span class="cm">    *                     2. A child of a JOIN node
+</span><span class="cm">    *                     source table only occurred in SubQuery
+</span><span class="cm">    * @return a set of source table names
+</span><span class="cm">    */</span>
+  <span class="k">private</span> <span class="k">def</span> <span class="n">extractSourceTableInSql</span><span class="o">(</span><span class="n">sqlNode</span><span class="k">:</span> <span class="kt">SqlNode</span><span class="o">,</span> <span class="n">fromOrJoin</span><span class="k">:</span> <span class="kt">Boolean</span><span class="o">)</span><span class="k">:</span> <span class="kt">Set</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">sqlNode</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="c1">//no source table
+</span><span class="c1"></span>      <span class="nc">Set</span><span class="o">[</span><span class="kt">String</span><span class="o">]()</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="n">sqlNode</span><span class="o">.</span><span class="n">getKind</span> <span class="k">match</span> <span class="o">{</span>
+        <span class="k">case</span> <span class="nc">SqlKind</span><span class="o">.</span><span class="nc">SELECT</span> <span class="k">=&gt;</span>
+          <span class="c1">//may have subQuery in FROM, SELECT list, WHERE, HAVING
+</span><span class="c1"></span>          <span class="k">val</span> <span class="n">selectNode</span> <span class="k">=</span> <span class="n">sqlNode</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">SqlSelect</span><span class="o">]</span>
+          <span class="k">val</span> <span class="n">sourceInFromClause</span> <span class="k">=</span> <span class="n">extractSourceTableInSql</span><span class="o">(</span><span class="n">selectNode</span><span class="o">.</span><span class="n">getFrom</span><span class="o">,</span><span class="kc">true</span><span class="o">)</span>
+          <span class="k">val</span> <span class="n">sourceInSelectListClause</span> <span class="k">=</span> <span class="n">selectNode</span><span class="o">.</span><span class="n">getSelectList</span><span class="o">.</span><span class="n">getList</span><span class="o">.</span><span class="n">asScala</span>
+            <span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">isInstanceOf</span><span class="o">[</span><span class="kt">SqlCall</span><span class="o">])</span> <span class="c1">//if not SqlCall, just ignore it
+</span><span class="c1"></span>            <span class="o">.</span><span class="n">foldLeft</span><span class="o">[</span><span class="kt">Set</span><span class="o">[</span><span class="kt">String</span><span class="o">]](</span><span class="nc">Set</span><span class="o">())((</span><span class="n">s</span><span class="o">,</span><span class="n">node</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">{</span>
+            <span class="n">s</span> <span class="o">++</span> <span class="n">extractSourceTableInSql</span><span class="o">(</span><span class="n">node</span><span class="o">,</span><span class="kc">false</span><span class="o">)</span>
+          <span class="o">})</span>
+          <span class="k">val</span> <span class="n">sourceInWhereClause</span> <span class="k">=</span> <span class="n">extractSourceTableInSql</span><span class="o">(</span><span class="n">selectNode</span><span class="o">.</span><span class="n">getWhere</span><span class="o">,</span><span class="kc">false</span><span class="o">)</span>
+          <span class="k">val</span> <span class="n">sourceInHavingClause</span> <span class="k">=</span> <span class="n">extractSourceTableInSql</span><span class="o">(</span><span class="n">selectNode</span><span class="o">.</span><span class="n">getHaving</span><span class="o">,</span><span class="kc">false</span><span class="o">)</span>
+          <span class="n">sourceInFromClause</span> <span class="o">++</span> <span class="n">sourceInSelectListClause</span> <span class="o">++</span> <span class="n">sourceInWhereClause</span> <span class="o">++</span> <span class="n">sourceInHavingClause</span>
+        <span class="k">case</span> <span class="nc">SqlKind</span><span class="o">.</span><span class="nc">JOIN</span> <span class="k">=&gt;</span>
+          <span class="k">val</span> <span class="n">left</span> <span class="k">=</span> <span class="n">extractSourceTableInSql</span><span class="o">(</span><span class="n">sqlNode</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">SqlJoin</span><span class="o">].</span><span class="n">getLeft</span><span class="o">,</span><span class="kc">true</span><span class="o">)</span>
+          <span class="k">val</span> <span class="n">right</span> <span class="k">=</span> <span class="n">extractSourceTableInSql</span><span class="o">(</span><span class="n">sqlNode</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">SqlJoin</span><span class="o">].</span><span class="n">getRight</span><span class="o">,</span><span class="kc">true</span><span class="o">)</span>
+          <span class="n">left</span> <span class="o">++</span> <span class="n">right</span>
+        <span class="k">case</span> <span class="nc">SqlKind</span><span class="o">.</span><span class="nc">AS</span> <span class="k">=&gt;</span>
+          <span class="c1">//AS node should at least 2 operand
+</span><span class="c1"></span>          <span class="n">require</span><span class="o">(</span><span class="n">sqlNode</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">SqlCall</span><span class="o">].</span><span class="n">operandCount</span><span class="o">()</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="o">)</span>
+          <span class="c1">//AS only consider operand[0], forward fromOrJoin relation to next level
+</span><span class="c1"></span>          <span class="n">extractSourceTableInSql</span><span class="o">(</span><span class="n">sqlNode</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">SqlCall</span><span class="o">].</span><span class="n">operand</span><span class="o">(</span><span class="mi">0</span><span class="o">),</span><span class="n">fromOrJoin</span><span class="o">)</span>
+        <span class="k">case</span> <span class="nc">SqlKind</span><span class="o">.</span><span class="nc">IDENTIFIER</span> <span class="k">=&gt;</span>
+          <span class="k">if</span> <span class="o">(</span><span class="n">fromOrJoin</span><span class="o">)</span> <span class="o">{</span>
+            <span class="c1">//If this IDENTIFIER is one of
+</span><span class="c1"></span>            <span class="c1">// 1. A FROM child of a SELECT node,
+</span><span class="c1"></span>            <span class="c1">// 2. A child of a JOIN node
+</span><span class="c1"></span>            <span class="c1">// then it is a table name.
+</span><span class="c1"></span>            <span class="nc">Set</span><span class="o">(</span><span class="n">sqlNode</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">SqlIdentifier</span><span class="o">].</span><span class="n">toString</span><span class="o">)</span>
+          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="c1">//NOT a table name, may be column name or other identifier
+</span><span class="c1"></span>            <span class="nc">Set</span><span class="o">()</span>
+          <span class="o">}</span>
+        <span class="k">case</span> <span class="k">_</span> <span class="k">if</span> <span class="n">sqlNode</span><span class="o">.</span><span class="n">isInstanceOf</span><span class="o">[</span><span class="kt">SqlCall</span><span class="o">]</span> <span class="k">=&gt;</span>
+          <span class="c1">//If is a SqlCall, find tables in all child node.
+</span><span class="c1"></span>          <span class="n">sqlNode</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">SqlCall</span><span class="o">].</span><span class="n">getOperandList</span><span class="o">.</span><span class="n">asScala</span>
+            <span class="o">.</span><span class="n">foldLeft</span><span class="o">[</span><span class="kt">Set</span><span class="o">[</span><span class="kt">String</span><span class="o">]](</span><span class="nc">Set</span><span class="o">())((</span><span class="n">s</span><span class="o">,</span><span class="n">node</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">{</span>
+            <span class="n">s</span> <span class="o">++</span> <span class="n">extractSourceTableInSql</span><span class="o">(</span><span class="n">node</span><span class="o">,</span><span class="kc">false</span><span class="o">)</span>
+          <span class="o">})</span>
+        <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span>
+          <span class="c1">//all other kind of SqlNode, no source table
+</span><span class="c1"></span>          <span class="nc">Set</span><span class="o">[</span><span class="kt">String</span><span class="o">]()</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+  <span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
     </div>
 
-    <footer class="post-footer">
-      
-        <div class="post-tags">
-          
-            <a href="/tags/SQL/" rel="tag">#SQL</a>
-          
-            <a href="/tags/Calcite/" rel="tag">#Calcite</a>
-          
-        </div>
-      
-
-      
-        <div class="post-nav">
-          <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2018/dynamic-variable-in-scala/" rel="prev">DynamicVariable in Scala</a>
-            
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">原始链接</span>
+    <span class="item-content"><a href="https://blog.jrwang.me/2018/parse-table-in-sql/">https://blog.jrwang.me/2018/parse-table-in-sql/</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2018-05-30
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/calcite/">Calcite</a>
+          <a href="/tags/sql/">SQL</a>
           </div>
-
-          <div class="post-nav-next post-nav-item">
-            
-              <a href="/2018/partial-function-in-scala/" rel="next">Partial Function in Scala</a>
-            
-          </div>
-        </div>
-      
-
-      
-      
+      <nav class="post-nav">
+        <a class="prev" href="/2018/dynamic-variable-in-scala/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">DynamicVariable in Scala</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/2018/partial-function-in-scala/">
+            <span class="next-text nav-default">Partial Function in Scala</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
     </footer>
   </article>
-
-
-
-    <div class="post-spread">
-      
-    </div>
-  </div>
-
- </div>
-
+        </div>
         
 
-        
-          <div class="comments" id="comments">
-            
-          </div>
-        
-      </div>
-
-      
   
-  <div class="sidebar-toggle">
-    <div class="sidebar-toggle-line-wrap">
-      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
-    </div>
-  </div>
 
-  <aside id="sidebar" class="sidebar">
-    <div class="sidebar-inner">
+  
+    <script src="https://utteranc.es/client.js"
+            repo="jrthe42/blog-comment"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/utterance">comments powered by utterances.</a></noscript>
 
-      
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview">
-            站点概览
-          </li>
-        </ul>
-      
-
-      <section class="site-overview">
-        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
-          <p class="site-author-name" itemprop="name">JR</p>
-        </div>
-        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
-        <nav class="site-state motion-element">
-          <div class="site-state-item site-state-posts">
-            <a href="/archives">
-              <span class="site-state-item-count">43</span>
-              <span class="site-state-item-name">日志</span>
-            </a>
-          </div>
-
-          
-
-          <div class="site-state-item site-state-tags">
-            <a href="/tags">
-              <span class="site-state-item-count">21</span>
-              <span class="site-state-item-name">标签</span>
-              </a>
-          </div>
-
-        </nav>
-
-        
-
-        <div class="links-of-author motion-element">
-          
-            
-              <span class="links-of-author-item">
-                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://music.jrwang.me" target="_blank">Music</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://jrwang.me" target="_blank">Site</a>
-              </span>
-            
-          
-        </div>
-
-        
-        
-          <div class="cc-license motion-element" itemprop="license">
-            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
-              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
-            </a>
-          </div>
-        
-
-        <div class="links-of-author motion-element">
-          
-        </div>
-
-      </section>
-
-      
-        <section class="post-toc-wrap sidebar-panel-active">
-          <div class="post-toc-indicator-top post-toc-indicator"></div>
-          <div class="post-toc">
-            
-            
-              <p class="post-toc-empty">此文章未包含目录</p>
-            
-          </div>
-          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
-        </section>
-      
-
-    </div>
-  </aside>
-
-
+      </div>
     </main>
 
     <footer id="footer" class="footer">
-      <div class="footer-inner"> <div class="copyright" >
-  
-  &copy; &nbsp;  2015 - 
-  <span itemprop="copyrightYear">2019</span>
-  <span class="with-love">
-    <i class="icon-next-heart"></i>
+      <div class="social-links">
+      <a href="mailto:jrthe42@gmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/jrthe42" class="iconfont icon-github" title="github"></a>
+      <a href="https://weibo.com/jrthe42" class="iconfont icon-weibo" title="weibo"></a>
+  <a href="https://blog.jrwang.me/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
   </span>
-  <span class="author" itemprop="copyrightHolder">JR</span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2015 - 
+    2019
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </span>
 </div>
-
-<div class="powered-by">
-  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
-</div>
-
-<div class="powered-by">
-  主题 -
-  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
-    NexT.Mist
-  </a>
-</div>
-
-<div class="theme-info">
-  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
-</div>
-
-
- </div>
     </footer>
 
-    <div class="back-to-top"></div>
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
   </div>
-
-  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
-
   
-  
-  
-    
-    
-
-  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.f79f403f.min.js"></script>
 
 
-  
-  
-  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
-  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
-
-
-  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
-  
-
-  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
-  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
-
-  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
-
-
-
-
-  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
-  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
-
-  
-  
-<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
-
-
-<script type="text/javascript" id="sidebar.toc.highlight">
-  $(document).ready(function () {
-    var tocSelector = '.post-toc';
-    var $tocSelector = $(tocSelector);
-    var activeCurrentSelector = '.active-current';
-
-    $tocSelector
-      .on('activate.bs.scrollspy', function () {
-        var $currentActiveElement = $(tocSelector + ' .active').last();
-
-        removeCurrentActiveClass();
-        $currentActiveElement.addClass('active-current');
-
-        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
-      })
-      .on('clear.bs.scrollspy', function () {
-        removeCurrentActiveClass();
-      });
-
-    function removeCurrentActiveClass () {
-      $(tocSelector + ' ' + activeCurrentSelector)
-        .removeClass(activeCurrentSelector.substring(1));
-    }
-
-    function processTOC () {
-      getTOCMaxHeight();
-      toggleTOCOverflowIndicators();
-    }
-
-    function getTOCMaxHeight () {
-      var height = $('.sidebar').height() -
-                   $tocSelector.position().top -
-                   $('.post-toc-indicator-bottom').height();
-
-      $tocSelector.css('height', height);
-
-      return height;
-    }
-
-    function toggleTOCOverflowIndicators () {
-      tocOverflowIndicator(
-        '.post-toc-indicator-top',
-        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
-      );
-
-      tocOverflowIndicator(
-        '.post-toc-indicator-bottom',
-        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
-      )
-    }
-
-    $(document).on('sidebar.motion.complete', function () {
-      processTOC();
-    });
-
-    $('body').scrollspy({ target: tocSelector });
-    $(window).on('resize', function () {
-      if ( $('.sidebar').hasClass('sidebar-active') ) {
-        processTOC();
-      }
-    });
-
-    onScroll($tocSelector);
-
-    function onScroll (element) {
-      element.on('mousewheel DOMMouseScroll', function (event) {
-          var oe = event.originalEvent;
-          var delta = oe.wheelDelta || -oe.detail;
-
-          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
-          event.preventDefault();
-
-          toggleTOCOverflowIndicators();
-      });
-    }
-
-    function tocOverflowIndicator (indicator, action) {
-      var $indicator = $(indicator);
-      var opacity = action === 'show' ? 0.4 : 0;
-      $indicator.velocity ?
-        $indicator.velocity('stop').velocity({
-          opacity: opacity
-        }, { duration: 100 }) :
-        $indicator.stop().animate({
-          opacity: opacity
-        }, 100);
-    }
-
-  });
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-66913886-2', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
 </script>
-
-<script type="text/javascript" id="sidebar.nav">
-  $(document).ready(function () {
-    var html = $('html');
-    var TAB_ANIMATE_DURATION = 200;
-    var hasVelocity = $.isFunction(html.velocity);
-
-    $('.sidebar-nav li').on('click', function () {
-      var item = $(this);
-      var activeTabClassName = 'sidebar-nav-active';
-      var activePanelClassName = 'sidebar-panel-active';
-      if (item.hasClass(activeTabClassName)) {
-        return;
-      }
-
-      var currentTarget = $('.' + activePanelClassName);
-      var target = $('.' + item.data('target'));
-
-      hasVelocity ?
-        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
-          target
-            .velocity('stop')
-            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
-            .addClass(activePanelClassName);
-        }) :
-        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
-          currentTarget.hide();
-          target
-            .stop()
-            .css({'opacity': 0, 'display': 'block'})
-            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
-              currentTarget.removeClass(activePanelClassName);
-              target.addClass(activePanelClassName);
-            });
-        });
-
-      item.siblings().removeClass(activeTabClassName);
-      item.addClass(activeTabClassName);
-    });
-
-    $('.post-toc a').on('click', function (e) {
-      e.preventDefault();
-      var targetSelector = escapeSelector(this.getAttribute('href'));
-      var offset = $(targetSelector).offset().top;
-      hasVelocity ?
-        html.velocity('stop').velocity('scroll', {
-          offset: offset  + 'px',
-          mobileHA: false
-        }) :
-        $('html, body').stop().animate({
-          scrollTop: offset
-        }, 500);
-    });
-
-    // Expand sidebar on post detail page by default, when post has a toc.
-    var $tocContent = $('.post-toc-content');
-    if (isDesktop() && CONFIG.sidebar === 'post') {
-      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
-        displaySidebar();
-      }
-    }
-  });
-</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
 
 
 
-  <script type="text/javascript">
-    $(document).ready(function () {
-      if (CONFIG.sidebar === 'always') {
-        displaySidebar();
-      }
-      if (isMobile()) {
-        FastClick.attach(document.body);
-      }
-    });
-  </script>
 
-  
 
-  
-  
 
-  
-  <script type="text/javascript" src="/js/lazyload.js"></script>
-  <script type="text/javascript">
-    $(function () {
-      $("#posts").find('img').lazyload({
-        placeholder: "/images/loading.gif",
-        effect: "fadeIn"
-      });
-    });
-  </script>
+
 </body>
 </html>

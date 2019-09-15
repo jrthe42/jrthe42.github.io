@@ -1,653 +1,928 @@
-<!doctype html>
-<html class="theme-next use-motion theme-next-mist">
+<!DOCTYPE html>
+<html lang="zh-cn">
 <head>
-  
-
-<meta charset="UTF-8"/>
-<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Flink 源码阅读笔记（1）- StreamGraph 的生成 - JR&#39;s Blog</title>
+  <meta name="renderer" content="webkit" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-
 
 <meta http-equiv="Cache-Control" content="no-transform" />
 <meta http-equiv="Cache-Control" content="no-siteapp" />
 
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="jrthe42" /><meta name="description" content="在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。 StreamExecutionEnvironment StreamExecutionEnvironment 是 Flink" /><meta name="keywords" content="jrthe42, Blog, Programming" />
 
 
 
 
 
-  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+<meta name="generator" content="Hugo 0.58.0 with theme even" />
+
+
+<link rel="canonical" href="https://blog.jrwang.me/2019/flink-source-code-streamgraph/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+<link href="/dist/even.7d171193.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="Flink 源码阅读笔记（1）- StreamGraph 的生成" />
+<meta property="og:description" content="在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。 StreamExecutionEnvironment StreamExecutionEnvironment 是 Flink" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.jrwang.me/2019/flink-source-code-streamgraph/" />
+<meta property="article:published_time" content="2019-02-16T20:42:38+00:00" />
+<meta property="article:modified_time" content="2019-02-16T20:42:38+00:00" />
+<meta itemprop="name" content="Flink 源码阅读笔记（1）- StreamGraph 的生成">
+<meta itemprop="description" content="在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。 StreamExecutionEnvironment StreamExecutionEnvironment 是 Flink">
+
+
+<meta itemprop="datePublished" content="2019-02-16T20:42:38&#43;00:00" />
+<meta itemprop="dateModified" content="2019-02-16T20:42:38&#43;00:00" />
+<meta itemprop="wordCount" content="3291">
 
 
 
+<meta itemprop="keywords" content="Flink," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Flink 源码阅读笔记（1）- StreamGraph 的生成"/>
+<meta name="twitter:description" content="在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。 StreamExecutionEnvironment StreamExecutionEnvironment 是 Flink"/>
 
-<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
-
-
-    <meta name="description" content="想入非非就是寻找神奇" />
-
-
-
-  <meta name="keywords" content="Flink," />
-
-
-
-
-
-  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
-
-
-<meta name="description" content="在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。 StreamExecutionEnvironmentStreamExecutionEnvironment 是 Flink 在流模式下任务执行的上下文，也是我们编写 Flink 程序的入口。根据具体的执行环境不同，StreamExecutio">
-<meta name="keywords" content="Flink">
-<meta property="og:type" content="article">
-<meta property="og:title" content="Flink 源码阅读笔记（1）- StreamGraph 的生成">
-<meta property="og:url" content="http://blog.jrwang.me/2019/flink-source-code-streamgraph/index.html">
-<meta property="og:site_name" content="JR&#39;s Blog">
-<meta property="og:description" content="在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。 StreamExecutionEnvironmentStreamExecutionEnvironment 是 Flink 在流模式下任务执行的上下文，也是我们编写 Flink 程序的入口。根据具体的执行环境不同，StreamExecutio">
-<meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-04-07T16:50:51.255Z">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Flink 源码阅读笔记（1）- StreamGraph 的生成">
-<meta name="twitter:description" content="在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。 StreamExecutionEnvironmentStreamExecutionEnvironment 是 Flink 在流模式下任务执行的上下文，也是我们编写 Flink 程序的入口。根据具体的执行环境不同，StreamExecutio">
-
-
-<script type="text/javascript" id="hexo.configuration">
-  var CONFIG = {
-    scheme: 'Mist',
-    sidebar: 'hide'
-  };
-</script>
-
-  <title> Flink 源码阅读笔记（1）- StreamGraph 的生成 | JR's Blog </title>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
-
-  <!--[if lte IE 8]>
-  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
-    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
-      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
-           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
-           style='margin-left:auto;margin-right:auto;display: block;'/>
-    </a>
-  </div>
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
 <![endif]-->
-  
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-  ga('create', 'UA-66913886-2', 'auto');
-  ga('send', 'pageview');
-</script>
 
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
 
-
-
-  <div class="container one-column page-post-detail">
-    <div class="headband"></div>
-
-    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
-      <div class="header-inner"><h1 class="site-meta">
-  <span class="logo-line-before"><i></i></span>
-  <a href="/" class="brand" rel="start">
-      <span class="logo">
-        <i class="icon-next-logo"></i>
-      </span>
-      <span class="site-title">JR's Blog</span>
-  </a>
-  <span class="logo-line-after"><i></i></span>
-</h1>
-
-<div class="site-nav-toggle">
-  <button>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-  </button>
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">JRTHE42</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">JRTHE42</a>
 </div>
 
-<nav class="site-nav">
-  
-
-  
-    <ul id="menu" class="menu ">
-      
-        
-        <li class="menu-item menu-item-home">
-          <a href="/" rel="section">
-            <i class="menu-item-icon icon-next-home"></i> <br />
-            首页
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-archives">
-          <a href="/archives" rel="section">
-            <i class="menu-item-icon icon-next-archives"></i> <br />
-            归档
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-tags">
-          <a href="/tags" rel="section">
-            <i class="menu-item-icon icon-next-tags"></i> <br />
-            标签
-          </a>
-        </li>
-      
-
-      
-      
-    </ul>
-  
-
-  
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
 </nav>
-
- </div>
     </header>
 
     <main id="main" class="main">
-      <div class="main-inner">
-        <div id="content" class="content"> 
-
-  <div id="posts" class="posts-expand">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
     
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              Flink 源码阅读笔记（1）- StreamGraph 的生成
-            
-          
-        </h1>
-      
+      <h1 class="post-title">Flink 源码阅读笔记（1）- StreamGraph 的生成</h1>
 
       <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2019-02-16T20:42:38+08:00" content="2019-02-16">
-            2019-02-16
-          </time>
-        </span>
-
+        <span class="post-time"> 2019-02-16 </span>
         
-
-        
-          
         
       </div>
     </header>
 
-    <div class="post-body">
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#streamexecutionenvironment">StreamExecutionEnvironment</a></li>
+<li><a href="#streamtransformation">StreamTransformation</a></li>
+<li><a href="#datastream">DataStream</a></li>
+<li><a href="#streamoperator">StreamOperator</a></li>
+<li><a href="#streamgraph">StreamGraph</a></li>
+<li><a href="#小结">小结</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      
 
-      
-      
+<p>在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。</p>
 
-      
-        <span itemprop="articleBody"><p>在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。</p>
-<h2 id="StreamExecutionEnvironment"><a href="#StreamExecutionEnvironment" class="headerlink" title="StreamExecutionEnvironment"></a>StreamExecutionEnvironment</h2><p><code>StreamExecutionEnvironment</code> 是 Flink 在流模式下任务执行的上下文，也是我们编写 Flink 程序的入口。根据具体的执行环境不同，<code>StreamExecutionEnvironment</code> 有不同的具体实现类，如 <code>LocalStreamEnvironment</code>, <code>RemoteStreamEnvironment</code> 等。<code>StreamExecutionEnvironment</code> 也提供了用来配置默认并行度、Checkpointing 等机制的方法，这些配置主要都保存在 <code>ExecutionConfig</code> 和 <code>CheckpointConfig</code> 中。我们现在先只关注拓扑结构的产生。</p>
+<h2 id="streamexecutionenvironment">StreamExecutionEnvironment</h2>
+
+<p><code>StreamExecutionEnvironment</code> 是 Flink 在流模式下任务执行的上下文，也是我们编写 Flink 程序的入口。根据具体的执行环境不同，<code>StreamExecutionEnvironment</code> 有不同的具体实现类，如 <code>LocalStreamEnvironment</code>, <code>RemoteStreamEnvironment</code> 等。<code>StreamExecutionEnvironment</code> 也提供了用来配置默认并行度、Checkpointing 等机制的方法，这些配置主要都保存在 <code>ExecutionConfig</code> 和 <code>CheckpointConfig</code> 中。我们现在先只关注拓扑结构的产生。</p>
+
 <p>通常一个 Flink 任务是按照下面的流程来编写处理逻辑的：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">senv.addSource(XXX)</span><br><span class="line">  .map(XXX)</span><br><span class="line">  .filter(XXX)</span><br><span class="line">  .addSink(XXX)</span><br></pre></td></tr></table></figure>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="n">senv</span><span class="p">.</span><span class="na">addSource</span><span class="p">(</span><span class="n">XXX</span><span class="p">)</span>
+	<span class="p">.</span><span class="na">map</span><span class="p">(</span><span class="n">XXX</span><span class="p">)</span>
+  <span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="n">XXX</span><span class="p">)</span>
+  <span class="p">.</span><span class="na">addSink</span><span class="p">(</span><span class="n">XXX</span><span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>添加数据源后获得 <code>DataStream</code>, 之后通过不同的算子不停地在 <code>DataStream</code> 上实现转换过滤等逻辑，最终将结果输出到 <code>DataSink</code> 中。</p>
+
 <p>在 StreamExecutionEnvironment 内部使用一个 <code>List&lt;StreamTransformation&lt;?&gt;&gt; transformations</code> 来保留生成 <code>DataStream</code> 的所有转换。</p>
-<h2 id="StreamTransformation"><a href="#StreamTransformation" class="headerlink" title="StreamTransformation"></a>StreamTransformation</h2><p><code>StreamTransformation</code> 代表了生成 <code>DataStream</code> 的操作，每一个 <code>DataStream</code> 的底层都有对应的一个 <code>StreamTransformation</code>。在 <code>DataStream</code> 上面通过 <code>map</code> 等算子不断进行转换，就得到了由 <code>StreamTransformation</code> 构成的图。当需要执行的时候，底层的这个图就会被转换成 <code>StreamGraph</code>。</p>
+
+<h2 id="streamtransformation">StreamTransformation</h2>
+
+<p><code>StreamTransformation</code> 代表了生成 <code>DataStream</code> 的操作，每一个 <code>DataStream</code> 的底层都有对应的一个 <code>StreamTransformation</code>。在 <code>DataStream</code> 上面通过 <code>map</code> 等算子不断进行转换，就得到了由 <code>StreamTransformation</code> 构成的图。当需要执行的时候，底层的这个图就会被转换成 <code>StreamGraph</code>。</p>
+
 <p><code>StreamTransformation</code> 在运行时并不一定对应着一个物理转换操作，有一些操作只是逻辑层面上的，比如 split/select/partitioning 等。</p>
+
 <p>每一个 <code>StreamTransformation</code> 都有一个关联的 Id，这个 Id 是全局递增的。除此以外，还有 uid, slotSharingGroup, parallelism 等信息。</p>
+
 <p><code>StreamTransformation</code> 有很多具体的子类，如<code>SourceTransformation</code>、 <code>OneInputStreamTransformation</code>、<code>TwoInputTransformation</code>、<code>SideOutputTransformation</code>、    <code>SinkTransformation</code> 等等，这些分别对应了DataStream 上的不同转换操作。</p>
+
 <p>由于 <code>StreamTransformation</code> 中通常保留了其前向的 <code>StreamTransformation</code>，即其输入，因此可以据此还原出 DAG 的拓扑结构。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// OneInputTransformation</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">OneInputTransformation</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">			StreamTransformation&lt;IN&gt; input,</span></span></span><br><span class="line"><span class="function"><span class="params">			String name,</span></span></span><br><span class="line"><span class="function"><span class="params">			OneInputStreamOperator&lt;IN, OUT&gt; operator,</span></span></span><br><span class="line"><span class="function"><span class="params">			TypeInformation&lt;OUT&gt; outputType,</span></span></span><br><span class="line"><span class="function"><span class="params">			<span class="keyword">int</span> parallelism)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>(name, outputType, parallelism);</span><br><span class="line">    <span class="keyword">this</span>.input = input;</span><br><span class="line">    <span class="keyword">this</span>.operator = operator;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// TwoInputTransformation</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">TwoInputTransformation</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">			StreamTransformation&lt;IN1&gt; input1,</span></span></span><br><span class="line"><span class="function"><span class="params">			StreamTransformation&lt;IN2&gt; input2,</span></span></span><br><span class="line"><span class="function"><span class="params">			String name,</span></span></span><br><span class="line"><span class="function"><span class="params">			TwoInputStreamOperator&lt;IN1, IN2, OUT&gt; operator,</span></span></span><br><span class="line"><span class="function"><span class="params">			TypeInformation&lt;OUT&gt; outputType,</span></span></span><br><span class="line"><span class="function"><span class="params">			<span class="keyword">int</span> parallelism)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>(name, outputType, parallelism);</span><br><span class="line">    <span class="keyword">this</span>.input1 = input1;</span><br><span class="line">    <span class="keyword">this</span>.input2 = input2;</span><br><span class="line">    <span class="keyword">this</span>.operator = operator;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-<h2 id="DataStream"><a href="#DataStream" class="headerlink" title="DataStream"></a>DataStream</h2><p>一个 <code>DataStream</code> 就表征了由同一种类型元素构成的数据流。通过对 <code>DataStream</code> 应用 map/filter 等操作，可以将一个 <code>DataStream</code> 转换为另一个 <code>DataStream</code>，这个转换的过程就是根据不同的操作生成不同的 <code>StreamTransformation</code>，并将其加入 <code>StreamExecutionEnvironment</code> 的 <code>transformations</code> 列表中。</p>
-<p>例如：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//构造 StreamTransformation</span></span><br><span class="line">OneInputTransformation&lt;T, R&gt; resultTransform = <span class="keyword">new</span> OneInputTransformation&lt;&gt;(</span><br><span class="line">        <span class="keyword">this</span>.transformation,</span><br><span class="line">        operatorName,</span><br><span class="line">        operator,</span><br><span class="line">        outTypeInfo,</span><br><span class="line">        environment.getParallelism());</span><br><span class="line"></span><br><span class="line"><span class="meta">@SuppressWarnings</span>(&#123; <span class="string">"unchecked"</span>, <span class="string">"rawtypes"</span> &#125;)</span><br><span class="line">SingleOutputStreamOperator&lt;R&gt; returnStream = <span class="keyword">new</span> SingleOutputStreamOperator(environment, resultTransform);</span><br><span class="line"><span class="comment">//加入到 StreamExecutionEnvironment 的列表中</span></span><br><span class="line">getExecutionEnvironment().addOperator(resultTransform);</span><br></pre></td></tr></table></figure></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="c1">// OneInputTransformation
+</span><span class="c1"></span><span class="kd">public</span> <span class="nf">OneInputTransformation</span><span class="p">(</span>
+			<span class="n">StreamTransformation</span><span class="o">&lt;</span><span class="n">IN</span><span class="o">&gt;</span> <span class="nf">input</span><span class="p">,</span>
+			<span class="n">String</span> <span class="nf">name</span><span class="p">,</span>
+			<span class="n">OneInputStreamOperator</span><span class="o">&lt;</span><span class="n">IN</span><span class="p">,</span> <span class="n">OUT</span><span class="o">&gt;</span> <span class="nf">operator</span><span class="p">,</span>
+			<span class="n">TypeInformation</span><span class="o">&lt;</span><span class="n">OUT</span><span class="o">&gt;</span> <span class="nf">outputType</span><span class="p">,</span>
+			<span class="kt">int</span> <span class="nf">parallelism</span><span class="p">)</span> <span class="p">{</span>
+		<span class="kd">super</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">outputType</span><span class="p">,</span> <span class="n">parallelism</span><span class="p">);</span>
+		<span class="k">this</span><span class="p">.</span><span class="na">input</span> <span class="o">=</span> <span class="n">input</span><span class="p">;</span>
+		<span class="k">this</span><span class="p">.</span><span class="na">operator</span> <span class="o">=</span> <span class="n">operator</span><span class="p">;</span>
+	<span class="p">}</span>
+
+<span class="c1">// TwoInputTransformation
+</span><span class="c1"></span><span class="kd">public</span> <span class="nf">TwoInputTransformation</span><span class="p">(</span>
+			<span class="n">StreamTransformation</span><span class="o">&lt;</span><span class="n">IN1</span><span class="o">&gt;</span> <span class="nf">input1</span><span class="p">,</span>
+			<span class="n">StreamTransformation</span><span class="o">&lt;</span><span class="n">IN2</span><span class="o">&gt;</span> <span class="nf">input2</span><span class="p">,</span>
+			<span class="n">String</span> <span class="nf">name</span><span class="p">,</span>
+			<span class="n">TwoInputStreamOperator</span><span class="o">&lt;</span><span class="n">IN1</span><span class="p">,</span> <span class="n">IN2</span><span class="p">,</span> <span class="n">OUT</span><span class="o">&gt;</span> <span class="nf">operator</span><span class="p">,</span>
+			<span class="n">TypeInformation</span><span class="o">&lt;</span><span class="n">OUT</span><span class="o">&gt;</span> <span class="nf">outputType</span><span class="p">,</span>
+			<span class="kt">int</span> <span class="nf">parallelism</span><span class="p">)</span> <span class="p">{</span>
+		<span class="kd">super</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">outputType</span><span class="p">,</span> <span class="n">parallelism</span><span class="p">);</span>
+		<span class="k">this</span><span class="p">.</span><span class="na">input1</span> <span class="o">=</span> <span class="n">input1</span><span class="p">;</span>
+		<span class="k">this</span><span class="p">.</span><span class="na">input2</span> <span class="o">=</span> <span class="n">input2</span><span class="p">;</span>
+		<span class="k">this</span><span class="p">.</span><span class="na">operator</span> <span class="o">=</span> <span class="n">operator</span><span class="p">;</span>
+	<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="datastream">DataStream</h2>
+
+<p>一个 <code>DataStream</code> 就表征了由同一种类型元素构成的数据流。通过对 <code>DataStream</code> 应用 map/filter 等操作，可以将一个 <code>DataStream</code> 转换为另一个 <code>DataStream</code>，这个转换的过程就是根据不同的操作生成不同的 <code>StreamTransformation</code>，并将其加入 <code>StreamExecutionEnvironment</code> 的 <code>transformations</code> 列表中。</p>
+
+<p>例如：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="c1">//构造 StreamTransformation
+</span><span class="c1"></span><span class="n">OneInputTransformation</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">R</span><span class="o">&gt;</span> <span class="nf">resultTransform</span> <span class="o">=</span> <span class="k">new</span> <span class="n">OneInputTransformation</span><span class="o">&lt;&gt;</span><span class="p">(</span>
+				<span class="k">this</span><span class="p">.</span><span class="na">transformation</span><span class="p">,</span>
+				<span class="n">operatorName</span><span class="p">,</span>
+				<span class="n">operator</span><span class="p">,</span>
+				<span class="n">outTypeInfo</span><span class="p">,</span>
+				<span class="n">environment</span><span class="p">.</span><span class="na">getParallelism</span><span class="p">());</span>
+
+<span class="nd">@SuppressWarnings</span><span class="p">({</span> <span class="s">&#34;unchecked&#34;</span><span class="p">,</span> <span class="s">&#34;rawtypes&#34;</span> <span class="p">})</span>
+<span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">R</span><span class="o">&gt;</span> <span class="nf">returnStream</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SingleOutputStreamOperator</span><span class="p">(</span><span class="n">environment</span><span class="p">,</span> <span class="n">resultTransform</span><span class="p">);</span>
+<span class="c1">//加入到 StreamExecutionEnvironment 的列表中
+</span><span class="c1"></span><span class="n">getExecutionEnvironment</span><span class="p">().</span><span class="na">addOperator</span><span class="p">(</span><span class="n">resultTransform</span><span class="p">);</span></code></pre></td></tr></table>
+</div>
+</div>
 <p><code>DataStream</code> 的子类包括 <code>SingleOutputStreamOperator</code>、 <code>DataStreamSource</code> <code>KeyedStream</code> 、<code>IterativeStream</code>, <code>SplitStream</code>(已弃用)。这里要吐槽一下 <code>SingleOutputStreamOperator</code> 的这个类的命名，太容易和 <code>StreamOperator</code> 混淆了。<code>StreamOperator</code> 的介绍见下一小节。</p>
-<p>除了 <code>DataStream</code> 及其子类以外，其它的表征数据流的类还有 <code>ConnectedStreams</code> (两个流连接在一起)、 <code>WindowedStream</code>、<code>AllWindowedStream</code> 。这些数据流之间的转换可以参考 Flink 的<a href="https://ci.apache.org/projects/flink/flink-docs-master/dev/stream/operators/" target="_blank" rel="noopener">官方文档</a>。</p>
-<h2 id="StreamOperator"><a href="#StreamOperator" class="headerlink" title="StreamOperator"></a>StreamOperator</h2><p>在操作 <code>DataStream</code> 的时候，比如 <code>DataStream#map</code> 等，会要求我们提供一个自定义的处理函数。那么这些信息时如何保存在 <code>StreamTransformation</code> 中的呢？这里就要引入一个新的接口 <code>StreamOperator</code>。</p>
-<p><code>StreamOperator</code> 定义了对一个具体的算子的生命周期的管理，包括：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//生命周期</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setup</span><span class="params">(StreamTask&lt;?, ?&gt; containingTask, StreamConfig config, Output&lt;StreamRecord&lt;OUT&gt;&gt; output)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">open</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">close</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">dispose</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//状态管理</span></span><br><span class="line"><span class="function">OperatorSnapshotFutures <span class="title">snapshotState</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">	<span class="keyword">long</span> checkpointId,</span></span></span><br><span class="line"><span class="function"><span class="params">	<span class="keyword">long</span> timestamp,</span></span></span><br><span class="line"><span class="function"><span class="params">	CheckpointOptions checkpointOptions,</span></span></span><br><span class="line"><span class="function"><span class="params">	CheckpointStreamFactory storageLocation)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">initializeState</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line"> <span class="comment">//其它方法暂时省略</span></span><br></pre></td></tr></table></figure></p>
+
+<p>除了 <code>DataStream</code> 及其子类以外，其它的表征数据流的类还有 <code>ConnectedStreams</code> (两个流连接在一起)、 <code>WindowedStream</code>、<code>AllWindowedStream</code> 。这些数据流之间的转换可以参考 Flink 的<a href="https://ci.apache.org/projects/flink/flink-docs-master/dev/stream/operators/">官方文档</a>。</p>
+
+<h2 id="streamoperator">StreamOperator</h2>
+
+<p>在操作 <code>DataStream</code> 的时候，比如 <code>DataStream#map</code> 等，会要求我们提供一个自定义的处理函数。那么这些信息时如何保存在 <code>StreamTransformation</code> 中的呢？这里就要引入一个新的接口 <code>StreamOperator</code>。</p>
+
+<p><code>StreamOperator</code> 定义了对一个具体的算子的生命周期的管理，包括：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java">	<span class="c1">//生命周期
+</span><span class="c1"></span>	<span class="kt">void</span> <span class="nf">setup</span><span class="p">(</span><span class="n">StreamTask</span><span class="o">&lt;?</span><span class="p">,</span> <span class="o">?&gt;</span> <span class="n">containingTask</span><span class="p">,</span> <span class="n">StreamConfig</span> <span class="nf">config</span><span class="p">,</span> <span class="n">Output</span><span class="o">&lt;</span><span class="n">StreamRecord</span><span class="o">&lt;</span><span class="n">OUT</span><span class="o">&gt;&gt;</span> <span class="nf">output</span><span class="p">);</span>
+
+	<span class="kt">void</span> <span class="nf">open</span><span class="p">()</span> <span class="kd">throws</span> <span class="nf">Exception</span><span class="p">;</span>
+
+	<span class="kt">void</span> <span class="nf">close</span><span class="p">()</span> <span class="kd">throws</span> <span class="nf">Exception</span><span class="p">;</span>
+
+	<span class="nd">@Override</span>
+	<span class="kt">void</span> <span class="nf">dispose</span><span class="p">()</span> <span class="kd">throws</span> <span class="nf">Exception</span><span class="p">;</span>
+
+	<span class="c1">//状态管理
+</span><span class="c1"></span>	<span class="n">OperatorSnapshotFutures</span> <span class="nf">snapshotState</span><span class="p">(</span>
+		<span class="kt">long</span> <span class="nf">checkpointId</span><span class="p">,</span>
+		<span class="kt">long</span> <span class="nf">timestamp</span><span class="p">,</span>
+		<span class="n">CheckpointOptions</span> <span class="nf">checkpointOptions</span><span class="p">,</span>
+		<span class="n">CheckpointStreamFactory</span> <span class="nf">storageLocation</span><span class="p">)</span> <span class="kd">throws</span> <span class="nf">Exception</span><span class="p">;</span>
+
+	<span class="kt">void</span> <span class="nf">initializeState</span><span class="p">()</span> <span class="kd">throws</span> <span class="nf">Exception</span><span class="p">;</span>
+
+  <span class="o">//</span><span class="n">其它方法暂时省略</span></code></pre></td></tr></table>
+</div>
+</div>
 <p><code>StreamOperator</code> 的两个子接口 <code>OneInputStreamOperator</code> 和 <code>TwoInputStreamOperator</code> 则提供了操作数据流中具体元素的方法，而 <code>AbstractUdfStreamOperator</code> 这个抽象子类则提供了自定义处理函数对应的算子的基本实现:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//OneInputStreamOperator</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">processElement</span><span class="params">(StreamRecord&lt;IN&gt; element)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">processWatermark</span><span class="params">(Watermark mark)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">processLatencyMarker</span><span class="params">(LatencyMarker latencyMarker)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//TwoInputStreamOperator</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">processElement1</span><span class="params">(StreamRecord&lt;IN1&gt; element)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">processElement2</span><span class="params">(StreamRecord&lt;IN2&gt; element)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//AbstractUdfStreamOperator 接受一个用户自定义的处理函数</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AbstractUdfStreamOperator</span><span class="params">(F userFunction)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.userFunction = requireNonNull(userFunction);</span><br><span class="line">    checkUdfCheckpointingPreconditions();</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="c1">//OneInputStreamOperator
+</span><span class="c1"></span><span class="kt">void</span> <span class="nf">processElement</span><span class="p">(</span><span class="n">StreamRecord</span><span class="o">&lt;</span><span class="n">IN</span><span class="o">&gt;</span> <span class="nf">element</span><span class="p">)</span> <span class="kd">throws</span> <span class="nf">Exception</span><span class="p">;</span>
+<span class="kt">void</span> <span class="nf">processWatermark</span><span class="p">(</span><span class="n">Watermark</span> <span class="nf">mark</span><span class="p">)</span> <span class="kd">throws</span> <span class="nf">Exception</span><span class="p">;</span>
+<span class="kt">void</span> <span class="nf">processLatencyMarker</span><span class="p">(</span><span class="n">LatencyMarker</span> <span class="nf">latencyMarker</span><span class="p">)</span> <span class="kd">throws</span> <span class="nf">Exception</span><span class="p">;</span>
+
+<span class="c1">//TwoInputStreamOperator
+</span><span class="c1"></span>	<span class="kt">void</span> <span class="nf">processElement1</span><span class="p">(</span><span class="n">StreamRecord</span><span class="o">&lt;</span><span class="n">IN1</span><span class="o">&gt;</span> <span class="nf">element</span><span class="p">)</span> <span class="kd">throws</span> <span class="nf">Exception</span><span class="p">;</span>
+	<span class="kt">void</span> <span class="nf">processElement2</span><span class="p">(</span><span class="n">StreamRecord</span><span class="o">&lt;</span><span class="n">IN2</span><span class="o">&gt;</span> <span class="nf">element</span><span class="p">)</span> <span class="kd">throws</span> <span class="nf">Exception</span><span class="p">;</span>
+
+
+<span class="c1">//AbstractUdfStreamOperator 接受一个用户自定义的处理函数
+</span><span class="c1"></span><span class="kd">public</span> <span class="nf">AbstractUdfStreamOperator</span><span class="p">(</span><span class="n">F</span> <span class="nf">userFunction</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">this</span><span class="p">.</span><span class="na">userFunction</span> <span class="o">=</span> <span class="n">requireNonNull</span><span class="p">(</span><span class="n">userFunction</span><span class="p">);</span>
+		<span class="n">checkUdfCheckpointingPreconditions</span><span class="p">();</span>
+	<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>至于具体到诸如 map/fliter 等操作对应的 StreamOperator，基本都是在 <code>AbstractUdfStreamOperator</code> 的基础上实现的。以 <code>StreamMap</code> 为例：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StreamMap</span>&lt;<span class="title">IN</span>, <span class="title">OUT</span>&gt;</span></span><br><span class="line"><span class="class">		<span class="keyword">extends</span> <span class="title">AbstractUdfStreamOperator</span>&lt;<span class="title">OUT</span>, <span class="title">MapFunction</span>&lt;<span class="title">IN</span>, <span class="title">OUT</span>&gt;&gt;</span></span><br><span class="line"><span class="class">		<span class="keyword">implements</span> <span class="title">OneInputStreamOperator</span>&lt;<span class="title">IN</span>, <span class="title">OUT</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = <span class="number">1L</span>;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">StreamMap</span><span class="params">(MapFunction&lt;IN, OUT&gt; mapper)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>(mapper);</span><br><span class="line">    chainingStrategy = ChainingStrategy.ALWAYS;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">processElement</span><span class="params">(StreamRecord&lt;IN&gt; element)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    output.collect(element.replace(userFunction.map(element.getValue())));</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>由此，通过 <strong>DataStream –&gt; StreamTransformation –&gt; StreamOperator</strong> 这样的依赖关系，就可以完成 DataStream 的转换，并且保留数据流和应用在流上的算子之间的关系。</p>
-<h2 id="StreamGraph"><a href="#StreamGraph" class="headerlink" title="StreamGraph"></a>StreamGraph</h2><p><code>StreamGraphGenerator</code> 会基于 <code>StreamExecutionEnvironment</code> 的 <code>transformations</code> 列表来生成 <code>StreamGraph</code>。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">class</span> <span class="n">StreamMap</span><span class="o">&lt;</span><span class="n">IN</span><span class="p">,</span> <span class="n">OUT</span><span class="o">&gt;</span>
+		<span class="nf">extends</span> <span class="n">AbstractUdfStreamOperator</span><span class="o">&lt;</span><span class="n">OUT</span><span class="p">,</span> <span class="n">MapFunction</span><span class="o">&lt;</span><span class="n">IN</span><span class="p">,</span> <span class="n">OUT</span><span class="o">&gt;&gt;</span>
+		<span class="nf">implements</span> <span class="n">OneInputStreamOperator</span><span class="o">&lt;</span><span class="n">IN</span><span class="p">,</span> <span class="n">OUT</span><span class="o">&gt;</span> <span class="p">{</span>
+
+	<span class="kd">private</span> <span class="nf">static</span> <span class="kd">final</span> <span class="nf">long</span> <span class="n">serialVersionUID</span> <span class="o">=</span> <span class="n">1L</span><span class="p">;</span>
+
+	<span class="kd">public</span> <span class="nf">StreamMap</span><span class="p">(</span><span class="n">MapFunction</span><span class="o">&lt;</span><span class="n">IN</span><span class="p">,</span> <span class="n">OUT</span><span class="o">&gt;</span> <span class="nf">mapper</span><span class="p">)</span> <span class="p">{</span>
+		<span class="kd">super</span><span class="p">(</span><span class="n">mapper</span><span class="p">);</span>
+		<span class="n">chainingStrategy</span> <span class="o">=</span> <span class="n">ChainingStrategy</span><span class="p">.</span><span class="na">ALWAYS</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="nf">void</span> <span class="n">processElement</span><span class="p">(</span><span class="n">StreamRecord</span><span class="o">&lt;</span><span class="n">IN</span><span class="o">&gt;</span> <span class="nf">element</span><span class="p">)</span> <span class="kd">throws</span> <span class="nf">Exception</span> <span class="p">{</span>
+		<span class="n">output</span><span class="p">.</span><span class="na">collect</span><span class="p">(</span><span class="n">element</span><span class="p">.</span><span class="na">replace</span><span class="p">(</span><span class="n">userFunction</span><span class="p">.</span><span class="na">map</span><span class="p">(</span><span class="n">element</span><span class="p">.</span><span class="na">getValue</span><span class="p">())));</span>
+	<span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>由此，通过 <strong>DataStream &ndash;&gt; StreamTransformation &ndash;&gt; StreamOperator</strong> 这样的依赖关系，就可以完成 DataStream 的转换，并且保留数据流和应用在流上的算子之间的关系。</p>
+
+<h2 id="streamgraph">StreamGraph</h2>
+
+<p><code>StreamGraphGenerator</code> 会基于 <code>StreamExecutionEnvironment</code> 的 <code>transformations</code> 列表来生成 <code>StreamGraph</code>。</p>
+
 <p>在遍历 <code>List&lt;StreamTransformation&gt;</code> 生成 <code>StreamGraph</code> 的时候，会递归调用<code>StreamGraphGenerator#transform</code>方法。对于每一个 <code>StreamTransformation</code>, 确保当前其上游已经完成转换。<code>StreamTransformations</code> 被转换为 <code>StreamGraph</code> 中的节点 <code>StreamNode</code>，并为上下游节点添加边 <code>StreamEdge</code>。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">Collection&lt;Integer&gt; transformedIds;</span><br><span class="line">    <span class="keyword">if</span> (transform <span class="keyword">instanceof</span> OneInputTransformation&lt;?, ?&gt;) &#123;</span><br><span class="line">      transformedIds = transformOneInputTransform((OneInputTransformation&lt;?, ?&gt;) transform);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (transform <span class="keyword">instanceof</span> TwoInputTransformation&lt;?, ?, ?&gt;) &#123;</span><br><span class="line">      transformedIds = transformTwoInputTransform((TwoInputTransformation&lt;?, ?, ?&gt;) transform);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (transform <span class="keyword">instanceof</span> SourceTransformation&lt;?&gt;) &#123;</span><br><span class="line">      transformedIds = transformSource((SourceTransformation&lt;?&gt;) transform);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (transform <span class="keyword">instanceof</span> SinkTransformation&lt;?&gt;) &#123;</span><br><span class="line">      transformedIds = transformSink((SinkTransformation&lt;?&gt;) transform);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (transform <span class="keyword">instanceof</span> UnionTransformation&lt;?&gt;) &#123;</span><br><span class="line">      transformedIds = transformUnion((UnionTransformation&lt;?&gt;) transform);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (transform <span class="keyword">instanceof</span> SplitTransformation&lt;?&gt;) &#123;</span><br><span class="line">      transformedIds = transformSplit((SplitTransformation&lt;?&gt;) transform);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (transform <span class="keyword">instanceof</span> SelectTransformation&lt;?&gt;) &#123;</span><br><span class="line">      transformedIds = transformSelect((SelectTransformation&lt;?&gt;) transform);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (transform <span class="keyword">instanceof</span> FeedbackTransformation&lt;?&gt;) &#123;</span><br><span class="line">      transformedIds = transformFeedback((FeedbackTransformation&lt;?&gt;) transform);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (transform <span class="keyword">instanceof</span> CoFeedbackTransformation&lt;?&gt;) &#123;</span><br><span class="line">      transformedIds = transformCoFeedback((CoFeedbackTransformation&lt;?&gt;) transform);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (transform <span class="keyword">instanceof</span> PartitionTransformation&lt;?&gt;) &#123;</span><br><span class="line">      transformedIds = transformPartition((PartitionTransformation&lt;?&gt;) transform);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (transform <span class="keyword">instanceof</span> SideOutputTransformation&lt;?&gt;) &#123;</span><br><span class="line">      transformedIds = transformSideOutput((SideOutputTransformation&lt;?&gt;) transform);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Unknown transformation: "</span> + transform);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="n">Collection</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="nf">transformedIds</span><span class="p">;</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">transform</span> <span class="nf">instanceof</span> <span class="n">OneInputTransformation</span><span class="o">&lt;?</span><span class="p">,</span> <span class="o">?&gt;</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">transformedIds</span> <span class="o">=</span> <span class="n">transformOneInputTransform</span><span class="p">((</span><span class="n">OneInputTransformation</span><span class="o">&lt;?</span><span class="p">,</span> <span class="o">?&gt;</span><span class="p">)</span> <span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">transform</span> <span class="nf">instanceof</span> <span class="n">TwoInputTransformation</span><span class="o">&lt;?</span><span class="p">,</span> <span class="o">?</span><span class="p">,</span> <span class="o">?&gt;</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">transformedIds</span> <span class="o">=</span> <span class="n">transformTwoInputTransform</span><span class="p">((</span><span class="n">TwoInputTransformation</span><span class="o">&lt;?</span><span class="p">,</span> <span class="o">?</span><span class="p">,</span> <span class="o">?&gt;</span><span class="p">)</span> <span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">transform</span> <span class="nf">instanceof</span> <span class="n">SourceTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">transformedIds</span> <span class="o">=</span> <span class="n">transformSource</span><span class="p">((</span><span class="n">SourceTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">transform</span> <span class="nf">instanceof</span> <span class="n">SinkTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">transformedIds</span> <span class="o">=</span> <span class="n">transformSink</span><span class="p">((</span><span class="n">SinkTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">transform</span> <span class="nf">instanceof</span> <span class="n">UnionTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">transformedIds</span> <span class="o">=</span> <span class="n">transformUnion</span><span class="p">((</span><span class="n">UnionTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">transform</span> <span class="nf">instanceof</span> <span class="n">SplitTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">transformedIds</span> <span class="o">=</span> <span class="n">transformSplit</span><span class="p">((</span><span class="n">SplitTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">transform</span> <span class="nf">instanceof</span> <span class="n">SelectTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">transformedIds</span> <span class="o">=</span> <span class="n">transformSelect</span><span class="p">((</span><span class="n">SelectTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">transform</span> <span class="nf">instanceof</span> <span class="n">FeedbackTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">transformedIds</span> <span class="o">=</span> <span class="n">transformFeedback</span><span class="p">((</span><span class="n">FeedbackTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">transform</span> <span class="nf">instanceof</span> <span class="n">CoFeedbackTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">transformedIds</span> <span class="o">=</span> <span class="n">transformCoFeedback</span><span class="p">((</span><span class="n">CoFeedbackTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">transform</span> <span class="nf">instanceof</span> <span class="n">PartitionTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">transformedIds</span> <span class="o">=</span> <span class="n">transformPartition</span><span class="p">((</span><span class="n">PartitionTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">transform</span> <span class="nf">instanceof</span> <span class="n">SideOutputTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">transformedIds</span> <span class="o">=</span> <span class="n">transformSideOutput</span><span class="p">((</span><span class="n">SideOutputTransformation</span><span class="o">&lt;?&gt;</span><span class="p">)</span> <span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalStateException</span><span class="p">(</span><span class="s">&#34;Unknown transformation: &#34;</span> <span class="o">+</span> <span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>对于不同类型的 <code>StreamTransformation</code>，分别调用对应的转换方法，以 最典型的 <code>transformOneInputTransform</code> 为例：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> &lt;IN, OUT&gt; <span class="function">Collection&lt;Integer&gt; <span class="title">transformOneInputTransform</span><span class="params">(OneInputTransformation&lt;IN, OUT&gt; transform)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//首先确保上游节点完成转换</span></span><br><span class="line">    Collection&lt;Integer&gt; inputIds = transform(transform.getInput());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// the recursive call might have already transformed this</span></span><br><span class="line">    <span class="comment">// 由于是递归调用的，可能已经完成了转换</span></span><br><span class="line">    <span class="keyword">if</span> (alreadyTransformed.containsKey(transform)) &#123;</span><br><span class="line">      <span class="keyword">return</span> alreadyTransformed.get(transform);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//确定资源共享组，用户如果没有指定，默认是default</span></span><br><span class="line">    String slotSharingGroup = determineSlotSharingGroup(transform.getSlotSharingGroup(), inputIds);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//向 StreamGraph 中添加 Operator, 这一步会生成对应的 StreamNode</span></span><br><span class="line">    streamGraph.addOperator(transform.getId(),</span><br><span class="line">        slotSharingGroup,</span><br><span class="line">        transform.getCoLocationGroupKey(),</span><br><span class="line">        transform.getOperator(),</span><br><span class="line">        transform.getInputType(),</span><br><span class="line">        transform.getOutputType(),</span><br><span class="line">        transform.getName());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (transform.getStateKeySelector() != <span class="keyword">null</span>) &#123;</span><br><span class="line">      TypeSerializer&lt;?&gt; keySerializer = transform.getStateKeyType().createSerializer(env.getConfig());</span><br><span class="line">      streamGraph.setOneInputStateKey(transform.getId(), transform.getStateKeySelector(), keySerializer);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    streamGraph.setParallelism(transform.getId(), transform.getParallelism());</span><br><span class="line">    streamGraph.setMaxParallelism(transform.getId(), transform.getMaxParallelism());</span><br><span class="line"></span><br><span class="line">    <span class="comment">//依次连接到上游节点，创建 StreamEdge</span></span><br><span class="line">    <span class="keyword">for</span> (Integer inputId: inputIds) &#123;</span><br><span class="line">      streamGraph.addEdge(inputId, transform.getId(), <span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> Collections.singleton(transform.getId());</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">private</span> <span class="o">&lt;</span><span class="n">IN</span><span class="p">,</span> <span class="n">OUT</span><span class="o">&gt;</span> <span class="nf">Collection</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="nf">transformOneInputTransform</span><span class="p">(</span><span class="n">OneInputTransformation</span><span class="o">&lt;</span><span class="n">IN</span><span class="p">,</span> <span class="n">OUT</span><span class="o">&gt;</span> <span class="nf">transform</span><span class="p">)</span> <span class="p">{</span>
+
+		<span class="c1">//首先确保上游节点完成转换
+</span><span class="c1"></span>		<span class="n">Collection</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="nf">inputIds</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">transform</span><span class="p">.</span><span class="na">getInput</span><span class="p">());</span>
+
+		<span class="c1">// the recursive call might have already transformed this
+</span><span class="c1"></span>    <span class="c1">// 由于是递归调用的，可能已经完成了转换
+</span><span class="c1"></span>		<span class="k">if</span> <span class="p">(</span><span class="n">alreadyTransformed</span><span class="p">.</span><span class="na">containsKey</span><span class="p">(</span><span class="n">transform</span><span class="p">))</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="n">alreadyTransformed</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">transform</span><span class="p">);</span>
+		<span class="p">}</span>
+
+		<span class="c1">//确定资源共享组，用户如果没有指定，默认是default
+</span><span class="c1"></span>		<span class="n">String</span> <span class="nf">slotSharingGroup</span> <span class="o">=</span> <span class="n">determineSlotSharingGroup</span><span class="p">(</span><span class="n">transform</span><span class="p">.</span><span class="na">getSlotSharingGroup</span><span class="p">(),</span> <span class="n">inputIds</span><span class="p">);</span>
+
+		<span class="c1">//向 StreamGraph 中添加 Operator, 这一步会生成对应的 StreamNode
+</span><span class="c1"></span>		<span class="n">streamGraph</span><span class="p">.</span><span class="na">addOperator</span><span class="p">(</span><span class="n">transform</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span>
+				<span class="n">slotSharingGroup</span><span class="p">,</span>
+				<span class="n">transform</span><span class="p">.</span><span class="na">getCoLocationGroupKey</span><span class="p">(),</span>
+				<span class="n">transform</span><span class="p">.</span><span class="na">getOperator</span><span class="p">(),</span>
+				<span class="n">transform</span><span class="p">.</span><span class="na">getInputType</span><span class="p">(),</span>
+				<span class="n">transform</span><span class="p">.</span><span class="na">getOutputType</span><span class="p">(),</span>
+				<span class="n">transform</span><span class="p">.</span><span class="na">getName</span><span class="p">());</span>
+
+		<span class="k">if</span> <span class="p">(</span><span class="n">transform</span><span class="p">.</span><span class="na">getStateKeySelector</span><span class="p">()</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">TypeSerializer</span><span class="o">&lt;?&gt;</span> <span class="n">keySerializer</span> <span class="o">=</span> <span class="n">transform</span><span class="p">.</span><span class="na">getStateKeyType</span><span class="p">().</span><span class="na">createSerializer</span><span class="p">(</span><span class="n">env</span><span class="p">.</span><span class="na">getConfig</span><span class="p">());</span>
+			<span class="n">streamGraph</span><span class="p">.</span><span class="na">setOneInputStateKey</span><span class="p">(</span><span class="n">transform</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span> <span class="n">transform</span><span class="p">.</span><span class="na">getStateKeySelector</span><span class="p">(),</span> <span class="n">keySerializer</span><span class="p">);</span>
+		<span class="p">}</span>
+
+		<span class="n">streamGraph</span><span class="p">.</span><span class="na">setParallelism</span><span class="p">(</span><span class="n">transform</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span> <span class="n">transform</span><span class="p">.</span><span class="na">getParallelism</span><span class="p">());</span>
+		<span class="n">streamGraph</span><span class="p">.</span><span class="na">setMaxParallelism</span><span class="p">(</span><span class="n">transform</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span> <span class="n">transform</span><span class="p">.</span><span class="na">getMaxParallelism</span><span class="p">());</span>
+
+		<span class="c1">//依次连接到上游节点，创建 StreamEdge
+</span><span class="c1"></span>		<span class="k">for</span> <span class="p">(</span><span class="n">Integer</span> <span class="nf">inputId</span><span class="o">:</span> <span class="n">inputIds</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">streamGraph</span><span class="p">.</span><span class="na">addEdge</span><span class="p">(</span><span class="n">inputId</span><span class="p">,</span> <span class="n">transform</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span> <span class="n">0</span><span class="p">);</span>
+		<span class="p">}</span>
+
+		<span class="k">return</span> <span class="n">Collections</span><span class="p">.</span><span class="na">singleton</span><span class="p">(</span><span class="n">transform</span><span class="p">.</span><span class="na">getId</span><span class="p">());</span>
+	<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>接着看一看 <code>StreamGraph</code> 中对应的添加节点和边的方法:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> StreamNode <span class="title">addNode</span><span class="params">(Integer vertexID,</span></span></span><br><span class="line"><span class="function"><span class="params">		String slotSharingGroup,</span></span></span><br><span class="line"><span class="function"><span class="params">		@Nullable String coLocationGroup,</span></span></span><br><span class="line"><span class="function"><span class="params">		Class&lt;? extends AbstractInvokable&gt; vertexClass,</span></span></span><br><span class="line"><span class="function"><span class="params">		StreamOperator&lt;?&gt; operatorObject,</span></span></span><br><span class="line"><span class="function"><span class="params">		String operatorName)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (streamNodes.containsKey(vertexID)) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">"Duplicate vertexID "</span> + vertexID);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    StreamNode vertex = <span class="keyword">new</span> StreamNode(environment,</span><br><span class="line">      vertexID,</span><br><span class="line">      slotSharingGroup,</span><br><span class="line">      coLocationGroup,</span><br><span class="line">      operatorObject,</span><br><span class="line">      operatorName,</span><br><span class="line">      <span class="keyword">new</span> ArrayList&lt;OutputSelector&lt;?&gt;&gt;(),</span><br><span class="line">      vertexClass);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//创建 StreamNode，这里保存了 StreamOperator 和 vertexClass 信息</span></span><br><span class="line">    streamNodes.put(vertexID, vertex);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> vertex;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">protected</span> <span class="nf">StreamNode</span> <span class="n">addNode</span><span class="p">(</span><span class="n">Integer</span> <span class="nf">vertexID</span><span class="p">,</span>
+		<span class="n">String</span> <span class="nf">slotSharingGroup</span><span class="p">,</span>
+		<span class="nd">@Nullable</span> <span class="n">String</span> <span class="nf">coLocationGroup</span><span class="p">,</span>
+		<span class="n">Class</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="nf">AbstractInvokable</span><span class="o">&gt;</span> <span class="n">vertexClass</span><span class="p">,</span>
+		<span class="n">StreamOperator</span><span class="o">&lt;?&gt;</span> <span class="n">operatorObject</span><span class="p">,</span>
+		<span class="n">String</span> <span class="nf">operatorName</span><span class="p">)</span> <span class="p">{</span>
+
+		<span class="k">if</span> <span class="p">(</span><span class="n">streamNodes</span><span class="p">.</span><span class="na">containsKey</span><span class="p">(</span><span class="n">vertexID</span><span class="p">))</span> <span class="p">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="n">RuntimeException</span><span class="p">(</span><span class="s">&#34;Duplicate vertexID &#34;</span> <span class="o">+</span> <span class="n">vertexID</span><span class="p">);</span>
+		<span class="p">}</span>
+
+		<span class="n">StreamNode</span> <span class="nf">vertex</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StreamNode</span><span class="p">(</span><span class="n">environment</span><span class="p">,</span>
+			<span class="n">vertexID</span><span class="p">,</span>
+			<span class="n">slotSharingGroup</span><span class="p">,</span>
+			<span class="n">coLocationGroup</span><span class="p">,</span>
+			<span class="n">operatorObject</span><span class="p">,</span>
+			<span class="n">operatorName</span><span class="p">,</span>
+			<span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">OutputSelector</span><span class="o">&lt;?&gt;&gt;</span><span class="p">(),</span>
+			<span class="n">vertexClass</span><span class="p">);</span>
+
+		<span class="c1">//创建 StreamNode，这里保存了 StreamOperator 和 vertexClass 信息
+</span><span class="c1"></span>		<span class="n">streamNodes</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">vertexID</span><span class="p">,</span> <span class="n">vertex</span><span class="p">);</span>
+
+		<span class="k">return</span> <span class="n">vertex</span><span class="p">;</span>
+	<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>在 <code>StreamNode</code> 中，保存了对应的 <code>StreamOperator</code> (从 <code>StreamTransformation</code> 得到)，并且还引入了变量 jobVertexClass 来表示该节点在 TaskManager 中运行时的实际任务类型。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> Class&lt;? extends AbstractInvokable&gt; jobVertexClass;</span><br></pre></td></tr></table></figure>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">private</span> <span class="nf">final</span> <span class="n">Class</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="nf">AbstractInvokable</span><span class="o">&gt;</span> <span class="n">jobVertexClass</span><span class="p">;</span></code></pre></td></tr></table>
+</div>
+</div>
 <p><code>AbstractInvokable</code> 是所有可以在 TaskManager 中运行的任务的抽象基础类，包括流式任务和批任务。<code>StreamTask</code> 是所有流式任务的基础类，其具体的子类包括 <code>SourceStreamTask</code>, <code>OneInputStreamTask</code>, <code>TwoInputStreamTask</code> 等。</p>
+
 <p>对于一些不包含物理转换操作的 <code>StreamTransformation</code>，如 Partitioning, split/select, union，并不会生成 StreamNode，而是生成一个带有特定属性的虚拟节点。当添加一条有虚拟节点指向下游节点的边时，会找到虚拟节点上游的物理节点，在两个物理节点之间添加边，并把虚拟转换操作的属性附着上去。</p>
+
 <p>以 <code>PartitionTansformation</code> 为例， <code>PartitionTansformation</code> 是 <code>KeyedStream</code>  对应的转换：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//StreamGraphGenerator#transformPartition</span></span><br><span class="line"><span class="keyword">private</span> &lt;T&gt; <span class="function">Collection&lt;Integer&gt; <span class="title">transformPartition</span><span class="params">(PartitionTransformation&lt;T&gt; partition)</span> </span>&#123;</span><br><span class="line">    StreamTransformation&lt;T&gt; input = partition.getInput();</span><br><span class="line">    List&lt;Integer&gt; resultIds = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//递归地转换上游节点</span></span><br><span class="line">    Collection&lt;Integer&gt; transformedIds = transform(input);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (Integer transformedId: transformedIds) &#123;</span><br><span class="line">      <span class="keyword">int</span> virtualId = StreamTransformation.getNewNodeId();</span><br><span class="line">      <span class="comment">//添加虚拟的 Partition 节点</span></span><br><span class="line">      streamGraph.addVirtualPartitionNode(transformedId, virtualId, partition.getPartitioner());</span><br><span class="line">      resultIds.add(virtualId);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> resultIds;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// StreamGraph#addVirtualPartitionNode</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addVirtualPartitionNode</span><span class="params">(Integer originalId, Integer virtualId, StreamPartitioner&lt;?&gt; partitioner)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (virtualPartitionNodes.containsKey(virtualId)) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Already has virtual partition node with id "</span> + virtualId);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//添加一个虚拟节点，后续添加边的时候会连接到实际的物理节点</span></span><br><span class="line">    virtualPartitionNodes.put(virtualId,</span><br><span class="line">        <span class="keyword">new</span> Tuple2&lt;Integer, StreamPartitioner&lt;?&gt;&gt;(originalId, partitioner));</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="c1">//StreamGraphGenerator#transformPartition
+</span><span class="c1"></span><span class="kd">private</span> <span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="nf">Collection</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="nf">transformPartition</span><span class="p">(</span><span class="n">PartitionTransformation</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="nf">partition</span><span class="p">)</span> <span class="p">{</span>
+		<span class="n">StreamTransformation</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="nf">input</span> <span class="o">=</span> <span class="n">partition</span><span class="p">.</span><span class="na">getInput</span><span class="p">();</span>
+		<span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="nf">resultIds</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+
+		<span class="c1">//递归地转换上游节点
+</span><span class="c1"></span>		<span class="n">Collection</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="nf">transformedIds</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">input</span><span class="p">);</span>
+
+		<span class="k">for</span> <span class="p">(</span><span class="n">Integer</span> <span class="nf">transformedId</span><span class="o">:</span> <span class="n">transformedIds</span><span class="p">)</span> <span class="p">{</span>
+			<span class="kt">int</span> <span class="nf">virtualId</span> <span class="o">=</span> <span class="n">StreamTransformation</span><span class="p">.</span><span class="na">getNewNodeId</span><span class="p">();</span>
+			<span class="c1">//添加虚拟的 Partition 节点
+</span><span class="c1"></span>			<span class="n">streamGraph</span><span class="p">.</span><span class="na">addVirtualPartitionNode</span><span class="p">(</span><span class="n">transformedId</span><span class="p">,</span> <span class="n">virtualId</span><span class="p">,</span> <span class="n">partition</span><span class="p">.</span><span class="na">getPartitioner</span><span class="p">());</span>
+			<span class="n">resultIds</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">virtualId</span><span class="p">);</span>
+		<span class="p">}</span>
+
+		<span class="k">return</span> <span class="n">resultIds</span><span class="p">;</span>
+	<span class="p">}</span>
+
+<span class="c1">// StreamGraph#addVirtualPartitionNode
+</span><span class="c1"></span><span class="kd">public</span> <span class="nf">void</span> <span class="n">addVirtualPartitionNode</span><span class="p">(</span><span class="n">Integer</span> <span class="nf">originalId</span><span class="p">,</span> <span class="n">Integer</span> <span class="nf">virtualId</span><span class="p">,</span> <span class="n">StreamPartitioner</span><span class="o">&lt;?&gt;</span> <span class="n">partitioner</span><span class="p">)</span> <span class="p">{</span>
+
+		<span class="k">if</span> <span class="p">(</span><span class="n">virtualPartitionNodes</span><span class="p">.</span><span class="na">containsKey</span><span class="p">(</span><span class="n">virtualId</span><span class="p">))</span> <span class="p">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalStateException</span><span class="p">(</span><span class="s">&#34;Already has virtual partition node with id &#34;</span> <span class="o">+</span> <span class="n">virtualId</span><span class="p">);</span>
+		<span class="p">}</span>
+
+		<span class="c1">//添加一个虚拟节点，后续添加边的时候会连接到实际的物理节点
+</span><span class="c1"></span>		<span class="n">virtualPartitionNodes</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">virtualId</span><span class="p">,</span>
+				<span class="k">new</span> <span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span> <span class="n">StreamPartitioner</span><span class="o">&lt;?&gt;&gt;</span><span class="p">(</span><span class="n">originalId</span><span class="p">,</span> <span class="n">partitioner</span><span class="p">));</span>
+	<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>前面提到，在每一个物理节点的转换上，会调用 <code>StreamGraph#addEdge</code> 在输入节点和当前节点之间建立边的连接：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">addEdgeInternal</span><span class="params">(Integer upStreamVertexID,</span></span></span><br><span class="line"><span class="function"><span class="params">			Integer downStreamVertexID,</span></span></span><br><span class="line"><span class="function"><span class="params">			<span class="keyword">int</span> typeNumber,</span></span></span><br><span class="line"><span class="function"><span class="params">			StreamPartitioner&lt;?&gt; partitioner,</span></span></span><br><span class="line"><span class="function"><span class="params">			List&lt;String&gt; outputNames,</span></span></span><br><span class="line"><span class="function"><span class="params">			OutputTag outputTag)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//先判断是不是虚拟节点上的边，如果是，则找到虚拟节点上游对应的物理节点</span></span><br><span class="line">    <span class="comment">//在两个物理节点之间添加边，并把对应的 StreamPartitioner,或者 OutputTag 等补充信息添加到StreamEdge中</span></span><br><span class="line">    <span class="keyword">if</span> (virtualSideOutputNodes.containsKey(upStreamVertexID)) &#123;</span><br><span class="line">      ......</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (virtualPartitionNodes.containsKey(upStreamVertexID)) &#123;</span><br><span class="line">      <span class="keyword">int</span> virtualId = upStreamVertexID;</span><br><span class="line">      upStreamVertexID = virtualPartitionNodes.get(virtualId).f0;</span><br><span class="line">      <span class="keyword">if</span> (partitioner == <span class="keyword">null</span>) &#123;</span><br><span class="line">        partitioner = virtualPartitionNodes.get(virtualId).f1;</span><br><span class="line">      &#125;</span><br><span class="line">      addEdgeInternal(upStreamVertexID, downStreamVertexID, typeNumber, partitioner, outputNames, outputTag);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">      <span class="comment">//两个物理节点</span></span><br><span class="line">      StreamNode upstreamNode = getStreamNode(upStreamVertexID);</span><br><span class="line">      StreamNode downstreamNode = getStreamNode(downStreamVertexID);</span><br><span class="line"></span><br><span class="line">      <span class="comment">// If no partitioner was specified and the parallelism of upstream and downstream</span></span><br><span class="line">      <span class="comment">// operator matches use forward partitioning, use rebalance otherwise.</span></span><br><span class="line">      <span class="keyword">if</span> (partitioner == <span class="keyword">null</span> &amp;&amp; upstreamNode.getParallelism() == downstreamNode.getParallelism()) &#123;</span><br><span class="line">        partitioner = <span class="keyword">new</span> ForwardPartitioner&lt;Object&gt;();</span><br><span class="line">      &#125; <span class="keyword">else</span> <span class="keyword">if</span> (partitioner == <span class="keyword">null</span>) &#123;</span><br><span class="line">        partitioner = <span class="keyword">new</span> RebalancePartitioner&lt;Object&gt;();</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (partitioner <span class="keyword">instanceof</span> ForwardPartitioner) &#123;</span><br><span class="line">        <span class="keyword">if</span> (upstreamNode.getParallelism() != downstreamNode.getParallelism()) &#123;</span><br><span class="line">          <span class="keyword">throw</span> <span class="keyword">new</span> UnsupportedOperationException(<span class="string">"Forward partitioning does not allow "</span> +</span><br><span class="line">              <span class="string">"change of parallelism. Upstream operation: "</span> + upstreamNode + <span class="string">" parallelism: "</span> + upstreamNode.getParallelism() +</span><br><span class="line">              <span class="string">", downstream operation: "</span> + downstreamNode + <span class="string">" parallelism: "</span> + downstreamNode.getParallelism() +</span><br><span class="line">              <span class="string">" You must use another partitioning strategy, such as broadcast, rebalance, shuffle or global."</span>);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">//创建 StreamEdge，保留了 StreamPartitioner 等属性</span></span><br><span class="line">      StreamEdge edge = <span class="keyword">new</span> StreamEdge(upstreamNode, downstreamNode, typeNumber, outputNames, partitioner, outputTag);</span><br><span class="line"></span><br><span class="line">      <span class="comment">//分别将StreamEdge添加到上游节点和下游节点</span></span><br><span class="line">      getStreamNode(edge.getSourceId()).addOutEdge(edge);</span><br><span class="line">      getStreamNode(edge.getTargetId()).addInEdge(edge);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">private</span> <span class="nf">void</span> <span class="n">addEdgeInternal</span><span class="p">(</span><span class="n">Integer</span> <span class="nf">upStreamVertexID</span><span class="p">,</span>
+			<span class="n">Integer</span> <span class="nf">downStreamVertexID</span><span class="p">,</span>
+			<span class="kt">int</span> <span class="nf">typeNumber</span><span class="p">,</span>
+			<span class="n">StreamPartitioner</span><span class="o">&lt;?&gt;</span> <span class="n">partitioner</span><span class="p">,</span>
+			<span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">outputNames</span><span class="p">,</span>
+			<span class="n">OutputTag</span> <span class="nf">outputTag</span><span class="p">)</span> <span class="p">{</span>
+
+		<span class="c1">//先判断是不是虚拟节点上的边，如果是，则找到虚拟节点上游对应的物理节点
+</span><span class="c1"></span>		<span class="c1">//在两个物理节点之间添加边，并把对应的 StreamPartitioner,或者 OutputTag 等补充信息添加到StreamEdge中
+</span><span class="c1"></span>		<span class="k">if</span> <span class="p">(</span><span class="n">virtualSideOutputNodes</span><span class="p">.</span><span class="na">containsKey</span><span class="p">(</span><span class="n">upStreamVertexID</span><span class="p">))</span> <span class="p">{</span>
+			<span class="p">......</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">virtualPartitionNodes</span><span class="p">.</span><span class="na">containsKey</span><span class="p">(</span><span class="n">upStreamVertexID</span><span class="p">))</span> <span class="p">{</span>
+			<span class="kt">int</span> <span class="nf">virtualId</span> <span class="o">=</span> <span class="n">upStreamVertexID</span><span class="p">;</span>
+			<span class="n">upStreamVertexID</span> <span class="o">=</span> <span class="n">virtualPartitionNodes</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">virtualId</span><span class="p">).</span><span class="na">f0</span><span class="p">;</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">partitioner</span> <span class="o">==</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+				<span class="n">partitioner</span> <span class="o">=</span> <span class="n">virtualPartitionNodes</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">virtualId</span><span class="p">).</span><span class="na">f1</span><span class="p">;</span>
+			<span class="p">}</span>
+			<span class="n">addEdgeInternal</span><span class="p">(</span><span class="n">upStreamVertexID</span><span class="p">,</span> <span class="n">downStreamVertexID</span><span class="p">,</span> <span class="n">typeNumber</span><span class="p">,</span> <span class="n">partitioner</span><span class="p">,</span> <span class="n">outputNames</span><span class="p">,</span> <span class="n">outputTag</span><span class="p">);</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+
+			<span class="c1">//两个物理节点
+</span><span class="c1"></span>			<span class="n">StreamNode</span> <span class="nf">upstreamNode</span> <span class="o">=</span> <span class="n">getStreamNode</span><span class="p">(</span><span class="n">upStreamVertexID</span><span class="p">);</span>
+			<span class="n">StreamNode</span> <span class="nf">downstreamNode</span> <span class="o">=</span> <span class="n">getStreamNode</span><span class="p">(</span><span class="n">downStreamVertexID</span><span class="p">);</span>
+
+			<span class="c1">// If no partitioner was specified and the parallelism of upstream and downstream
+</span><span class="c1"></span>			<span class="c1">// operator matches use forward partitioning, use rebalance otherwise.
+</span><span class="c1"></span>			<span class="k">if</span> <span class="p">(</span><span class="n">partitioner</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">upstreamNode</span><span class="p">.</span><span class="na">getParallelism</span><span class="p">()</span> <span class="o">==</span> <span class="n">downstreamNode</span><span class="p">.</span><span class="na">getParallelism</span><span class="p">())</span> <span class="p">{</span>
+				<span class="n">partitioner</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ForwardPartitioner</span><span class="o">&lt;</span><span class="n">Object</span><span class="o">&gt;</span><span class="p">();</span>
+			<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">partitioner</span> <span class="o">==</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+				<span class="n">partitioner</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RebalancePartitioner</span><span class="o">&lt;</span><span class="n">Object</span><span class="o">&gt;</span><span class="p">();</span>
+			<span class="p">}</span>
+
+			<span class="k">if</span> <span class="p">(</span><span class="n">partitioner</span> <span class="nf">instanceof</span> <span class="n">ForwardPartitioner</span><span class="p">)</span> <span class="p">{</span>
+				<span class="k">if</span> <span class="p">(</span><span class="n">upstreamNode</span><span class="p">.</span><span class="na">getParallelism</span><span class="p">()</span> <span class="o">!=</span> <span class="n">downstreamNode</span><span class="p">.</span><span class="na">getParallelism</span><span class="p">())</span> <span class="p">{</span>
+					<span class="k">throw</span> <span class="k">new</span> <span class="n">UnsupportedOperationException</span><span class="p">(</span><span class="s">&#34;Forward partitioning does not allow &#34;</span> <span class="o">+</span>
+							<span class="s">&#34;change of parallelism. Upstream operation: &#34;</span> <span class="o">+</span> <span class="n">upstreamNode</span> <span class="o">+</span> <span class="s">&#34; parallelism: &#34;</span> <span class="o">+</span> <span class="n">upstreamNode</span><span class="p">.</span><span class="na">getParallelism</span><span class="p">()</span> <span class="o">+</span>
+							<span class="s">&#34;, downstream operation: &#34;</span> <span class="o">+</span> <span class="n">downstreamNode</span> <span class="o">+</span> <span class="s">&#34; parallelism: &#34;</span> <span class="o">+</span> <span class="n">downstreamNode</span><span class="p">.</span><span class="na">getParallelism</span><span class="p">()</span> <span class="o">+</span>
+							<span class="s">&#34; You must use another partitioning strategy, such as broadcast, rebalance, shuffle or global.&#34;</span><span class="p">);</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+
+			<span class="c1">//创建 StreamEdge，保留了 StreamPartitioner 等属性
+</span><span class="c1"></span>			<span class="n">StreamEdge</span> <span class="nf">edge</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StreamEdge</span><span class="p">(</span><span class="n">upstreamNode</span><span class="p">,</span> <span class="n">downstreamNode</span><span class="p">,</span> <span class="n">typeNumber</span><span class="p">,</span> <span class="n">outputNames</span><span class="p">,</span> <span class="n">partitioner</span><span class="p">,</span> <span class="n">outputTag</span><span class="p">);</span>
+
+			<span class="c1">//分别将StreamEdge添加到上游节点和下游节点
+</span><span class="c1"></span>			<span class="n">getStreamNode</span><span class="p">(</span><span class="n">edge</span><span class="p">.</span><span class="na">getSourceId</span><span class="p">()).</span><span class="na">addOutEdge</span><span class="p">(</span><span class="n">edge</span><span class="p">);</span>
+			<span class="n">getStreamNode</span><span class="p">(</span><span class="n">edge</span><span class="p">.</span><span class="na">getTargetId</span><span class="p">()).</span><span class="na">addInEdge</span><span class="p">(</span><span class="n">edge</span><span class="p">);</span>
+		<span class="p">}</span>
+	<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>这样通过 StreamNode 和 SteamEdge，就得到了 DAG 中的所有节点和边，以及它们之间的连接关系，拓扑结构也就建立了。</p>
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>本文简单分析了从 DataStream API 到 StramGraph 的过程。 StreamGraph 是 Flink 任务最接近用户逻辑的 DAG 表示，后面到具体执行的时候还会进行一系列转换，我们在后续的文章中再逐一加以分析。</p>
+
+<h2 id="小结">小结</h2>
+
+<p>本文简单分析了从 DataStream API 到 StramGraph 的过程。 StreamGraph 是 Flink 任务最接近用户逻辑的 DAG 表示，后面到具体执行的时候还会进行一系列转换，我们在后续的文章中再逐一加以分析。</p>
+
 <p>-EOF-</p>
-</span>
-      
+
     </div>
 
-    <footer class="post-footer">
-      
-        <div class="post-tags">
-          
-            <a href="/tags/Flink/" rel="tag">#Flink</a>
-          
-        </div>
-      
-
-      
-        <div class="post-nav">
-          <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/flink-source-code-jobgraph/" rel="prev">Flink 源码阅读笔记（2）- JobGraph 的生成</a>
-            
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">原始链接</span>
+    <span class="item-content"><a href="https://blog.jrwang.me/2019/flink-source-code-streamgraph/">https://blog.jrwang.me/2019/flink-source-code-streamgraph/</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2019-02-16
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/flink/">Flink</a>
           </div>
-
-          <div class="post-nav-next post-nav-item">
-            
-              <a href="/2018/container-and-kubernetes/" rel="next">关于容器技术的小抄</a>
-            
-          </div>
-        </div>
-      
-
-      
-      
+      <nav class="post-nav">
+        <a class="prev" href="/2019/flink-source-code-jobgraph/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">Flink 源码阅读笔记（2）- JobGraph 的生成</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/2018/container-and-kubernetes/">
+            <span class="next-text nav-default">关于容器技术的小抄</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
     </footer>
   </article>
-
-
-
-    <div class="post-spread">
-      
-    </div>
-  </div>
-
- </div>
-
+        </div>
         
 
-        
-          <div class="comments" id="comments">
-            
-          </div>
-        
-      </div>
-
-      
   
-  <div class="sidebar-toggle">
-    <div class="sidebar-toggle-line-wrap">
-      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
-    </div>
-  </div>
 
-  <aside id="sidebar" class="sidebar">
-    <div class="sidebar-inner">
+  
+    <script src="https://utteranc.es/client.js"
+            repo="jrthe42/blog-comment"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/utterance">comments powered by utterances.</a></noscript>
 
-      
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview">
-            站点概览
-          </li>
-        </ul>
-      
-
-      <section class="site-overview">
-        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
-          <p class="site-author-name" itemprop="name">JR</p>
-        </div>
-        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
-        <nav class="site-state motion-element">
-          <div class="site-state-item site-state-posts">
-            <a href="/archives">
-              <span class="site-state-item-count">43</span>
-              <span class="site-state-item-name">日志</span>
-            </a>
-          </div>
-
-          
-
-          <div class="site-state-item site-state-tags">
-            <a href="/tags">
-              <span class="site-state-item-count">21</span>
-              <span class="site-state-item-name">标签</span>
-              </a>
-          </div>
-
-        </nav>
-
-        
-
-        <div class="links-of-author motion-element">
-          
-            
-              <span class="links-of-author-item">
-                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://music.jrwang.me" target="_blank">Music</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://jrwang.me" target="_blank">Site</a>
-              </span>
-            
-          
-        </div>
-
-        
-        
-          <div class="cc-license motion-element" itemprop="license">
-            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
-              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
-            </a>
-          </div>
-        
-
-        <div class="links-of-author motion-element">
-          
-        </div>
-
-      </section>
-
-      
-        <section class="post-toc-wrap sidebar-panel-active">
-          <div class="post-toc-indicator-top post-toc-indicator"></div>
-          <div class="post-toc">
-            
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#StreamExecutionEnvironment"><span class="nav-number">1.</span> <span class="nav-text">StreamExecutionEnvironment</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#StreamTransformation"><span class="nav-number">2.</span> <span class="nav-text">StreamTransformation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DataStream"><span class="nav-number">3.</span> <span class="nav-text">DataStream</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#StreamOperator"><span class="nav-number">4.</span> <span class="nav-text">StreamOperator</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#StreamGraph"><span class="nav-number">5.</span> <span class="nav-text">StreamGraph</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">6.</span> <span class="nav-text">小结</span></a></li></ol></div>
-            
-          </div>
-          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
-        </section>
-      
-
-    </div>
-  </aside>
-
-
+      </div>
     </main>
 
     <footer id="footer" class="footer">
-      <div class="footer-inner"> <div class="copyright" >
-  
-  &copy; &nbsp;  2015 - 
-  <span itemprop="copyrightYear">2019</span>
-  <span class="with-love">
-    <i class="icon-next-heart"></i>
+      <div class="social-links">
+      <a href="mailto:jrthe42@gmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/jrthe42" class="iconfont icon-github" title="github"></a>
+      <a href="https://weibo.com/jrthe42" class="iconfont icon-weibo" title="weibo"></a>
+  <a href="https://blog.jrwang.me/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
   </span>
-  <span class="author" itemprop="copyrightHolder">JR</span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2015 - 
+    2019
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </span>
 </div>
-
-<div class="powered-by">
-  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
-</div>
-
-<div class="powered-by">
-  主题 -
-  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
-    NexT.Mist
-  </a>
-</div>
-
-<div class="theme-info">
-  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
-</div>
-
-
- </div>
     </footer>
 
-    <div class="back-to-top"></div>
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
   </div>
-
-  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
-
   
-  
-  
-    
-    
-
-  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.f79f403f.min.js"></script>
 
 
-  
-  
-  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
-  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
-
-
-  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
-  
-
-  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
-  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
-
-  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
-
-
-
-
-  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
-  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
-
-  
-  
-<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
-
-
-<script type="text/javascript" id="sidebar.toc.highlight">
-  $(document).ready(function () {
-    var tocSelector = '.post-toc';
-    var $tocSelector = $(tocSelector);
-    var activeCurrentSelector = '.active-current';
-
-    $tocSelector
-      .on('activate.bs.scrollspy', function () {
-        var $currentActiveElement = $(tocSelector + ' .active').last();
-
-        removeCurrentActiveClass();
-        $currentActiveElement.addClass('active-current');
-
-        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
-      })
-      .on('clear.bs.scrollspy', function () {
-        removeCurrentActiveClass();
-      });
-
-    function removeCurrentActiveClass () {
-      $(tocSelector + ' ' + activeCurrentSelector)
-        .removeClass(activeCurrentSelector.substring(1));
-    }
-
-    function processTOC () {
-      getTOCMaxHeight();
-      toggleTOCOverflowIndicators();
-    }
-
-    function getTOCMaxHeight () {
-      var height = $('.sidebar').height() -
-                   $tocSelector.position().top -
-                   $('.post-toc-indicator-bottom').height();
-
-      $tocSelector.css('height', height);
-
-      return height;
-    }
-
-    function toggleTOCOverflowIndicators () {
-      tocOverflowIndicator(
-        '.post-toc-indicator-top',
-        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
-      );
-
-      tocOverflowIndicator(
-        '.post-toc-indicator-bottom',
-        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
-      )
-    }
-
-    $(document).on('sidebar.motion.complete', function () {
-      processTOC();
-    });
-
-    $('body').scrollspy({ target: tocSelector });
-    $(window).on('resize', function () {
-      if ( $('.sidebar').hasClass('sidebar-active') ) {
-        processTOC();
-      }
-    });
-
-    onScroll($tocSelector);
-
-    function onScroll (element) {
-      element.on('mousewheel DOMMouseScroll', function (event) {
-          var oe = event.originalEvent;
-          var delta = oe.wheelDelta || -oe.detail;
-
-          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
-          event.preventDefault();
-
-          toggleTOCOverflowIndicators();
-      });
-    }
-
-    function tocOverflowIndicator (indicator, action) {
-      var $indicator = $(indicator);
-      var opacity = action === 'show' ? 0.4 : 0;
-      $indicator.velocity ?
-        $indicator.velocity('stop').velocity({
-          opacity: opacity
-        }, { duration: 100 }) :
-        $indicator.stop().animate({
-          opacity: opacity
-        }, 100);
-    }
-
-  });
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-66913886-2', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
 </script>
-
-<script type="text/javascript" id="sidebar.nav">
-  $(document).ready(function () {
-    var html = $('html');
-    var TAB_ANIMATE_DURATION = 200;
-    var hasVelocity = $.isFunction(html.velocity);
-
-    $('.sidebar-nav li').on('click', function () {
-      var item = $(this);
-      var activeTabClassName = 'sidebar-nav-active';
-      var activePanelClassName = 'sidebar-panel-active';
-      if (item.hasClass(activeTabClassName)) {
-        return;
-      }
-
-      var currentTarget = $('.' + activePanelClassName);
-      var target = $('.' + item.data('target'));
-
-      hasVelocity ?
-        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
-          target
-            .velocity('stop')
-            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
-            .addClass(activePanelClassName);
-        }) :
-        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
-          currentTarget.hide();
-          target
-            .stop()
-            .css({'opacity': 0, 'display': 'block'})
-            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
-              currentTarget.removeClass(activePanelClassName);
-              target.addClass(activePanelClassName);
-            });
-        });
-
-      item.siblings().removeClass(activeTabClassName);
-      item.addClass(activeTabClassName);
-    });
-
-    $('.post-toc a').on('click', function (e) {
-      e.preventDefault();
-      var targetSelector = escapeSelector(this.getAttribute('href'));
-      var offset = $(targetSelector).offset().top;
-      hasVelocity ?
-        html.velocity('stop').velocity('scroll', {
-          offset: offset  + 'px',
-          mobileHA: false
-        }) :
-        $('html, body').stop().animate({
-          scrollTop: offset
-        }, 500);
-    });
-
-    // Expand sidebar on post detail page by default, when post has a toc.
-    var $tocContent = $('.post-toc-content');
-    if (isDesktop() && CONFIG.sidebar === 'post') {
-      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
-        displaySidebar();
-      }
-    }
-  });
-</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
 
 
 
-  <script type="text/javascript">
-    $(document).ready(function () {
-      if (CONFIG.sidebar === 'always') {
-        displaySidebar();
-      }
-      if (isMobile()) {
-        FastClick.attach(document.body);
-      }
-    });
-  </script>
 
-  
 
-  
-  
 
-  
-  <script type="text/javascript" src="/js/lazyload.js"></script>
-  <script type="text/javascript">
-    $(function () {
-      $("#posts").find('img').lazyload({
-        placeholder: "/images/loading.gif",
-        effect: "fadeIn"
-      });
-    });
-  </script>
+
 </body>
 </html>

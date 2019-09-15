@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tags on JR&#39;s Blog</title>
+    <link>https://blog.jrwang.me/tags/</link>
+    <description>Recent content in Tags on JR&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 04 Sep 2019 21:31:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://blog.jrwang.me/tags/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Flink</title>
+      <link>https://blog.jrwang.me/tags/flink/</link>
+      <pubDate>Wed, 04 Sep 2019 21:31:00 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/flink/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>SQL</title>
+      <link>https://blog.jrwang.me/tags/sql/</link>
+      <pubDate>Wed, 04 Sep 2019 21:31:00 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/sql/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>实时计算</title>
+      <link>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</link>
+      <pubDate>Wed, 04 Sep 2019 21:31:00 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Aloha</title>
+      <link>https://blog.jrwang.me/tags/aloha/</link>
+      <pubDate>Fri, 15 Mar 2019 23:58:18 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/aloha/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Original</title>
+      <link>https://blog.jrwang.me/tags/original/</link>
+      <pubDate>Fri, 15 Mar 2019 23:58:18 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/original/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>RPC</title>
+      <link>https://blog.jrwang.me/tags/rpc/</link>
+      <pubDate>Fri, 15 Mar 2019 23:58:18 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/rpc/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Spark</title>
+      <link>https://blog.jrwang.me/tags/spark/</link>
+      <pubDate>Fri, 15 Mar 2019 23:58:18 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/spark/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Docker</title>
+      <link>https://blog.jrwang.me/tags/docker/</link>
+      <pubDate>Sat, 29 Dec 2018 20:08:21 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/docker/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Kubernets</title>
+      <link>https://blog.jrwang.me/tags/kubernets/</link>
+      <pubDate>Sat, 29 Dec 2018 20:08:21 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/kubernets/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Scala</title>
+      <link>https://blog.jrwang.me/tags/scala/</link>
+      <pubDate>Thu, 07 Jun 2018 21:05:51 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/scala/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Calcite</title>
+      <link>https://blog.jrwang.me/tags/calcite/</link>
+      <pubDate>Wed, 30 May 2018 15:15:57 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/calcite/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>gRPC</title>
+      <link>https://blog.jrwang.me/tags/grpc/</link>
+      <pubDate>Thu, 25 Aug 2016 18:10:35 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/grpc/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>HBase</title>
+      <link>https://blog.jrwang.me/tags/hbase/</link>
+      <pubDate>Fri, 22 Apr 2016 15:44:11 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/hbase/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>MapReduce</title>
+      <link>https://blog.jrwang.me/tags/mapreduce/</link>
+      <pubDate>Fri, 22 Apr 2016 15:44:11 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/mapreduce/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Collection</title>
+      <link>https://blog.jrwang.me/tags/collection/</link>
+      <pubDate>Sun, 10 Apr 2016 20:26:22 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/collection/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Java</title>
+      <link>https://blog.jrwang.me/tags/java/</link>
+      <pubDate>Sun, 10 Apr 2016 20:26:22 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/java/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Source Code Analysis</title>
+      <link>https://blog.jrwang.me/tags/source-code-analysis/</link>
+      <pubDate>Sun, 10 Apr 2016 20:26:22 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/source-code-analysis/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Design Pattern</title>
+      <link>https://blog.jrwang.me/tags/design-pattern/</link>
+      <pubDate>Fri, 20 Nov 2015 20:40:11 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/design-pattern/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

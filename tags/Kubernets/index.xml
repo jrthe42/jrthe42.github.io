@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Kubernets on JR&#39;s Blog</title>
+    <link>https://blog.jrwang.me/tags/kubernets/</link>
+    <description>Recent content in Kubernets on JR&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 29 Dec 2018 20:08:21 +0000</lastBuildDate>
+    
+	<atom:link href="https://blog.jrwang.me/tags/kubernets/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>关于容器技术的小抄</title>
+      <link>https://blog.jrwang.me/2018/container-and-kubernetes/</link>
+      <pubDate>Sat, 29 Dec 2018 20:08:21 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2018/container-and-kubernetes/</guid>
+      <description>Docker 最初风靡一时的 Paas 项目提供的“应用托管”，其最核心的组件就是一套应用的打包和分发机制。为了对多用户的应用环境进行隔离，会调用操作系统的 Cgroups 和 Namespace</description>
+    </item>
+    
+  </channel>
+</rss>

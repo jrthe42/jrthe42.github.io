@@ -1,1068 +1,384 @@
-<!doctype html>
-<html class="theme-next use-motion theme-next-mist">
+<!DOCTYPE html>
+<html lang="zh-cn">
 <head>
-  
-
-<meta charset="UTF-8"/>
-<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>JR&#39;s Blog</title>
+  <meta name="renderer" content="webkit" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-
 
 <meta http-equiv="Cache-Control" content="no-transform" />
 <meta http-equiv="Cache-Control" content="no-siteapp" />
 
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="jrthe42" /><meta name="description" content="JR&#39;s Blog" /><meta name="keywords" content="jrthe42, Blog, Programming" />
 
 
 
 
 
-  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+<meta name="generator" content="Hugo 0.58.0 with theme even" />
 
 
+<link rel="canonical" href="https://blog.jrwang.me/" />
+  <link href="https://blog.jrwang.me/index.xml" rel="alternate" type="application/rss+xml" title="JR&#39;s Blog" />
+  <link href="https://blog.jrwang.me/index.xml" rel="feed" type="application/rss+xml" title="JR&#39;s Blog" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
 
 
-<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+<link href="/dist/even.7d171193.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
 
 
-    <meta name="description" content="想入非非就是寻找神奇" />
+<meta property="og:title" content="JR&#39;s Blog" />
+<meta property="og:description" content="JR&#39;s Blog" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://blog.jrwang.me/" />
 
+<meta property="og:updated_time" content="2019-09-04T21:31:00+00:00" />
+<meta itemprop="name" content="JR&#39;s Blog">
+<meta itemprop="description" content="JR&#39;s Blog">
 
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="JR&#39;s Blog"/>
+<meta name="twitter:description" content="JR&#39;s Blog"/>
 
-  <meta name="keywords" content="JR, Blog, Programming, Java, JR Wang" />
-
-
-
-
-
-  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
-
-
-<meta name="description" content="想入非非就是寻找神奇">
-<meta property="og:type" content="website">
-<meta property="og:title" content="JR&#39;s Blog">
-<meta property="og:url" content="http://blog.jrwang.me/page/2/index.html">
-<meta property="og:site_name" content="JR&#39;s Blog">
-<meta property="og:description" content="想入非非就是寻找神奇">
-<meta property="og:locale" content="zh-Hans">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="JR&#39;s Blog">
-<meta name="twitter:description" content="想入非非就是寻找神奇">
-
-
-<script type="text/javascript" id="hexo.configuration">
-  var CONFIG = {
-    scheme: 'Mist',
-    sidebar: 'hide'
-  };
-</script>
-
-  <title> JR's Blog </title>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
-
-  <!--[if lte IE 8]>
-  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
-    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
-      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
-           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
-           style='margin-left:auto;margin-right:auto;display: block;'/>
-    </a>
-  </div>
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
 <![endif]-->
-  
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-  ga('create', 'UA-66913886-2', 'auto');
-  ga('send', 'pageview');
-</script>
 
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
 
-
-
-  <div class="container one-column 
-   page-home 
-">
-    <div class="headband"></div>
-
-    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
-      <div class="header-inner"><h1 class="site-meta">
-  <span class="logo-line-before"><i></i></span>
-  <a href="/" class="brand" rel="start">
-      <span class="logo">
-        <i class="icon-next-logo"></i>
-      </span>
-      <span class="site-title">JR's Blog</span>
-  </a>
-  <span class="logo-line-after"><i></i></span>
-</h1>
-
-<div class="site-nav-toggle">
-  <button>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-  </button>
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">JRTHE42</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">JRTHE42</a>
 </div>
 
-<nav class="site-nav">
-  
-
-  
-    <ul id="menu" class="menu ">
-      
-        
-        <li class="menu-item menu-item-home">
-          <a href="/" rel="section">
-            <i class="menu-item-icon icon-next-home"></i> <br />
-            首页
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-archives">
-          <a href="/archives" rel="section">
-            <i class="menu-item-icon icon-next-archives"></i> <br />
-            归档
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-tags">
-          <a href="/tags" rel="section">
-            <i class="menu-item-icon icon-next-tags"></i> <br />
-            标签
-          </a>
-        </li>
-      
-
-      
-      
-    </ul>
-  
-
-  
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
 </nav>
-
- </div>
     </header>
 
     <main id="main" class="main">
-      <div class="main-inner">
-        <div id="content" class="content"> 
-  <section id="posts" class="posts-expand">
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2019/flink-source-code-bootstarp/" itemprop="url">
-                Flink 源码阅读笔记（5）- 集群启动流程
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2019-05-05T21:42:38+08:00" content="2019-05-05">
-            2019-05-05
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            在 Flink 1.5.0 版本发布的时候，Flink 迎来了一个重要的改进：根据 FLIP-6 重构了 Flink 集群部署和任务处理模型，以便更好地和管理资源和调度任务，更优雅地和 Yarn、 Mesos、Kubernetes 等框架进行集成。
-在这篇文章中，我们将对 Flink 集群的启动流程
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2019/flink-source-code-bootstarp/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <section id="posts" class="posts">
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2019/flink-source-code-resource-manager/">Flink 源码阅读笔记（6）- 计算资源管理</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2019-05-11 </span>
       
     </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2019/flink-source-code-rpc/" itemprop="url">
-                Flink 源码阅读笔记（4）- RPC
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2019-05-03T20:42:38+08:00" content="2019-05-03">
-            2019-05-03
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            作为一个分布式系统，Flink 内部不同组件之间通信依赖于 RPC 机制。这篇文章将对 Flink 的 RPC 框架加以分析。
-例子先来看一个简单的例子，了解 Flink 内部的 RPC 框架是如何使用的。
-1234567891011121314151617181920212223242526272
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2019/flink-source-code-rpc/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2019/aloha-introduce/" itemprop="url">
-                Aloha：一个分布式任务调度框架
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2019-03-15T23:58:18+08:00" content="2019-03-15">
-            2019-03-15
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            概览Aloha 是一个基于 Scala 实现的分布式的任务调度和管理框架，提供插件式扩展功能，可以用来调度各种类型的任务。Aloha 的典型的应用场景是作为统一的任务管理入口。例如，在数据平台上通常会运行各种类型的应用，如 Spark 任务，Flink 任务，ETL 任务等，统一对这些任务进行管理并
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2019/aloha-introduce/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2019/flink-source-code-executiongraph/" itemprop="url">
-                Flink 源码阅读笔记（3）- ExecutionGraph 的生成
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2019-02-23T19:38:53+08:00" content="2019-02-23">
-            2019-02-23
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            我们前面已经分析过 StreamGraph, JobGraph 的生成过程，这两个执行图都是在 client 端生成的。接下来我们将把目光头投向 Flink Job 运行时调度层核心的执行图 - ExecutionGraph。
-和 StreamGraph 以及 JobGraph 不同的是，Execu
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2019/flink-source-code-executiongraph/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2019/flink-source-code-jobgraph/" itemprop="url">
-                Flink 源码阅读笔记（2）- JobGraph 的生成
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2019-02-17T16:35:45+08:00" content="2019-02-17">
-            2019-02-17
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            前面的文章我们介绍了 StreamGraph 的生成，这个实际上只对应 Flink 作业在逻辑上的执行计划图。Flink 会进一步对 StreamGraph 进行转换，得到另一个执行计划图，即 JobGraph。
-JobVertex在 StreamGraph 中，每一个算子（Operator） 对应
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2019/flink-source-code-jobgraph/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2019/flink-source-code-streamgraph/" itemprop="url">
-                Flink 源码阅读笔记（1）- StreamGraph 的生成
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2019-02-16T20:42:38+08:00" content="2019-02-16">
-            2019-02-16
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。
-StreamExecutionEnvironmentStreamExecutionEnvironment 是 Flink 在流模式下任务执行
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2019/flink-source-code-streamgraph/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2018/container-and-kubernetes/" itemprop="url">
-                关于容器技术的小抄
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2018-12-29T20:08:21+08:00" content="2018-12-29">
-            2018-12-29
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            Docker最初风靡一时的 Paas 项目提供的“应用托管”，其最核心的组件就是一套应用的打包和分发机制。为了对多用户的应用环境进行隔离，会调用操作系统的 Cgroups 和 Namespace 机制为每一个应用单独创建一个称作“沙盒”的隔离环境，然后在“沙盒”中启动这些应用进程。这就是所谓的“容器
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2018/container-and-kubernetes/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2018/dynamic-variable-in-scala/" itemprop="url">
-                DynamicVariable in Scala
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2018-06-07T21:05:51+08:00" content="2018-06-07">
-            2018-06-07
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            scala.util.DynamicVariable，这个类有点类似于 java 里面 ThreadLocal，适合用来保存和传递上下文（Context）相关的信息。
-Scala 的官方文档 是这么介绍的：
-
-DynamicVariables 提供了一种绑定机制，即变量的当前值是通过动态范围来查找的
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2018/dynamic-variable-in-scala/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2018/parse-table-in-sql/" itemprop="url">
-                从 SQL 语句中解析出源表和结果表
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2018-05-30T15:15:57+08:00" content="2018-05-30">
-            2018-05-30
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。
-在 Calcite 中，解析出的 AST 是以 SqlNode 的形式表现的，一个 SqlNode 即是 AST 中的一个节点。SqlNode 有众多的子类，但
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2018/parse-table-in-sql/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2018/partial-function-in-scala/" itemprop="url">
-                Partial Function in Scala
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2018-03-01T20:35:18+08:00" content="2018-03-01">
-            2018-03-01
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            模式匹配和匿名函数Scala 的模式匹配可能是最常用到的代码片段，match 和 case 配合使用，应该是 Scala 程序员最常写的代码片段：
-1234v match &#123;    case Some(str) =&gt; ...    case None =&gt; ...&#125;
-
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2018/partial-function-in-scala/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-  </section>
-
+  </header>
   
-  <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/">&laquo;</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/3/">&raquo;</a>
-  </nav>
-
- </div>
-
-        
-
-        
-      </div>
-
-      
-  
-  <div class="sidebar-toggle">
-    <div class="sidebar-toggle-line-wrap">
-      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+  <div class="post-content">
+    <div class="post-summary">
+      在 Flink 中，计算资源的是以 Slot 作为基本单位进行分配的。本文将对 Flink 中计算资源的管理机制加以分析。 Task Slot 的基本概念 我们在前面的文章中了解了 Flink 集群的启动流
+    </div>
+    <div class="read-more">
+      <a href="/2019/flink-source-code-resource-manager/" class="read-more-link">阅读更多</a>
     </div>
   </div>
+</article>
 
-  <aside id="sidebar" class="sidebar">
-    <div class="sidebar-inner">
-
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2019/flink-source-code-bootstarp/">Flink 源码阅读笔记（5）- 集群启动流程</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2019-05-05 </span>
       
-
-      <section class="site-overview">
-        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
-          <p class="site-author-name" itemprop="name">JR</p>
-        </div>
-        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
-        <nav class="site-state motion-element">
-          <div class="site-state-item site-state-posts">
-            <a href="/archives">
-              <span class="site-state-item-count">43</span>
-              <span class="site-state-item-name">日志</span>
-            </a>
-          </div>
-
-          
-
-          <div class="site-state-item site-state-tags">
-            <a href="/tags">
-              <span class="site-state-item-count">21</span>
-              <span class="site-state-item-name">标签</span>
-              </a>
-          </div>
-
-        </nav>
-
-        
-
-        <div class="links-of-author motion-element">
-          
-            
-              <span class="links-of-author-item">
-                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://music.jrwang.me" target="_blank">Music</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://jrwang.me" target="_blank">Site</a>
-              </span>
-            
-          
-        </div>
-
-        
-        
-          <div class="cc-license motion-element" itemprop="license">
-            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
-              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
-            </a>
-          </div>
-        
-
-        <div class="links-of-author motion-element">
-          
-        </div>
-
-      </section>
-
-      
-
     </div>
-  </aside>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      在 Flink 1.5.0 版本发布的时候，Flink 迎来了一个重要的改进：根据 FLIP-6 重构了 Flink 集群部署和任务处理模型，以便更好地和管理资源和调度任务，更优雅地和 Yar
+    </div>
+    <div class="read-more">
+      <a href="/2019/flink-source-code-bootstarp/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
 
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2019/flink-source-code-rpc/">Flink 源码阅读笔记（4）- RPC</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2019-05-03 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      作为一个分布式系统，Flink 内部不同组件之间通信依赖于 RPC 机制。这篇文章将对 Flink 的 RPC 框架加以分析。 例子 先来看一个简单的例子，了解 Flink 内部的 RPC 框架
+    </div>
+    <div class="read-more">
+      <a href="/2019/flink-source-code-rpc/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
 
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2019/flink-source-code-executiongraph/">Flink 源码阅读笔记（3）- ExecutionGraph 的生成</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2019-02-23 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      我们前面已经分析过 StreamGraph, JobGraph 的生成过程，这两个执行图都是在 client 端生成的。接下来我们将把目光头投向 Flink Job 运行时调度层核心的执行图 - ExecutionGr
+    </div>
+    <div class="read-more">
+      <a href="/2019/flink-source-code-executiongraph/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2019/flink-source-code-jobgraph/">Flink 源码阅读笔记（2）- JobGraph 的生成</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2019-02-17 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      前面的文章我们介绍了 StreamGraph 的生成，这个实际上只对应 Flink 作业在逻辑上的执行计划图。Flink 会进一步对 StreamGraph 进行转换，得到另一个执行计划图，即 JobGr
+    </div>
+    <div class="read-more">
+      <a href="/2019/flink-source-code-jobgraph/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2019/flink-source-code-streamgraph/">Flink 源码阅读笔记（1）- StreamGraph 的生成</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2019-02-16 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。 StreamExecutionEnvironment StreamExecutionEnvironment 是 Flink
+    </div>
+    <div class="read-more">
+      <a href="/2019/flink-source-code-streamgraph/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2018/container-and-kubernetes/">关于容器技术的小抄</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2018-12-29 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      Docker 最初风靡一时的 Paas 项目提供的“应用托管”，其最核心的组件就是一套应用的打包和分发机制。为了对多用户的应用环境进行隔离，会调用操作系统的 Cgroups 和 Namespace
+    </div>
+    <div class="read-more">
+      <a href="/2018/container-and-kubernetes/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2018/dynamic-variable-in-scala/">DynamicVariable in Scala</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2018-06-07 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      scala.util.DynamicVariable，这个类有点类似于 java 里面 ThreadLocal，适合用来保存和传递上下文（Context
+    </div>
+    <div class="read-more">
+      <a href="/2018/dynamic-variable-in-scala/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2018/parse-table-in-sql/">从 SQL 语句中解析出源表和结果表</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2018-05-30 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。 在 Calcite 中，解析出的 AST 是
+    </div>
+    <div class="read-more">
+      <a href="/2018/parse-table-in-sql/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2018/partial-function-in-scala/">Partial Function in Scala</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2018-03-01 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      模式匹配和匿名函数 Scala 的模式匹配可能是最常用到的代码片段，match 和 case 配合使用，应该是 Scala 程序员最常写的代码片段： 1 2 3 4 v match { case Some(str) =&gt; ... case None =&gt;
+    </div>
+    <div class="read-more">
+      <a href="/2018/partial-function-in-scala/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    </section>
+  
+  <nav class="pagination">
+    <a class="prev" href="/">
+        <i class="iconfont icon-left"></i>
+        <span class="prev-text">上一页</span>
+      </a>
+    <a class="next" href="/page/3/">
+        <span class="next-text">下一页</span>
+        <i class="iconfont icon-right"></i>
+      </a>
+  </nav>
+        </div>
+        
+
+      </div>
     </main>
 
     <footer id="footer" class="footer">
-      <div class="footer-inner"> <div class="copyright" >
-  
-  &copy; &nbsp;  2015 - 
-  <span itemprop="copyrightYear">2019</span>
-  <span class="with-love">
-    <i class="icon-next-heart"></i>
+      <div class="social-links">
+      <a href="mailto:jrthe42@gmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/jrthe42" class="iconfont icon-github" title="github"></a>
+      <a href="https://weibo.com/jrthe42" class="iconfont icon-weibo" title="weibo"></a>
+  <a href="https://blog.jrwang.me/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
   </span>
-  <span class="author" itemprop="copyrightHolder">JR</span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2015 - 
+    2019
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </span>
 </div>
-
-<div class="powered-by">
-  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
-</div>
-
-<div class="powered-by">
-  主题 -
-  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
-    NexT.Mist
-  </a>
-</div>
-
-<div class="theme-info">
-  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
-</div>
-
-
- </div>
     </footer>
 
-    <div class="back-to-top"></div>
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
   </div>
-
-  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
-
   
-  
-  
-    
-    
-
-  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.f79f403f.min.js"></script>
 
 
-  
-  
-  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
-  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
-
-
-  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
-  
-
-  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
-  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
-
-  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-66913886-2', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
 
 
 
 
-  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
-  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
 
-  
 
-  <script type="text/javascript">
-    $(document).ready(function () {
-      if (CONFIG.sidebar === 'always') {
-        displaySidebar();
-      }
-      if (isMobile()) {
-        FastClick.attach(document.body);
-      }
-    });
-  </script>
 
-  
-
-  
-  
-
-  
-  <script type="text/javascript" src="/js/lazyload.js"></script>
-  <script type="text/javascript">
-    $(function () {
-      $("#posts").find('img').lazyload({
-        placeholder: "/images/loading.gif",
-        effect: "fadeIn"
-      });
-    });
-  </script>
 </body>
 </html>

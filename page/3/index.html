@@ -1,1062 +1,384 @@
-<!doctype html>
-<html class="theme-next use-motion theme-next-mist">
+<!DOCTYPE html>
+<html lang="zh-cn">
 <head>
-  
-
-<meta charset="UTF-8"/>
-<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>JR&#39;s Blog</title>
+  <meta name="renderer" content="webkit" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-
 
 <meta http-equiv="Cache-Control" content="no-transform" />
 <meta http-equiv="Cache-Control" content="no-siteapp" />
 
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="jrthe42" /><meta name="description" content="JR&#39;s Blog" /><meta name="keywords" content="jrthe42, Blog, Programming" />
 
 
 
 
 
-  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+<meta name="generator" content="Hugo 0.58.0 with theme even" />
 
 
+<link rel="canonical" href="https://blog.jrwang.me/" />
+  <link href="https://blog.jrwang.me/index.xml" rel="alternate" type="application/rss+xml" title="JR&#39;s Blog" />
+  <link href="https://blog.jrwang.me/index.xml" rel="feed" type="application/rss+xml" title="JR&#39;s Blog" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
 
 
-<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+<link href="/dist/even.7d171193.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
 
 
-    <meta name="description" content="想入非非就是寻找神奇" />
+<meta property="og:title" content="JR&#39;s Blog" />
+<meta property="og:description" content="JR&#39;s Blog" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://blog.jrwang.me/" />
 
+<meta property="og:updated_time" content="2019-09-04T21:31:00+00:00" />
+<meta itemprop="name" content="JR&#39;s Blog">
+<meta itemprop="description" content="JR&#39;s Blog">
 
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="JR&#39;s Blog"/>
+<meta name="twitter:description" content="JR&#39;s Blog"/>
 
-  <meta name="keywords" content="JR, Blog, Programming, Java, JR Wang" />
-
-
-
-
-
-  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
-
-
-<meta name="description" content="想入非非就是寻找神奇">
-<meta property="og:type" content="website">
-<meta property="og:title" content="JR&#39;s Blog">
-<meta property="og:url" content="http://blog.jrwang.me/page/3/index.html">
-<meta property="og:site_name" content="JR&#39;s Blog">
-<meta property="og:description" content="想入非非就是寻找神奇">
-<meta property="og:locale" content="zh-Hans">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="JR&#39;s Blog">
-<meta name="twitter:description" content="想入非非就是寻找神奇">
-
-
-<script type="text/javascript" id="hexo.configuration">
-  var CONFIG = {
-    scheme: 'Mist',
-    sidebar: 'hide'
-  };
-</script>
-
-  <title> JR's Blog </title>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
-
-  <!--[if lte IE 8]>
-  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
-    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
-      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
-           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
-           style='margin-left:auto;margin-right:auto;display: block;'/>
-    </a>
-  </div>
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
 <![endif]-->
-  
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-  ga('create', 'UA-66913886-2', 'auto');
-  ga('send', 'pageview');
-</script>
 
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
 
-
-
-  <div class="container one-column 
-   page-home 
-">
-    <div class="headband"></div>
-
-    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
-      <div class="header-inner"><h1 class="site-meta">
-  <span class="logo-line-before"><i></i></span>
-  <a href="/" class="brand" rel="start">
-      <span class="logo">
-        <i class="icon-next-logo"></i>
-      </span>
-      <span class="site-title">JR's Blog</span>
-  </a>
-  <span class="logo-line-after"><i></i></span>
-</h1>
-
-<div class="site-nav-toggle">
-  <button>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-  </button>
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">JRTHE42</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">JRTHE42</a>
 </div>
 
-<nav class="site-nav">
-  
-
-  
-    <ul id="menu" class="menu ">
-      
-        
-        <li class="menu-item menu-item-home">
-          <a href="/" rel="section">
-            <i class="menu-item-icon icon-next-home"></i> <br />
-            首页
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-archives">
-          <a href="/archives" rel="section">
-            <i class="menu-item-icon icon-next-archives"></i> <br />
-            归档
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-tags">
-          <a href="/tags" rel="section">
-            <i class="menu-item-icon icon-next-tags"></i> <br />
-            标签
-          </a>
-        </li>
-      
-
-      
-      
-    </ul>
-  
-
-  
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
 </nav>
-
- </div>
     </header>
 
     <main id="main" class="main">
-      <div class="main-inner">
-        <div id="content" class="content"> 
-  <section id="posts" class="posts-expand">
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2017/flink-state-checkpoint/" itemprop="url">
-                Flink 的状态管理和检查点机制
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2017-09-20T20:18:16+08:00" content="2017-09-20">
-            2017-09-20
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            从状态说起状态 (State) 是 Flink 程序中构建复杂逻辑的基本组件。流处理中的状态可以视作算子上的记忆能力，可以保留和已经处理完的输入相关的信息，并对后续输入的处理造成影响。与之相反，流处理中的无状态操作只会考虑到当前处理的元素，不会受到处理完毕的元素的影响，也不会影响到后续待处理的元素。
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2017/flink-state-checkpoint/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <section id="posts" class="posts">
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2017/flink-state-checkpoint/">Flink 的状态管理和检查点机制</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2017-09-20 </span>
       
     </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/grpc-at-first-view/" itemprop="url">
-                Google 开源 RPC 框架 gRPC 初探
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-08-25T18:10:35+08:00" content="2016-08-25">
-            2016-08-25
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            gRPC 是 Google 开源的一款高性能 RPC 框架，前两天发布了 1.0 版本。RPC (Remote Procedure Call) 即远程过程调用，通过 RPC ，客户端的应用程序可以方便地调用另外一台机器上的服务端程序，因而常被应用于分布式系统中。
-RPC 框架通常使用 IDL (In
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/grpc-at-first-view/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-thread-states/" itemprop="url">
-                谈谈 Java 线程状态相关的几个方法
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-07-23T19:44:11+08:00" content="2016-07-23">
-            2016-07-23
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。
-Java 线程的状态先来谈一谈 Java 中线程的状态。在
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-thread-states/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-simpledateformat-multithread-threadlocal/" itemprop="url">
-                SimpleDateFormat 的线程安全问题与 ThreadLocal
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-07-09T23:14:11+08:00" content="2016-07-09">
-            2016-07-09
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            从 SimpleDateFormat 的线程安全说起SimpleDateFormat 是 Java 中非常常用的一个类，用于解析和格式化日期字符串。这个类想必大家都有用过，但是 SimpleDateFormat 在多线程环境中并不是线程安全的。我刚知道这一点的时候也觉得很奇怪，因为 SimpleDa
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-simpledateformat-multithread-threadlocal/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/gc-overhead-limit-in-putsortreducer/" itemprop="url">
-                记一次使用 PutSortReducer 时 OOM 错误的排查过程
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-04-22T15:44:11+08:00" content="2016-04-22">
-            2016-04-22
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我非常困惑。谷歌搜索了一圈也没有发现可行的解决方案，无奈只能自己解决了
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/gc-overhead-limit-in-putsortreducer/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-collections-set/" itemprop="url">
-                Java 容器源码分析之 Set
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-04-10T20:26:22+08:00" content="2016-04-10">
-            2016-04-10
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            Set 表示由无重复对象组成的集合，也是集合框架中重要的一种集合类型，直接扩展自 Collection 接口。在一个 Set 中，不能有两个引用指向同一个对象，或两个指向 null 的引用。如果对象 a 和 b 的引用满足条件 a.equals(b)，那么这两个对象也不能同时出现在集合中。
-通常 S
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-collections-set/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-collections-treemap/" itemprop="url">
-                Java 容器源码分析之 TreeMap
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-04-09T20:00:21+08:00" content="2016-04-09">
-            2016-04-09
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            TreeMap 是一种基于红黑树实现的 Key-Value 结构。在使用集合视图在 HashMap 中迭代时，是不能保证迭代顺序的； LinkedHashMap 使用了双向链表，保证按照插入顺序或者访问顺序进行迭代。但是有些时候，我们可能需要按照键的大小进行按序迭代，或者在使用哈希表的同时希望按键值
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-collections-treemap/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-enum/" itemprop="url">
-                Java 枚举源码分析
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-04-01T20:06:19+08:00" content="2016-04-01">
-            2016-04-01
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            引言枚举类型是 JDK 5 之后引进的一种非常重要的引用类型，可以用来定义一系列枚举常量。
-在没有引入 enum 关键字之前，要表示可枚举的变量，只能使用 public static final 的方式。
-1234public staic final int SPRING = 1;public st
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-enum/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-collections-linkedhashmap/" itemprop="url">
-                Java 容器源码分析之 LinkedHashMap
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-03-27T20:21:06+08:00" content="2016-03-27">
-            2016-03-27
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            同 HashMap 一样，LinkedHashMap 也是对 Map 接口的一种基于链表和哈希表的实现。实际上， LinkedHashMap 是 HashMap 的子类，其扩展了 HashMap 增加了双向链表的实现。相较于 HashMap 的迭代器中混乱的访问顺序，LinkedHashMap 可以
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-collections-linkedhashmap/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/java-collections-linkedlist/" itemprop="url">
-                Java 容器源码分析之 LinkedList
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-03-21T19:03:52+08:00" content="2016-03-21">
-            2016-03-21
-          </time>
-        </span>
-
-        
-
-        
-          
-        
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            概览同 ArrayList 一样，LinkedList 也是对 List 接口的一种具体实现。不同的是，ArrayList 是基于数组来实现的，而 LinkedList 是基于双向链表实现的。LinkedList 类的声明如下：
-123public class LinkedList&lt;E&gt;
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/java-collections-linkedlist/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-  </section>
-
+  </header>
   
-  <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/2/">&laquo;</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/4/">&raquo;</a>
-  </nav>
-
- </div>
-
-        
-
-        
-      </div>
-
-      
-  
-  <div class="sidebar-toggle">
-    <div class="sidebar-toggle-line-wrap">
-      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+  <div class="post-content">
+    <div class="post-summary">
+      从状态说起 状态 (State) 是 Flink 程序中构建复杂逻辑的基本组件。流处理中的状态可以视作算子上的记忆能力，可以保留和已经处理完的输入相关的信息，并对后续输入
+    </div>
+    <div class="read-more">
+      <a href="/2017/flink-state-checkpoint/" class="read-more-link">阅读更多</a>
     </div>
   </div>
+</article>
 
-  <aside id="sidebar" class="sidebar">
-    <div class="sidebar-inner">
-
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2016/grpc-at-first-view/">Google 开源 RPC 框架 gRPC 初探</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2016-08-25 </span>
       
-
-      <section class="site-overview">
-        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
-          <p class="site-author-name" itemprop="name">JR</p>
-        </div>
-        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
-        <nav class="site-state motion-element">
-          <div class="site-state-item site-state-posts">
-            <a href="/archives">
-              <span class="site-state-item-count">43</span>
-              <span class="site-state-item-name">日志</span>
-            </a>
-          </div>
-
-          
-
-          <div class="site-state-item site-state-tags">
-            <a href="/tags">
-              <span class="site-state-item-count">21</span>
-              <span class="site-state-item-name">标签</span>
-              </a>
-          </div>
-
-        </nav>
-
-        
-
-        <div class="links-of-author motion-element">
-          
-            
-              <span class="links-of-author-item">
-                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://music.jrwang.me" target="_blank">Music</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://jrwang.me" target="_blank">Site</a>
-              </span>
-            
-          
-        </div>
-
-        
-        
-          <div class="cc-license motion-element" itemprop="license">
-            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
-              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
-            </a>
-          </div>
-        
-
-        <div class="links-of-author motion-element">
-          
-        </div>
-
-      </section>
-
-      
-
     </div>
-  </aside>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      gRPC 是 Google 开源的一款高性能 RPC 框架，前两天发布了 1.0 版本。RPC (Remote Procedure Call) 即远程过程调用，通过 RPC ，客户端的应用程序可以方便地调用另外一台机器上的服务端程
+    </div>
+    <div class="read-more">
+      <a href="/2016/grpc-at-first-view/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
 
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2016/java-thread-states/">谈谈 Java 线程状态相关的几个方法</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2016-07-23 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编
+    </div>
+    <div class="read-more">
+      <a href="/2016/java-thread-states/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
 
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2016/java-simpledateformat-multithread-threadlocal/">SimpleDateFormat 的线程安全问题与 ThreadLocal</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2016-07-09 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      从 SimpleDateFormat 的线程安全说起 SimpleDateFormat 是 Java 中非常常用的一个类，用于解析和格式化日期字符串。这个类想必大家都有用过，但是 SimpleDateFormat 在多线程环境中并不是线程安全的。我刚知
+    </div>
+    <div class="read-more">
+      <a href="/2016/java-simpledateformat-multithread-threadlocal/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2016/gc-overhead-limit-in-putsortreducer/">记一次使用 PutSortReducer 时 OOM 错误的排查过程</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2016-04-22 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我
+    </div>
+    <div class="read-more">
+      <a href="/2016/gc-overhead-limit-in-putsortreducer/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2016/java-collections-set/">Java 容器源码分析之 Set</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2016-04-10 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      Set 表示由无重复对象组成的集合，也是集合框架中重要的一种集合类型，直接扩展自 Collection 接口。在一个 Set 中，不能有两个引用指向同一个对象，或两个指向 null 的引
+    </div>
+    <div class="read-more">
+      <a href="/2016/java-collections-set/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2016/java-collections-treemap/">Java 容器源码分析之 TreeMap</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2016-04-09 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      TreeMap 是一种基于红黑树实现的 Key-Value 结构。在使用集合视图在 HashMap 中迭代时，是不能保证迭代顺序的； LinkedHashMap 使用了双向链表，保证按照插入顺序或者访问顺序进行迭代。但
+    </div>
+    <div class="read-more">
+      <a href="/2016/java-collections-treemap/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2016/java-enum/">Java 枚举源码分析</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2016-04-01 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      引言 枚举类型是 JDK 5 之后引进的一种非常重要的引用类型，可以用来定义一系列枚举常量。 在没有引入 enum 关键字之前，要表示可枚举的变量，只能使用 public static final 的
+    </div>
+    <div class="read-more">
+      <a href="/2016/java-enum/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2016/java-collections-linkedhashmap/">Java 容器源码分析之 LinkedHashMap</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2016-03-27 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      同 HashMap 一样，LinkedHashMap 也是对 Map 接口的一种基于链表和哈希表的实现。实际上， LinkedHashMap 是 HashMap 的子类，其扩展了 HashMap 增加了双向链表的实现。相较于 HashMap
+    </div>
+    <div class="read-more">
+      <a href="/2016/java-collections-linkedhashmap/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2016/java-collections-linkedlist/">Java 容器源码分析之 LinkedList</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2016-03-21 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      概览 同 ArrayList 一样，LinkedList 也是对 List 接口的一种具体实现。不同的是，ArrayList 是基于数组来实现的，而 LinkedList 是基于双向链表实现的。Li
+    </div>
+    <div class="read-more">
+      <a href="/2016/java-collections-linkedlist/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    </section>
+  
+  <nav class="pagination">
+    <a class="prev" href="/page/2/">
+        <i class="iconfont icon-left"></i>
+        <span class="prev-text">上一页</span>
+      </a>
+    <a class="next" href="/page/4/">
+        <span class="next-text">下一页</span>
+        <i class="iconfont icon-right"></i>
+      </a>
+  </nav>
+        </div>
+        
+
+      </div>
     </main>
 
     <footer id="footer" class="footer">
-      <div class="footer-inner"> <div class="copyright" >
-  
-  &copy; &nbsp;  2015 - 
-  <span itemprop="copyrightYear">2019</span>
-  <span class="with-love">
-    <i class="icon-next-heart"></i>
+      <div class="social-links">
+      <a href="mailto:jrthe42@gmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/jrthe42" class="iconfont icon-github" title="github"></a>
+      <a href="https://weibo.com/jrthe42" class="iconfont icon-weibo" title="weibo"></a>
+  <a href="https://blog.jrwang.me/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
   </span>
-  <span class="author" itemprop="copyrightHolder">JR</span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2015 - 
+    2019
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </span>
 </div>
-
-<div class="powered-by">
-  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
-</div>
-
-<div class="powered-by">
-  主题 -
-  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
-    NexT.Mist
-  </a>
-</div>
-
-<div class="theme-info">
-  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
-</div>
-
-
- </div>
     </footer>
 
-    <div class="back-to-top"></div>
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
   </div>
-
-  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
-
   
-  
-  
-    
-    
-
-  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.f79f403f.min.js"></script>
 
 
-  
-  
-  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
-  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
-
-
-  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
-  
-
-  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
-  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
-
-  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-66913886-2', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
 
 
 
 
-  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
-  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
 
-  
 
-  <script type="text/javascript">
-    $(document).ready(function () {
-      if (CONFIG.sidebar === 'always') {
-        displaySidebar();
-      }
-      if (isMobile()) {
-        FastClick.attach(document.body);
-      }
-    });
-  </script>
 
-  
-
-  
-  
-
-  
-  <script type="text/javascript" src="/js/lazyload.js"></script>
-  <script type="text/javascript">
-    $(function () {
-      $("#posts").find('img').lazyload({
-        placeholder: "/images/loading.gif",
-        effect: "fadeIn"
-      });
-    });
-  </script>
 </body>
 </html>

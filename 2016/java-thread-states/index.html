@@ -1,674 +1,499 @@
-<!doctype html>
-<html class="theme-next use-motion theme-next-mist">
+<!DOCTYPE html>
+<html lang="zh-cn">
 <head>
-  
-
-<meta charset="UTF-8"/>
-<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>谈谈 Java 线程状态相关的几个方法 - JR&#39;s Blog</title>
+  <meta name="renderer" content="webkit" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-
 
 <meta http-equiv="Cache-Control" content="no-transform" />
 <meta http-equiv="Cache-Control" content="no-siteapp" />
 
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="jrthe42" /><meta name="description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编" /><meta name="keywords" content="jrthe42, Blog, Programming" />
 
 
 
 
 
-  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+<meta name="generator" content="Hugo 0.58.0 with theme even" />
+
+
+<link rel="canonical" href="https://blog.jrwang.me/2016/java-thread-states/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+<link href="/dist/even.7d171193.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="谈谈 Java 线程状态相关的几个方法" />
+<meta property="og:description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.jrwang.me/2016/java-thread-states/" />
+<meta property="article:published_time" content="2016-07-23T19:44:11+00:00" />
+<meta property="article:modified_time" content="2016-07-23T19:44:11+00:00" />
+<meta itemprop="name" content="谈谈 Java 线程状态相关的几个方法">
+<meta itemprop="description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编">
+
+
+<meta itemprop="datePublished" content="2016-07-23T19:44:11&#43;00:00" />
+<meta itemprop="dateModified" content="2016-07-23T19:44:11&#43;00:00" />
+<meta itemprop="wordCount" content="2449">
 
 
 
+<meta itemprop="keywords" content="" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="谈谈 Java 线程状态相关的几个方法"/>
+<meta name="twitter:description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编"/>
 
-<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
-
-
-    <meta name="description" content="想入非非就是寻找神奇" />
-
-
-
-  <meta name="keywords" content="Original,Java,Multithreading," />
-
-
-
-
-
-  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
-
-
-<meta name="description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。 Java 线程的状态先来谈一谈 Java 中线程的状态。在 Java 中，线程的状态和底层操作系统中线程的状态并不是一一对应的关系，我们所能见到的是 JVM">
-<meta name="keywords" content="Original,Java,Multithreading">
-<meta property="og:type" content="article">
-<meta property="og:title" content="谈谈 Java 线程状态相关的几个方法">
-<meta property="og:url" content="http://blog.jrwang.me/2016/java-thread-states/index.html">
-<meta property="og:site_name" content="JR&#39;s Blog">
-<meta property="og:description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。 Java 线程的状态先来谈一谈 Java 中线程的状态。在 Java 中，线程的状态和底层操作系统中线程的状态并不是一一对应的关系，我们所能见到的是 JVM">
-<meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://blog.jrwang.me/img/java-thread-states/thread-states-os.png">
-<meta property="og:updated_time" content="2018-06-09T08:48:11.329Z">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="谈谈 Java 线程状态相关的几个方法">
-<meta name="twitter:description" content="在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。 Java 线程的状态先来谈一谈 Java 中线程的状态。在 Java 中，线程的状态和底层操作系统中线程的状态并不是一一对应的关系，我们所能见到的是 JVM">
-<meta name="twitter:image" content="http://blog.jrwang.me/img/java-thread-states/thread-states-os.png">
-
-
-<script type="text/javascript" id="hexo.configuration">
-  var CONFIG = {
-    scheme: 'Mist',
-    sidebar: 'hide'
-  };
-</script>
-
-  <title> 谈谈 Java 线程状态相关的几个方法 | JR's Blog </title>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
-
-  <!--[if lte IE 8]>
-  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
-    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
-      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
-           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
-           style='margin-left:auto;margin-right:auto;display: block;'/>
-    </a>
-  </div>
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
 <![endif]-->
-  
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-  ga('create', 'UA-66913886-2', 'auto');
-  ga('send', 'pageview');
-</script>
 
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
 
-
-
-  <div class="container one-column page-post-detail">
-    <div class="headband"></div>
-
-    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
-      <div class="header-inner"><h1 class="site-meta">
-  <span class="logo-line-before"><i></i></span>
-  <a href="/" class="brand" rel="start">
-      <span class="logo">
-        <i class="icon-next-logo"></i>
-      </span>
-      <span class="site-title">JR's Blog</span>
-  </a>
-  <span class="logo-line-after"><i></i></span>
-</h1>
-
-<div class="site-nav-toggle">
-  <button>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-  </button>
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">JRTHE42</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">JRTHE42</a>
 </div>
 
-<nav class="site-nav">
-  
-
-  
-    <ul id="menu" class="menu ">
-      
-        
-        <li class="menu-item menu-item-home">
-          <a href="/" rel="section">
-            <i class="menu-item-icon icon-next-home"></i> <br />
-            首页
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-archives">
-          <a href="/archives" rel="section">
-            <i class="menu-item-icon icon-next-archives"></i> <br />
-            归档
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-tags">
-          <a href="/tags" rel="section">
-            <i class="menu-item-icon icon-next-tags"></i> <br />
-            标签
-          </a>
-        </li>
-      
-
-      
-      
-    </ul>
-  
-
-  
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
 </nav>
-
- </div>
     </header>
 
     <main id="main" class="main">
-      <div class="main-inner">
-        <div id="content" class="content"> 
-
-  <div id="posts" class="posts-expand">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
     
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              谈谈 Java 线程状态相关的几个方法
-            
-          
-        </h1>
-      
+      <h1 class="post-title">谈谈 Java 线程状态相关的几个方法</h1>
 
       <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-07-23T19:44:11+08:00" content="2016-07-23">
-            2016-07-23
-          </time>
-        </span>
-
+        <span class="post-time"> 2016-07-23 </span>
         
-
-        
-          
         
       </div>
     </header>
 
-    <div class="post-body">
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#java-线程的状态">Java 线程的状态</a></li>
+<li><a href="#sleep-vs-wait"><code>sleep</code> vs <code>wait</code></a></li>
+<li><a href="#interrupt"><code>interrupt</code></a></li>
+<li><a href="#yield">yield</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      
 
-      
-      
+<p>在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。</p>
 
-      
-        <span itemprop="articleBody"><p>在 Java 多线程编程中，sleep(), interrupt(), wait(), notify() 等方法是非常基本也很常用的方法。这些方法会改变运行中的 Java 线程的状态，正确地认识这些方法是掌握 Java 并发编程的基本要求。</p>
-<h3 id="Java-线程的状态"><a href="#Java-线程的状态" class="headerlink" title="Java 线程的状态"></a>Java 线程的状态</h3><p>先来谈一谈 Java 中线程的状态。在 Java 中，线程的状态和底层操作系统中线程的状态并不是一一对应的关系，我们所能见到的是 JVM 虚拟机层面暴露的状态。</p>
+<h3 id="java-线程的状态">Java 线程的状态</h3>
+
+<p>先来谈一谈 Java 中线程的状态。在 Java 中，线程的状态和底层操作系统中线程的状态并不是一一对应的关系，我们所能见到的是 JVM 虚拟机层面暴露的状态。</p>
+
 <p>Java 中线程的状态在 Thread 的内部枚举类 <code>Thread.State</code> 中定义，有 <code>NEW</code>, <code>RUNNABLE</code>, <code>BLOCKED</code>, <code>WAITING</code>, <code>TIMED_WAITING</code>, <code>TERMINATED</code> 这六类状态。</p>
+
 <p>在 Java 的官方文档中写道：“A thread in the runnable state is executing in the Java virtual machine but it may be waiting for other resources from the operating system such as processor.” 就是说，处于 <code>RUNNABLE</code> 状态的线程在 JVM 虚拟机正在 Java 虚拟机中执行，但它可能正在等待来自于操作系统的其它资源，比如处理器。实际上，如果一个线程在等待阻塞I/O的操作时，它的状态也是 <code>RUNNABLE</code> 的。</p>
+
 <p>如果一个线程在获取对象锁的过程中阻塞了（synchronized关键字），它就处于 <code>BLOCKED</code> 状态。Thread state for a thread blocked waiting for a monitor lock. A thread in the blocked state is waiting for a monitor lock to enter a synchronized block/method or reenter a synchronized block/method after calling Object.wait.</p>
-<p>而如果是由于调用了下面这三类方法，则线程会处于 <code>WAITING</code> 状态，需要等待其他的线程将其唤醒:</p>
-<ul>
-<li><code>Object.wait</code> with no timeout</li>
-<li><code>Thread.join</code> with no timeout</li>
-<li><code>LockSupport.park</code></li>
-</ul>
+
+<p>而如果是由于调用了下面这三类方法，则线程会处于 <code>WAITING</code> 状态，需要等待其他的线程将其唤醒:
+- <code>Object.wait</code> with no timeout
+- <code>Thread.join</code> with no timeout
+- <code>LockSupport.park</code></p>
+
 <p>如果是通过 <code>Lock.lock()</code> 方法等待获取锁时，也会处于 <code>WAITING</code> 状态。因为 <code>Lock</code> 接口的实现基于 AQS 实现的，而 AQS 中的阻塞操作都是基于 <code>LockSupport</code> 工具类实现的。</p>
-<p><code>TIMED_WAITING</code> 状态和 <code>WAITING</code> 状态类似，只不过等待的是超时事件的发生，下面几种方法会使得线程进入该状态：</p>
-<ul>
-<li><code>Thread.sleep</code></li>
-<li><code>Object.wait</code> with timeout</li>
-<li><code>Thread.join</code> with timeout</li>
-<li><code>LockSupport.parkNanos</code></li>
-<li><code>LockSupport.parkUntil</code></li>
-</ul>
+
+<p><code>TIMED_WAITING</code> 状态和 <code>WAITING</code> 状态类似，只不过等待的是超时事件的发生，下面几种方法会使得线程进入该状态：
+- <code>Thread.sleep</code>
+- <code>Object.wait</code> with timeout
+- <code>Thread.join</code> with timeout
+- <code>LockSupport.parkNanos</code>
+- <code>LockSupport.parkUntil</code></p>
+
 <p>同样，带有超时的 <code>Lock.tryLock(long time, TimeUnit unit)</code> 方法在等待获取锁时也会进入该状态。</p>
+
 <p>通常，在操作系统这一层面，线程存在五类状态，状态的转换关系可以参考下面的这张图。</p>
-<p><img src="/img/java-thread-states/thread-states-os.png" alt="os-thread-state"></p>
+
+<p><img src="/img/java-thread-states/thread-states-os.png" alt="os-thread-state" /></p>
+
 <p>可以看到，JVM 中所说的线程状态和 OS 层面的线程状态是不太一样的。JVM 中 <code>RUNNABLE</code> 其实是包含了上图中的 <code>RUNNING</code>, <code>READY</code>， 和部分 <code>WAITING</code> 状态的；而  JVM 中 <code>WAITING</code>， <code>TIMED_WAITING</code> 和 <code>BLOCKED</code> 其实又是对上图中 <code>WAITING</code> 剩余情形的一个更细致的划分。</p>
-<h3 id="sleep-vs-wait"><a href="#sleep-vs-wait" class="headerlink" title="sleep vs wait"></a><code>sleep</code> vs <code>wait</code></h3><p><code>sleep(long)</code> 和 <code>wait()</code> 方法都能让线程暂停执行，并让出当前的处理器资源。但是，这两个方法存在一些本质的区别。</p>
+
+<h3 id="sleep-vs-wait"><code>sleep</code> vs <code>wait</code></h3>
+
+<p><code>sleep(long)</code> 和 <code>wait()</code> 方法都能让线程暂停执行，并让出当前的处理器资源。但是，这两个方法存在一些本质的区别。</p>
+
 <p><code>sleep(long)</code> 方法是在 <code>Thread</code> 类中定义的静态方法，会使得线程睡眠（即暂时停止运行）一段指定的时间，进入 <code>TIMED_WAITING</code> 状态；当超时后重新进入 <code>RUNNABLE</code> 状态。<code>sleep()</code> 方法会保留当前线程的运行状态，线程所持有的锁资源并不会释放。</p>
+
 <p><code>wait()</code> 方法是在 <code>Object</code> 上定义的方法，任何一个类都从 <code>Object</code> 类中继承了该方法。调用该方法(<code>obj.wait()</code>)的前提是当前线程获取了该对象(<code>obj</code>)的锁。调用该方法后，线程会进入 <code>WAITING</code> 状态，同时会释放持有的对象上的锁，JVM 会将该线程置于对象的等待队列中。<code>wait()</code> 方法需要通过 <code>obj.notify()</code> 或 <code>obj.notifyAll()</code> 来进行唤醒，<code>notify()</code>和<code>notifyAll()</code>会将对象的等待队列中的一个或全部线程移入对象的同步队列中来竞争对象的锁，当获取锁之后便从 <code>wait()</code> 方法中返回了。简单地说， <code>wait()</code> 方法会释放线程持有的锁，并等待 <code>notify()</code> 或 <code>notifyAll()</code> 唤醒，从 <code>wait()</code> 方法返回表明线程又重新获取了对象锁。</p>
+
 <p><code>wait(long)</code> 是 <code>wait()</code> 的一个重载版本，效果基本一致，只是 <code>wait(long)</code> 进入 <code>TIMED_WAITING</code> 状态，超时也可以被唤醒。</p>
-<h3 id="interrupt"><a href="#interrupt" class="headerlink" title="interrupt"></a><code>interrupt</code></h3><p>很多人看到 <code>interrupt()</code> 方法，认为“中断”线程不就是让线程停止嘛。实际上， <code>interrupt()</code> 方法实现的根本就不是这个效果, <code>interrupt()</code>方法更像是发出一个信号，这个信号会改变线程的一个标识位属性（中断标识），对于这个信号如何进行响应则是无法确定的（可以有不同的处理逻辑）。很多时候调用 <code>interrupt()</code> 方法非但不是为了停止线程，反而是为了让线程继续运行下去。</p>
+
+<h3 id="interrupt"><code>interrupt</code></h3>
+
+<p>很多人看到 <code>interrupt()</code> 方法，认为“中断”线程不就是让线程停止嘛。实际上， <code>interrupt()</code> 方法实现的根本就不是这个效果, <code>interrupt()</code>方法更像是发出一个信号，这个信号会改变线程的一个标识位属性（中断标识），对于这个信号如何进行响应则是无法确定的（可以有不同的处理逻辑）。很多时候调用 <code>interrupt()</code> 方法非但不是为了停止线程，反而是为了让线程继续运行下去。</p>
+
 <p>在 Java 的文档中对 <code>interrupt()</code> 的效果列了四种情形：</p>
+
 <blockquote>
 <p>If this thread is blocked in an invocation of the wait(), wait(long), or wait(long, int) methods of the Object class, or of the join(), join(long), join(long, int), sleep(long), or sleep(long, int), methods of this class, then its interrupt status will be cleared and it will receive an InterruptedException.</p>
+
+<p>If this thread is blocked in an I/O operation upon an InterruptibleChannel then the channel will be closed, the thread&rsquo;s interrupt status will be set, and the thread will receive a ClosedByInterruptException.</p>
+
+<p>If this thread is blocked in a Selector then the thread&rsquo;s interrupt status will be set and it will return immediately from the selection operation, possibly with a non-zero value, just as if the selector&rsquo;s wakeup method were invoked.</p>
+
+<p>If none of the previous conditions hold then this thread&rsquo;s interrupt status will be set.</p>
 </blockquote>
-<blockquote>
-<p>If this thread is blocked in an I/O operation upon an InterruptibleChannel then the channel will be closed, the thread’s interrupt status will be set, and the thread will receive a ClosedByInterruptException.</p>
-</blockquote>
-<blockquote>
-<p>If this thread is blocked in a Selector then the thread’s interrupt status will be set and it will return immediately from the selection operation, possibly with a non-zero value, just as if the selector’s wakeup method were invoked.</p>
-</blockquote>
-<blockquote>
-<p>If none of the previous conditions hold then this thread’s interrupt status will be set.</p>
-</blockquote>
+
 <p>前三种情形其实是描述了如果线程处于等待状态或是阻塞在某一种资源上，那么 <code>interrupt()</code> 方法会使得线程跳出这种状态继续执行下去。第四种情形则描述了如果线程正在正常执行，那么 <code>interrupt()</code> 的效果则是设置了线程的中断状态，至于怎么处理这种状态，可以选择忽略也可以按需处理。</p>
+
 <p>可以通过 <code>isInterrupted()</code> 方法来测试当前线程的中断标识的状态；静态方法 <code>Thread.interrupted()</code> 可以判断当前线程是否处于中断状态，同时也会清除当前的中断状态。通常使用 <code>Thread.interrupted()</code> 来复位中断标识。在第一种情形的表示中我们可以看到，在抛出 <code>InterruptedException</code> 前会清除中断标识，因而在异常处理中调用 <code>isInterrupted()</code> 会返回 false。</p>
+
 <p>如果线程调用 <code>sleep(long)</code> 方法睡眠了非常长的一段时间，现在想要将它唤醒，就可以调用 <code>interrupt()</code> 方法。注意是在 <code>wait()</code>, <code>sleep()</code>， <code>join()</code> 方法声明中的异常，可见不是调用 <code>interrupt()</code> 抛出异常，而是在 <code>wait()</code>, <code>sleep()</code>， <code>join()</code> 处于等待的过程中，调用 <code>interrupt()</code> 方法会使其从等待状态中返回，并收到 <code>InterruptedException</code> 异常，进而将控制逻辑交给异常处理语句。</p>
+
 <p>在 <code>wait()</code> 方法中等待的线程被中断时，和使用 <code>notify()</code> 唤醒一样，必须要重新获得对象的锁才能从方法中返回，而不是立即就能返回并进入异常处理。下面这个例子简单地验证一下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">InterruptDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException</span>&#123;</span><br><span class="line">        WN wn = <span class="keyword">new</span> WN();</span><br><span class="line"></span><br><span class="line">        Thread t1 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                wn.m1();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        t1.setName(<span class="string">"thread 1"</span>);</span><br><span class="line"></span><br><span class="line">        Thread t2 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                wn.m2();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        t2.setName(<span class="string">"thread 2"</span>);</span><br><span class="line"></span><br><span class="line">        t1.start();</span><br><span class="line">        t2.start();</span><br><span class="line"></span><br><span class="line">        Thread.sleep(<span class="number">1000L</span>);</span><br><span class="line">        System.out.println(<span class="string">"call interrupt @"</span> + System.currentTimeMillis());</span><br><span class="line">        t1.interrupt();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">WN</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> Object o = <span class="keyword">new</span> Object();</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">m1</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (o) &#123;</span><br><span class="line">                System.out.println(Thread.currentThread().getName() + <span class="string">" get lock @"</span></span><br><span class="line">                        + System.currentTimeMillis());</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    o.wait();</span><br><span class="line">                    System.out.println(<span class="string">"return from wait() @"</span> + System.currentTimeMillis());</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    System.out.println(<span class="string">"interrupted during obj.wait() @"</span> + System</span><br><span class="line">                            .currentTimeMillis());</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">m2</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (o) &#123;</span><br><span class="line">                System.out.println(Thread.currentThread().getName() + <span class="string">" get lock @"</span></span><br><span class="line">                        + System.currentTimeMillis());</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    Thread.sleep(<span class="number">10000L</span>);</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() + <span class="string">" release lock @"</span> +</span><br><span class="line">                            System.currentTimeMillis());</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-Java" data-lang="Java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-Java" data-lang="Java"><span class="kd">public</span> <span class="nf">class</span> <span class="n">InterruptDemo</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="nf">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="p">[]</span> <span class="nf">args</span><span class="p">)</span> <span class="kd">throws</span> <span class="nf">InterruptedException</span><span class="p">{</span>
+        <span class="n">WN</span> <span class="nf">wn</span> <span class="o">=</span> <span class="k">new</span> <span class="n">WN</span><span class="p">();</span>
+
+        <span class="n">Thread</span> <span class="nf">t1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Thread</span><span class="p">(</span><span class="k">new</span> <span class="n">Runnable</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="nf">void</span> <span class="n">run</span><span class="p">()</span> <span class="p">{</span>
+                <span class="n">wn</span><span class="p">.</span><span class="na">m1</span><span class="p">();</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+        <span class="n">t1</span><span class="p">.</span><span class="na">setName</span><span class="p">(</span><span class="s">&#34;thread 1&#34;</span><span class="p">);</span>
+
+        <span class="n">Thread</span> <span class="nf">t2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Thread</span><span class="p">(</span><span class="k">new</span> <span class="n">Runnable</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="nf">void</span> <span class="n">run</span><span class="p">()</span> <span class="p">{</span>
+                <span class="n">wn</span><span class="p">.</span><span class="na">m2</span><span class="p">();</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+        <span class="n">t2</span><span class="p">.</span><span class="na">setName</span><span class="p">(</span><span class="s">&#34;thread 2&#34;</span><span class="p">);</span>
+
+        <span class="n">t1</span><span class="p">.</span><span class="na">start</span><span class="p">();</span>
+        <span class="n">t2</span><span class="p">.</span><span class="na">start</span><span class="p">();</span>
+
+        <span class="n">Thread</span><span class="p">.</span><span class="na">sleep</span><span class="p">(</span><span class="n">1000L</span><span class="p">);</span>
+        <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;call interrupt @&#34;</span> <span class="o">+</span> <span class="n">System</span><span class="p">.</span><span class="na">currentTimeMillis</span><span class="p">());</span>
+        <span class="n">t1</span><span class="p">.</span><span class="na">interrupt</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="kd">static</span> <span class="nf">class</span> <span class="n">WN</span> <span class="p">{</span>
+        <span class="kd">private</span> <span class="nf">Object</span> <span class="n">o</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Object</span><span class="p">();</span>
+
+        <span class="kd">public</span> <span class="nf">void</span> <span class="n">m1</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">synchronized</span> <span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Thread</span><span class="p">.</span><span class="na">currentThread</span><span class="p">().</span><span class="na">getName</span><span class="p">()</span> <span class="o">+</span> <span class="s">&#34; get lock @&#34;</span>
+                        <span class="o">+</span> <span class="n">System</span><span class="p">.</span><span class="na">currentTimeMillis</span><span class="p">());</span>
+                <span class="k">try</span> <span class="p">{</span>
+                    <span class="n">o</span><span class="p">.</span><span class="na">wait</span><span class="p">();</span>
+                    <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;return from wait() @&#34;</span> <span class="o">+</span> <span class="n">System</span><span class="p">.</span><span class="na">currentTimeMillis</span><span class="p">());</span>
+                <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">InterruptedException</span> <span class="nf">e</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;interrupted during obj.wait() @&#34;</span> <span class="o">+</span> <span class="n">System</span>
+                            <span class="p">.</span><span class="na">currentTimeMillis</span><span class="p">());</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="kd">public</span> <span class="nf">void</span> <span class="n">m2</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">synchronized</span> <span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Thread</span><span class="p">.</span><span class="na">currentThread</span><span class="p">().</span><span class="na">getName</span><span class="p">()</span> <span class="o">+</span> <span class="s">&#34; get lock @&#34;</span>
+                        <span class="o">+</span> <span class="n">System</span><span class="p">.</span><span class="na">currentTimeMillis</span><span class="p">());</span>
+                <span class="k">try</span> <span class="p">{</span>
+                    <span class="n">Thread</span><span class="p">.</span><span class="na">sleep</span><span class="p">(</span><span class="n">10000L</span><span class="p">);</span>
+                    <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Thread</span><span class="p">.</span><span class="na">currentThread</span><span class="p">().</span><span class="na">getName</span><span class="p">()</span> <span class="o">+</span> <span class="s">&#34; release lock @&#34;</span> <span class="o">+</span>
+                            <span class="n">System</span><span class="p">.</span><span class="na">currentTimeMillis</span><span class="p">());</span>
+                <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">InterruptedException</span> <span class="nf">e</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>输出的结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">thread 1 get lock @1471189560880</span><br><span class="line">thread 2 get lock @1471189560880</span><br><span class="line">call interrupt @1471189561880</span><br><span class="line">thread 2 release lock @1471189570881</span><br><span class="line">interrupted during obj.wait() @1471189570881</span><br></pre></td></tr></table></figure>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">thread 1 get lock @1471189560880
+thread 2 get lock @1471189560880
+call interrupt @1471189561880
+thread 2 release lock @1471189570881
+interrupted during obj.wait() @1471189570881</pre></td></tr></table>
+</div>
+</div>
 <p>可以看到，只有在线程2释放了锁之后（只有线程2释放了线程1才能重新获取），才能从<code>wait()</code>方法中返回。</p>
-<h3 id="yield"><a href="#yield" class="headerlink" title="yield"></a>yield</h3><p><code>yield()</code> 方法是 <code>Thread</code> 类的静态方法，也用于出让当前线程占用的CPU资源。和 <code>sleep(long)</code> 方法不同的是， <code>sleep(long)</code>会使得线程进入 <code>WAITING</code> 状态并且至少会等待超时时间到达后才会再次执行；而 <code>yield()</code> 方法则是从 <code>RUNNING</code> 进入 <code>READY</code> 状态（这里指的是操作系统层面，在 JVM 暴露出来的都是 <code>RUNNABLE</code> 状态），因而极有可能马上又被调度选中继续运行。</p>
+
+<h3 id="yield">yield</h3>
+
+<p><code>yield()</code> 方法是 <code>Thread</code> 类的静态方法，也用于出让当前线程占用的CPU资源。和 <code>sleep(long)</code> 方法不同的是， <code>sleep(long)</code>会使得线程进入 <code>WAITING</code> 状态并且至少会等待超时时间到达后才会再次执行；而 <code>yield()</code> 方法则是从 <code>RUNNING</code> 进入 <code>READY</code> 状态（这里指的是操作系统层面，在 JVM 暴露出来的都是 <code>RUNNABLE</code> 状态），因而极有可能马上又被调度选中继续运行。</p>
+
 <blockquote>
 <p>A hint to the scheduler that the current thread is willing to yield its current use of a processor. The scheduler is free to ignore this hint.</p>
 </blockquote>
+
 <p>从文档中的表述来看，<code>yield()</code> 方法相比于 <code>sleep(long)</code> 方法更依赖与系统的调度。该方法并不经常用到。</p>
+
 <p>-EOF-</p>
-</span>
-      
+
     </div>
 
-    <footer class="post-footer">
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">原始链接</span>
+    <span class="item-content"><a href="https://blog.jrwang.me/2016/java-thread-states/">https://blog.jrwang.me/2016/java-thread-states/</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2016-07-23
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+<footer class="post-footer">
       
-        <div class="post-tags">
-          
-            <a href="/tags/Original/" rel="tag">#Original</a>
-          
-            <a href="/tags/Java/" rel="tag">#Java</a>
-          
-            <a href="/tags/Multithreading/" rel="tag">#Multithreading</a>
-          
-        </div>
-      
-
-      
-        <div class="post-nav">
-          <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2016/grpc-at-first-view/" rel="prev">Google 开源 RPC 框架 gRPC 初探</a>
-            
-          </div>
-
-          <div class="post-nav-next post-nav-item">
-            
-              <a href="/2016/java-simpledateformat-multithread-threadlocal/" rel="next">SimpleDateFormat 的线程安全问题与 ThreadLocal</a>
-            
-          </div>
-        </div>
-      
-
-      
-      
+      <nav class="post-nav">
+        <a class="prev" href="/2016/grpc-at-first-view/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">Google 开源 RPC 框架 gRPC 初探</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/2016/java-simpledateformat-multithread-threadlocal/">
+            <span class="next-text nav-default">SimpleDateFormat 的线程安全问题与 ThreadLocal</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
     </footer>
   </article>
-
-
-
-    <div class="post-spread">
-      
-    </div>
-  </div>
-
- </div>
-
+        </div>
         
 
-        
-          <div class="comments" id="comments">
-            
-          </div>
-        
-      </div>
-
-      
   
-  <div class="sidebar-toggle">
-    <div class="sidebar-toggle-line-wrap">
-      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
-    </div>
-  </div>
 
-  <aside id="sidebar" class="sidebar">
-    <div class="sidebar-inner">
+  
+    <script src="https://utteranc.es/client.js"
+            repo="jrthe42/blog-comment"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/utterance">comments powered by utterances.</a></noscript>
 
-      
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview">
-            站点概览
-          </li>
-        </ul>
-      
-
-      <section class="site-overview">
-        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
-          <p class="site-author-name" itemprop="name">JR</p>
-        </div>
-        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
-        <nav class="site-state motion-element">
-          <div class="site-state-item site-state-posts">
-            <a href="/archives">
-              <span class="site-state-item-count">43</span>
-              <span class="site-state-item-name">日志</span>
-            </a>
-          </div>
-
-          
-
-          <div class="site-state-item site-state-tags">
-            <a href="/tags">
-              <span class="site-state-item-count">21</span>
-              <span class="site-state-item-name">标签</span>
-              </a>
-          </div>
-
-        </nav>
-
-        
-
-        <div class="links-of-author motion-element">
-          
-            
-              <span class="links-of-author-item">
-                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://music.jrwang.me" target="_blank">Music</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://jrwang.me" target="_blank">Site</a>
-              </span>
-            
-          
-        </div>
-
-        
-        
-          <div class="cc-license motion-element" itemprop="license">
-            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
-              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
-            </a>
-          </div>
-        
-
-        <div class="links-of-author motion-element">
-          
-        </div>
-
-      </section>
-
-      
-        <section class="post-toc-wrap sidebar-panel-active">
-          <div class="post-toc-indicator-top post-toc-indicator"></div>
-          <div class="post-toc">
-            
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Java-线程的状态"><span class="nav-number">1.</span> <span class="nav-text">Java 线程的状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sleep-vs-wait"><span class="nav-number">2.</span> <span class="nav-text">sleep vs wait</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#interrupt"><span class="nav-number">3.</span> <span class="nav-text">interrupt</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#yield"><span class="nav-number">4.</span> <span class="nav-text">yield</span></a></li></ol></div>
-            
-          </div>
-          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
-        </section>
-      
-
-    </div>
-  </aside>
-
-
+      </div>
     </main>
 
     <footer id="footer" class="footer">
-      <div class="footer-inner"> <div class="copyright" >
-  
-  &copy; &nbsp;  2015 - 
-  <span itemprop="copyrightYear">2019</span>
-  <span class="with-love">
-    <i class="icon-next-heart"></i>
+      <div class="social-links">
+      <a href="mailto:jrthe42@gmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/jrthe42" class="iconfont icon-github" title="github"></a>
+      <a href="https://weibo.com/jrthe42" class="iconfont icon-weibo" title="weibo"></a>
+  <a href="https://blog.jrwang.me/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
   </span>
-  <span class="author" itemprop="copyrightHolder">JR</span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2015 - 
+    2019
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </span>
 </div>
-
-<div class="powered-by">
-  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
-</div>
-
-<div class="powered-by">
-  主题 -
-  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
-    NexT.Mist
-  </a>
-</div>
-
-<div class="theme-info">
-  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
-</div>
-
-
- </div>
     </footer>
 
-    <div class="back-to-top"></div>
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
   </div>
-
-  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
-
   
-  
-  
-    
-    
-
-  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.f79f403f.min.js"></script>
 
 
-  
-  
-  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
-  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
-
-
-  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
-  
-
-  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
-  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
-
-  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
-
-
-
-
-  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
-  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
-
-  
-  
-<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
-
-
-<script type="text/javascript" id="sidebar.toc.highlight">
-  $(document).ready(function () {
-    var tocSelector = '.post-toc';
-    var $tocSelector = $(tocSelector);
-    var activeCurrentSelector = '.active-current';
-
-    $tocSelector
-      .on('activate.bs.scrollspy', function () {
-        var $currentActiveElement = $(tocSelector + ' .active').last();
-
-        removeCurrentActiveClass();
-        $currentActiveElement.addClass('active-current');
-
-        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
-      })
-      .on('clear.bs.scrollspy', function () {
-        removeCurrentActiveClass();
-      });
-
-    function removeCurrentActiveClass () {
-      $(tocSelector + ' ' + activeCurrentSelector)
-        .removeClass(activeCurrentSelector.substring(1));
-    }
-
-    function processTOC () {
-      getTOCMaxHeight();
-      toggleTOCOverflowIndicators();
-    }
-
-    function getTOCMaxHeight () {
-      var height = $('.sidebar').height() -
-                   $tocSelector.position().top -
-                   $('.post-toc-indicator-bottom').height();
-
-      $tocSelector.css('height', height);
-
-      return height;
-    }
-
-    function toggleTOCOverflowIndicators () {
-      tocOverflowIndicator(
-        '.post-toc-indicator-top',
-        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
-      );
-
-      tocOverflowIndicator(
-        '.post-toc-indicator-bottom',
-        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
-      )
-    }
-
-    $(document).on('sidebar.motion.complete', function () {
-      processTOC();
-    });
-
-    $('body').scrollspy({ target: tocSelector });
-    $(window).on('resize', function () {
-      if ( $('.sidebar').hasClass('sidebar-active') ) {
-        processTOC();
-      }
-    });
-
-    onScroll($tocSelector);
-
-    function onScroll (element) {
-      element.on('mousewheel DOMMouseScroll', function (event) {
-          var oe = event.originalEvent;
-          var delta = oe.wheelDelta || -oe.detail;
-
-          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
-          event.preventDefault();
-
-          toggleTOCOverflowIndicators();
-      });
-    }
-
-    function tocOverflowIndicator (indicator, action) {
-      var $indicator = $(indicator);
-      var opacity = action === 'show' ? 0.4 : 0;
-      $indicator.velocity ?
-        $indicator.velocity('stop').velocity({
-          opacity: opacity
-        }, { duration: 100 }) :
-        $indicator.stop().animate({
-          opacity: opacity
-        }, 100);
-    }
-
-  });
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-66913886-2', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
 </script>
-
-<script type="text/javascript" id="sidebar.nav">
-  $(document).ready(function () {
-    var html = $('html');
-    var TAB_ANIMATE_DURATION = 200;
-    var hasVelocity = $.isFunction(html.velocity);
-
-    $('.sidebar-nav li').on('click', function () {
-      var item = $(this);
-      var activeTabClassName = 'sidebar-nav-active';
-      var activePanelClassName = 'sidebar-panel-active';
-      if (item.hasClass(activeTabClassName)) {
-        return;
-      }
-
-      var currentTarget = $('.' + activePanelClassName);
-      var target = $('.' + item.data('target'));
-
-      hasVelocity ?
-        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
-          target
-            .velocity('stop')
-            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
-            .addClass(activePanelClassName);
-        }) :
-        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
-          currentTarget.hide();
-          target
-            .stop()
-            .css({'opacity': 0, 'display': 'block'})
-            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
-              currentTarget.removeClass(activePanelClassName);
-              target.addClass(activePanelClassName);
-            });
-        });
-
-      item.siblings().removeClass(activeTabClassName);
-      item.addClass(activeTabClassName);
-    });
-
-    $('.post-toc a').on('click', function (e) {
-      e.preventDefault();
-      var targetSelector = escapeSelector(this.getAttribute('href'));
-      var offset = $(targetSelector).offset().top;
-      hasVelocity ?
-        html.velocity('stop').velocity('scroll', {
-          offset: offset  + 'px',
-          mobileHA: false
-        }) :
-        $('html, body').stop().animate({
-          scrollTop: offset
-        }, 500);
-    });
-
-    // Expand sidebar on post detail page by default, when post has a toc.
-    var $tocContent = $('.post-toc-content');
-    if (isDesktop() && CONFIG.sidebar === 'post') {
-      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
-        displaySidebar();
-      }
-    }
-  });
-</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
 
 
 
-  <script type="text/javascript">
-    $(document).ready(function () {
-      if (CONFIG.sidebar === 'always') {
-        displaySidebar();
-      }
-      if (isMobile()) {
-        FastClick.attach(document.body);
-      }
-    });
-  </script>
 
-  
 
-  
-  
 
-  
-  <script type="text/javascript" src="/js/lazyload.js"></script>
-  <script type="text/javascript">
-    $(function () {
-      $("#posts").find('img').lazyload({
-        placeholder: "/images/loading.gif",
-        effect: "fadeIn"
-      });
-    });
-  </script>
+
 </body>
 </html>

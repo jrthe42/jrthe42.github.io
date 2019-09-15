@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Scala on JR&#39;s Blog</title>
+    <link>https://blog.jrwang.me/tags/scala/</link>
+    <description>Recent content in Scala on JR&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 07 Jun 2018 21:05:51 +0000</lastBuildDate>
+    
+	<atom:link href="https://blog.jrwang.me/tags/scala/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>DynamicVariable in Scala</title>
+      <link>https://blog.jrwang.me/2018/dynamic-variable-in-scala/</link>
+      <pubDate>Thu, 07 Jun 2018 21:05:51 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2018/dynamic-variable-in-scala/</guid>
+      <description>scala.util.DynamicVariable，这个类有点类似于 java 里面 ThreadLocal，适合用来保存和传递上下文（Context</description>
+    </item>
+    
+    <item>
+      <title>Partial Function in Scala</title>
+      <link>https://blog.jrwang.me/2018/partial-function-in-scala/</link>
+      <pubDate>Thu, 01 Mar 2018 20:35:18 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2018/partial-function-in-scala/</guid>
+      <description>模式匹配和匿名函数 Scala 的模式匹配可能是最常用到的代码片段，match 和 case 配合使用，应该是 Scala 程序员最常写的代码片段： 1 2 3 4 v match { case Some(str) =&amp;gt; ... case None =&amp;gt;</description>
+    </item>
+    
+  </channel>
+</rss>

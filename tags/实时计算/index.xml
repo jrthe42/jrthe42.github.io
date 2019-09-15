@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>实时计算 on JR&#39;s Blog</title>
+    <link>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</link>
+    <description>Recent content in 实时计算 on JR&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 04 Sep 2019 21:31:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Flink 源码阅读笔记（15） - Flink SQL 整体执行框架</title>
+      <link>https://blog.jrwang.me/2019/flink-source-code-sql-overview/</link>
+      <pubDate>Wed, 04 Sep 2019 21:31:00 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2019/flink-source-code-sql-overview/</guid>
+      <description>在数据处理领域，无论是实时数据处理还是离线数据处理，使用 SQL 简化开发将会是未来的整体发展趋势。尽管 SQL 简化了使用的门槛，但是如何将 SQL 等价转换到现</description>
+    </item>
+    
+  </channel>
+</rss>

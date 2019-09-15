@@ -1,651 +1,692 @@
-<!doctype html>
-<html class="theme-next use-motion theme-next-mist">
+<!DOCTYPE html>
+<html lang="zh-cn">
 <head>
-  
-
-<meta charset="UTF-8"/>
-<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Flink 源码阅读笔记（3）- ExecutionGraph 的生成 - JR&#39;s Blog</title>
+  <meta name="renderer" content="webkit" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-
 
 <meta http-equiv="Cache-Control" content="no-transform" />
 <meta http-equiv="Cache-Control" content="no-siteapp" />
 
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="jrthe42" /><meta name="description" content="我们前面已经分析过 StreamGraph, JobGraph 的生成过程，这两个执行图都是在 client 端生成的。接下来我们将把目光头投向 Flink Job 运行时调度层核心的执行图 - ExecutionGr" /><meta name="keywords" content="jrthe42, Blog, Programming" />
 
 
 
 
 
-  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+<meta name="generator" content="Hugo 0.58.0 with theme even" />
+
+
+<link rel="canonical" href="https://blog.jrwang.me/2019/flink-source-code-executiongraph/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+<link href="/dist/even.7d171193.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="Flink 源码阅读笔记（3）- ExecutionGraph 的生成" />
+<meta property="og:description" content="我们前面已经分析过 StreamGraph, JobGraph 的生成过程，这两个执行图都是在 client 端生成的。接下来我们将把目光头投向 Flink Job 运行时调度层核心的执行图 - ExecutionGr" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.jrwang.me/2019/flink-source-code-executiongraph/" />
+<meta property="article:published_time" content="2019-02-23T19:38:53+00:00" />
+<meta property="article:modified_time" content="2019-02-23T19:38:53+00:00" />
+<meta itemprop="name" content="Flink 源码阅读笔记（3）- ExecutionGraph 的生成">
+<meta itemprop="description" content="我们前面已经分析过 StreamGraph, JobGraph 的生成过程，这两个执行图都是在 client 端生成的。接下来我们将把目光头投向 Flink Job 运行时调度层核心的执行图 - ExecutionGr">
+
+
+<meta itemprop="datePublished" content="2019-02-23T19:38:53&#43;00:00" />
+<meta itemprop="dateModified" content="2019-02-23T19:38:53&#43;00:00" />
+<meta itemprop="wordCount" content="2409">
 
 
 
+<meta itemprop="keywords" content="Flink," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Flink 源码阅读笔记（3）- ExecutionGraph 的生成"/>
+<meta name="twitter:description" content="我们前面已经分析过 StreamGraph, JobGraph 的生成过程，这两个执行图都是在 client 端生成的。接下来我们将把目光头投向 Flink Job 运行时调度层核心的执行图 - ExecutionGr"/>
 
-<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
-
-
-    <meta name="description" content="想入非非就是寻找神奇" />
-
-
-
-  <meta name="keywords" content="Flink," />
-
-
-
-
-
-  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
-
-
-<meta name="description" content="我们前面已经分析过 StreamGraph, JobGraph 的生成过程，这两个执行图都是在 client 端生成的。接下来我们将把目光头投向 Flink Job 运行时调度层核心的执行图 - ExecutionGraph。 和 StreamGraph 以及 JobGraph 不同的是，ExecutionGraph 是在 JobManager 中生成的。 Client 向 JobManager">
-<meta name="keywords" content="Flink">
-<meta property="og:type" content="article">
-<meta property="og:title" content="Flink 源码阅读笔记（3）- ExecutionGraph 的生成">
-<meta property="og:url" content="http://blog.jrwang.me/2019/flink-source-code-executiongraph/index.html">
-<meta property="og:site_name" content="JR&#39;s Blog">
-<meta property="og:description" content="我们前面已经分析过 StreamGraph, JobGraph 的生成过程，这两个执行图都是在 client 端生成的。接下来我们将把目光头投向 Flink Job 运行时调度层核心的执行图 - ExecutionGraph。 和 StreamGraph 以及 JobGraph 不同的是，ExecutionGraph 是在 JobManager 中生成的。 Client 向 JobManager">
-<meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-08-07T11:34:43.692Z">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Flink 源码阅读笔记（3）- ExecutionGraph 的生成">
-<meta name="twitter:description" content="我们前面已经分析过 StreamGraph, JobGraph 的生成过程，这两个执行图都是在 client 端生成的。接下来我们将把目光头投向 Flink Job 运行时调度层核心的执行图 - ExecutionGraph。 和 StreamGraph 以及 JobGraph 不同的是，ExecutionGraph 是在 JobManager 中生成的。 Client 向 JobManager">
-
-
-<script type="text/javascript" id="hexo.configuration">
-  var CONFIG = {
-    scheme: 'Mist',
-    sidebar: 'hide'
-  };
-</script>
-
-  <title> Flink 源码阅读笔记（3）- ExecutionGraph 的生成 | JR's Blog </title>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
-
-  <!--[if lte IE 8]>
-  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
-    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
-      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
-           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
-           style='margin-left:auto;margin-right:auto;display: block;'/>
-    </a>
-  </div>
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
 <![endif]-->
-  
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-  ga('create', 'UA-66913886-2', 'auto');
-  ga('send', 'pageview');
-</script>
 
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
 
-
-
-  <div class="container one-column page-post-detail">
-    <div class="headband"></div>
-
-    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
-      <div class="header-inner"><h1 class="site-meta">
-  <span class="logo-line-before"><i></i></span>
-  <a href="/" class="brand" rel="start">
-      <span class="logo">
-        <i class="icon-next-logo"></i>
-      </span>
-      <span class="site-title">JR's Blog</span>
-  </a>
-  <span class="logo-line-after"><i></i></span>
-</h1>
-
-<div class="site-nav-toggle">
-  <button>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-  </button>
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">JRTHE42</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">JRTHE42</a>
 </div>
 
-<nav class="site-nav">
-  
-
-  
-    <ul id="menu" class="menu ">
-      
-        
-        <li class="menu-item menu-item-home">
-          <a href="/" rel="section">
-            <i class="menu-item-icon icon-next-home"></i> <br />
-            首页
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-archives">
-          <a href="/archives" rel="section">
-            <i class="menu-item-icon icon-next-archives"></i> <br />
-            归档
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-tags">
-          <a href="/tags" rel="section">
-            <i class="menu-item-icon icon-next-tags"></i> <br />
-            标签
-          </a>
-        </li>
-      
-
-      
-      
-    </ul>
-  
-
-  
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
 </nav>
-
- </div>
     </header>
 
     <main id="main" class="main">
-      <div class="main-inner">
-        <div id="content" class="content"> 
-
-  <div id="posts" class="posts-expand">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
     
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              Flink 源码阅读笔记（3）- ExecutionGraph 的生成
-            
-          
-        </h1>
-      
+      <h1 class="post-title">Flink 源码阅读笔记（3）- ExecutionGraph 的生成</h1>
 
       <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2019-02-23T19:38:53+08:00" content="2019-02-23">
-            2019-02-23
-          </time>
-        </span>
-
+        <span class="post-time"> 2019-02-23 </span>
         
-
-        
-          
         
       </div>
     </header>
 
-    <div class="post-body">
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#核心概念">核心概念</a>
+<ul>
+<li><a href="#executionjobvertex">ExecutionJobVertex</a></li>
+<li><a href="#executionvertex">ExecutionVertex</a></li>
+<li><a href="#execution">Execution</a></li>
+<li><a href="#intermediateresult">IntermediateResult</a></li>
+<li><a href="#executionedge">ExecutionEdge</a></li>
+</ul></li>
+<li><a href="#构建-executiongraph-的流程">构建 ExecutionGraph 的流程</a>
+<ul>
+<li><a href="#1-创建-executiongraph-对象并设置基本属性">1. 创建 ExecutionGraph 对象并设置基本属性</a></li>
+<li><a href="#2-jobvertex-初始化">2. JobVertex 初始化</a></li>
+<li><a href="#4-生成-executiongraph-内部的节点和连接">4. 生成 ExecutionGraph 内部的节点和连接</a>
+<ul>
+<li><a href="#4-1-对-jobvertex-进行拓扑排序">4.1 对 JobVertex 进行拓扑排序</a></li>
+<li><a href="#4-2-创建-executionjobvertex">4.2 创建 ExecutionJobVertex</a></li>
+</ul></li>
+<li><a href="#5-配置-state-checkpointing-忽略">5. 配置 state checkpointing (忽略)</a></li>
+</ul></li>
+<li><a href="#从-executiongraph-到实际运行的任务">从 ExecutionGraph 到实际运行的任务</a>
+<ul>
+<li><a href="#executiongraph-scheduleforexecution">ExecutionGraph.scheduleForExecution</a></li>
+</ul></li>
+<li><a href="#小结">小结</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      
 
-      
-      
+<p>我们前面已经分析过 <code>StreamGraph</code>, <code>JobGraph</code> 的生成过程，这两个执行图都是在 client 端生成的。接下来我们将把目光头投向 Flink Job 运行时调度层核心的执行图 - <code>ExecutionGraph</code>。</p>
 
-      
-        <span itemprop="articleBody"><p>我们前面已经分析过 <code>StreamGraph</code>, <code>JobGraph</code> 的生成过程，这两个执行图都是在 client 端生成的。接下来我们将把目光头投向 Flink Job 运行时调度层核心的执行图 - <code>ExecutionGraph</code>。</p>
 <p>和 <code>StreamGraph</code> 以及 <code>JobGraph</code> 不同的是，<code>ExecutionGraph</code> 是在 JobManager 中生成的。 Client 向 JobManager 提交 <code>JobGraph</code> 后， JobManager 就会根据 <code>JobGraph</code> 来创建对应的 <code>ExecutionGraph</code>,并以此来调度任务。</p>
+
 <p>本文不会介绍 JobMagage 的启动及任务调度过程，后面将会在单独的文章中进行分析。</p>
-<h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><h3 id="ExecutionJobVertex"><a href="#ExecutionJobVertex" class="headerlink" title="ExecutionJobVertex"></a>ExecutionJobVertex</h3><p>在 <code>ExecutionGraph</code> 中，节点对应的类是 <code>ExecutionJobVertex</code>，与之对应的就是 <code>JobGraph</code> 中的 <code>JobVertex</code>。每一个 <code>ExexutionJobVertex</code> 都是由一个 <code>JobVertex</code> 生成的。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> JobVertex jobVertex;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> List&lt;OperatorID&gt; operatorIDs;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> List&lt;OperatorID&gt; userDefinedOperatorIds;</span><br><span class="line"></span><br><span class="line"><span class="comment">//ExecutionVertex 对应一个并行的子任务</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ExecutionVertex[] taskVertices;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> IntermediateResult[] producedDataSets;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> List&lt;IntermediateResult&gt; inputs;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> parallelism;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> SlotSharingGroup slotSharingGroup;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> CoLocationGroup coLocationGroup;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> InputSplit[] inputSplits;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">int</span> maxParallelism;</span><br></pre></td></tr></table></figure>
-<h3 id="ExecutionVertex"><a href="#ExecutionVertex" class="headerlink" title="ExecutionVertex"></a>ExecutionVertex</h3><p><code>ExexutionJobVertex</code> 的成员变量中包含一个 <code>ExecutionVertex</code> 数组。我们知道，Flink Job 是可以指定任务的并行度的，在实际运行时，会有多个并行的任务同时在执行，对应到这里就是 <code>ExecutionVertex</code>。<code>ExecutionVertex</code> 是并行任务的一个子任务，算子的并行度是多少，那么就会有多少个 <code>ExecutionVertex</code>。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ExecutionJobVertex jobVertex;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> Map&lt;IntermediateResultPartitionID, IntermediateResultPartition&gt; resultPartitions;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ExecutionEdge[][] inputEdges;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> subTaskIndex;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> EvictingBoundedList&lt;ArchivedExecution&gt; priorExecutions;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> CoLocationConstraint locationConstraint;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** The current or latest execution attempt of this vertex's task. */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> Execution currentExecution;	<span class="comment">// this field must never be null</span></span><br></pre></td></tr></table></figure>
-<h3 id="Execution"><a href="#Execution" class="headerlink" title="Execution"></a>Execution</h3><p><code>Execution</code> 是对 <code>ExecutionVertex</code> 的一次执行，通过 <code>ExecutionAttemptId</code> 来唯一标识。</p>
-<h3 id="IntermediateResult"><a href="#IntermediateResult" class="headerlink" title="IntermediateResult"></a>IntermediateResult</h3><p>在 <code>JobGraph</code> 中用 <code>IntermediateDataSet</code> 表示 <code>JobVertex</code> 的对外输出，一个 <code>JobGraph</code> 可能有 n(n &gt;=0) 个输出。在 <code>ExecutionGraph</code> 中，与此对应的就是 <code>IntermediateResult</code>。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//对应的IntermediateDataSet的ID</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> IntermediateDataSetID id;</span><br><span class="line"><span class="comment">//生产者</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ExecutionJobVertex producer;</span><br><span class="line"></span><br><span class="line"><span class="comment">//对应ExecutionJobVertex的并行度</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> numParallelProducers;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> IntermediateResultPartition[] partitions = <span class="keyword">new</span> IntermediateResultPartition[numParallelProducers];</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ResultPartitionType resultType;</span><br></pre></td></tr></table></figure>
+
+<h2 id="核心概念">核心概念</h2>
+
+<h3 id="executionjobvertex">ExecutionJobVertex</h3>
+
+<p>在 <code>ExecutionGraph</code> 中，节点对应的类是 <code>ExecutionJobVertex</code>，与之对应的就是 <code>JobGraph</code> 中的 <code>JobVertex</code>。每一个 <code>ExexutionJobVertex</code> 都是由一个 <code>JobVertex</code> 生成的。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java">	<span class="kd">private</span> <span class="nf">final</span> <span class="n">JobVertex</span> <span class="nf">jobVertex</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">OperatorID</span><span class="o">&gt;</span> <span class="nf">operatorIDs</span><span class="p">;</span>
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">OperatorID</span><span class="o">&gt;</span> <span class="nf">userDefinedOperatorIds</span><span class="p">;</span>
+
+	<span class="c1">//ExecutionVertex 对应一个并行的子任务
+</span><span class="c1"></span>	<span class="kd">private</span> <span class="nf">final</span> <span class="n">ExecutionVertex</span><span class="p">[]</span> <span class="nf">taskVertices</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">IntermediateResult</span><span class="p">[]</span> <span class="nf">producedDataSets</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">IntermediateResult</span><span class="o">&gt;</span> <span class="nf">inputs</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="kt">int</span> <span class="nf">parallelism</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">SlotSharingGroup</span> <span class="nf">slotSharingGroup</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">CoLocationGroup</span> <span class="nf">coLocationGroup</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">InputSplit</span><span class="p">[]</span> <span class="nf">inputSplits</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">int</span> <span class="n">maxParallelism</span><span class="p">;</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="executionvertex">ExecutionVertex</h3>
+
+<p><code>ExexutionJobVertex</code> 的成员变量中包含一个 <code>ExecutionVertex</code> 数组。我们知道，Flink Job 是可以指定任务的并行度的，在实际运行时，会有多个并行的任务同时在执行，对应到这里就是 <code>ExecutionVertex</code>。<code>ExecutionVertex</code> 是并行任务的一个子任务，算子的并行度是多少，那么就会有多少个 <code>ExecutionVertex</code>。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java">	<span class="kd">private</span> <span class="nf">final</span> <span class="n">ExecutionJobVertex</span> <span class="nf">jobVertex</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">IntermediateResultPartitionID</span><span class="p">,</span> <span class="n">IntermediateResultPartition</span><span class="o">&gt;</span> <span class="nf">resultPartitions</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">ExecutionEdge</span><span class="p">[][]</span> <span class="nf">inputEdges</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="kt">int</span> <span class="nf">subTaskIndex</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">EvictingBoundedList</span><span class="o">&lt;</span><span class="n">ArchivedExecution</span><span class="o">&gt;</span> <span class="nf">priorExecutions</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">volatile</span> <span class="n">CoLocationConstraint</span> <span class="nf">locationConstraint</span><span class="p">;</span>
+
+	<span class="cm">/** The current or latest execution attempt of this vertex&#39;s task. */</span>
+	<span class="kd">private</span> <span class="nf">volatile</span> <span class="n">Execution</span> <span class="nf">currentExecution</span><span class="p">;</span>	<span class="o">//</span> <span class="k">this</span> <span class="n">field</span> <span class="nf">must</span> <span class="n">never</span> <span class="nf">be</span> <span class="kc">null</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="execution">Execution</h3>
+
+<p><code>Execution</code> 是对 <code>ExecutionVertex</code> 的一次执行，通过 <code>ExecutionAttemptId</code> 来唯一标识。</p>
+
+<h3 id="intermediateresult">IntermediateResult</h3>
+
+<p>在 <code>JobGraph</code> 中用 <code>IntermediateDataSet</code> 表示 <code>JobVertex</code> 的对外输出，一个 <code>JobGraph</code> 可能有 n(n &gt;=0) 个输出。在 <code>ExecutionGraph</code> 中，与此对应的就是 <code>IntermediateResult</code>。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java">	<span class="c1">//对应的IntermediateDataSet的ID
+</span><span class="c1"></span>	<span class="kd">private</span> <span class="nf">final</span> <span class="n">IntermediateDataSetID</span> <span class="nf">id</span><span class="p">;</span>
+	<span class="c1">//生产者
+</span><span class="c1"></span>	<span class="kd">private</span> <span class="nf">final</span> <span class="n">ExecutionJobVertex</span> <span class="nf">producer</span><span class="p">;</span>
+
+	<span class="c1">//对应ExecutionJobVertex的并行度
+</span><span class="c1"></span>	<span class="kd">private</span> <span class="nf">final</span> <span class="kt">int</span> <span class="nf">numParallelProducers</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">IntermediateResultPartition</span><span class="p">[]</span> <span class="nf">partitions</span> <span class="o">=</span> <span class="k">new</span> <span class="n">IntermediateResultPartition</span><span class="p">[</span><span class="n">numParallelProducers</span><span class="p">];</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">ResultPartitionType</span> <span class="nf">resultType</span><span class="p">;</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>由于 <code>ExecutionJobVertex</code>  有 numParallelProducers 个并行的子任务，自然对应的每一个 <code>IntermediateResult</code> 就有 numParallelProducers 个生产者，每个生产者的在相应的 <code>IntermediateResult</code> 上的输出对应一个 <code>IntermediateResultPartition</code>。<code>IntermediateResultPartition</code> 表示的是 <code>ExecutionVertex</code> 的一个输出分区，即：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ExecutionJobVertex --&gt;  IntermediateResult</span><br><span class="line"></span><br><span class="line">ExecutionVertex --&gt;  IntermediateResultPartition</span><br></pre></td></tr></table></figure>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">ExecutionJobVertex --&gt;  IntermediateResult
+
+ExecutionVertex --&gt;  IntermediateResultPartition</pre></td></tr></table>
+</div>
+</div>
 <p>一个 <code>ExecutionJobVertex</code> 可能包含多个（n） 个 <code>IntermediateResult</code>， 那实际上每一个并行的子任务 <code>ExecutionVertex</code> 可能会会包含（n） 个 <code>IntermediateResultPartition</code>。</p>
+
 <p><code>IntermediateResultPartition</code> 的生产者是 <code>ExecutionVertex</code>，消费者是一个或若干个 <code>ExecutionEdge</code>。</p>
-<h3 id="ExecutionEdge"><a href="#ExecutionEdge" class="headerlink" title="ExecutionEdge"></a>ExecutionEdge</h3><p><code>ExecutionEdge</code> 表示 <code>ExecutionVertex</code> 的输入，通过 <code>ExecutionEdge</code> 将 <code>ExecutionVertex</code> 和 <code>IntermediateResultPartition</code> 连接起来，进而在不同的 <code>ExecutionVertex</code> 之间建立联系。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> IntermediateResultPartition source;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ExecutionVertex target;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> inputNum;</span><br></pre></td></tr></table></figure>
-<h2 id="构建-ExecutionGraph-的流程"><a href="#构建-ExecutionGraph-的流程" class="headerlink" title="构建 ExecutionGraph 的流程"></a>构建 ExecutionGraph 的流程</h2><p>创建 <code>ExecutionGraph</code> 的入口在 <code>ExecutionGraphBuilder#buildGraph()</code> 中。</p>
-<h3 id="1-创建-ExecutionGraph-对象并设置基本属性"><a href="#1-创建-ExecutionGraph-对象并设置基本属性" class="headerlink" title="1. 创建 ExecutionGraph 对象并设置基本属性"></a>1. 创建 ExecutionGraph 对象并设置基本属性</h3><p>设置 JobInformation, SlotProvider 等信息，下面罗列了一些比较重要的属性：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** Job specific information like the job id, job name, job configuration, etc. */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> JobInformation jobInformation;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** The slot provider to use for allocating slots for tasks as they are needed. */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> SlotProvider slotProvider;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** The classloader for the user code. Needed for calls into user code classes. */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ClassLoader userClassLoader;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** All job vertices that are part of this graph. */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ConcurrentHashMap&lt;JobVertexID, ExecutionJobVertex&gt; tasks;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** All vertices, in the order in which they were created. **/</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> List&lt;ExecutionJobVertex&gt; verticesInCreationOrder;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** All intermediate results that are part of this graph. */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ConcurrentHashMap&lt;IntermediateDataSetID, IntermediateResult&gt; intermediateResults;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** Current status of the job execution. */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> JobStatus state = JobStatus.CREATED;</span><br><span class="line"></span><br><span class="line"> 	<span class="comment">/** Listeners that receive messages when the entire job switches it status</span></span><br><span class="line"><span class="comment"> * (such as from RUNNING to FINISHED). */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> List&lt;JobStatusListener&gt; jobStatusListeners;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** Listeners that receive messages whenever a single task execution changes its status. */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> List&lt;ExecutionStatusListener&gt; executionListeners;</span><br></pre></td></tr></table></figure>
-<h3 id="2-JobVertex-初始化"><a href="#2-JobVertex-初始化" class="headerlink" title="2. JobVertex 初始化"></a>2. JobVertex 初始化</h3><p>JobVertex 在  Master 上进行初始化，主要关注<code>OutputFormatVertex</code> 和 <code>InputFormatVertex</code>，其他类型的 vertex 在这里没有什么特殊操作。File output format 在这一步准备好输出目录, Input splits 在这一步创建对应的 splits。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (JobVertex vertex : jobGraph.getVertices()) &#123;</span><br><span class="line">      ....</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        vertex.initializeOnMaster(classLoader);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">          <span class="keyword">throw</span> <span class="keyword">new</span> JobExecutionException(jobId,</span><br><span class="line">              <span class="string">"Cannot initialize task '"</span> + vertex.getName() + <span class="string">"': "</span> + t.getMessage(), t);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-<h3 id="4-生成-ExecutionGraph-内部的节点和连接"><a href="#4-生成-ExecutionGraph-内部的节点和连接" class="headerlink" title="4. 生成 ExecutionGraph 内部的节点和连接"></a>4. 生成 ExecutionGraph 内部的节点和连接</h3><p>对所有的 Jobvertext 进行拓扑排序，并生成 <code>ExecutionGraph</code> 内部的节点和连接</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//topologically sort the job vertices and attach the graph to the existing one</span></span><br><span class="line">List&lt;JobVertex&gt; sortedTopology = jobGraph.getVerticesSortedTopologicallyFromSources();</span><br><span class="line">    <span class="keyword">if</span> (log.isDebugEnabled()) &#123;</span><br><span class="line">      log.debug(<span class="string">"Adding &#123;&#125; vertices from job graph &#123;&#125; (&#123;&#125;)."</span>, sortedTopology.size(), jobName, jobId);</span><br><span class="line">    &#125;</span><br><span class="line">    executionGraph.attachJobGraph(sortedTopology);</span><br></pre></td></tr></table></figure>
-<h4 id="4-1-对-JobVertex-进行拓扑排序"><a href="#4-1-对-JobVertex-进行拓扑排序" class="headerlink" title="4.1 对 JobVertex 进行拓扑排序"></a>4.1 对 JobVertex 进行拓扑排序</h4><p>所谓拓扑排序，即保证如果存在 A -&gt; B 的有向边，那么在排序后的列表中 A 节点一定在 B 节点之前。具体的算法这里不再详细分析。</p>
-<h4 id="4-2-创建-ExecutionJobVertex"><a href="#4-2-创建-ExecutionJobVertex" class="headerlink" title="4.2 创建 ExecutionJobVertex"></a>4.2 创建 ExecutionJobVertex</h4><p>按照拓扑排序的结果依次为每个 <code>JobVertex</code> 创建对应的 <code>ExecutionJobVertex</code>。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (JobVertex jobVertex : topologiallySorted) &#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (jobVertex.isInputVertex() &amp;&amp; !jobVertex.isStoppable()) &#123;</span><br><span class="line">    <span class="keyword">this</span>.isStoppable = <span class="keyword">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// create the execution job vertex and attach it to the graph</span></span><br><span class="line">  <span class="comment">//创建 ExecutionJobVertex</span></span><br><span class="line">  ExecutionJobVertex ejv = <span class="keyword">new</span> ExecutionJobVertex(</span><br><span class="line">    <span class="keyword">this</span>,</span><br><span class="line">    jobVertex,</span><br><span class="line">    <span class="number">1</span>,</span><br><span class="line">    rpcTimeout,</span><br><span class="line">    globalModVersion,</span><br><span class="line">    createTimestamp);</span><br><span class="line"></span><br><span class="line">  <span class="comment">//连接上游节点</span></span><br><span class="line">  ejv.connectToPredecessors(<span class="keyword">this</span>.intermediateResults);</span><br><span class="line"></span><br><span class="line">  ExecutionJobVertex previousTask = <span class="keyword">this</span>.tasks.putIfAbsent(jobVertex.getID(), ejv);</span><br><span class="line">  <span class="keyword">if</span> (previousTask != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> JobException(String.format(<span class="string">"Encountered two job vertices with ID %s : previous=[%s] / new=[%s]"</span>,</span><br><span class="line">      jobVertex.getID(), ejv, previousTask));</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> (IntermediateResult res : ejv.getProducedDataSets()) &#123;</span><br><span class="line">    IntermediateResult previousDataSet = <span class="keyword">this</span>.intermediateResults.putIfAbsent(res.getId(), res);</span><br><span class="line">    <span class="keyword">if</span> (previousDataSet != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> JobException(String.format(<span class="string">"Encountered two intermediate data set with ID %s : previous=[%s] / new=[%s]"</span>,</span><br><span class="line">        res.getId(), res, previousDataSet));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">this</span>.verticesInCreationOrder.add(ejv);</span><br><span class="line">  <span class="keyword">this</span>.numVerticesTotal += ejv.getParallelism();</span><br><span class="line">  newExecJobVertices.add(ejv);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="executionedge">ExecutionEdge</h3>
+
+<p><code>ExecutionEdge</code> 表示 <code>ExecutionVertex</code> 的输入，通过 <code>ExecutionEdge</code> 将 <code>ExecutionVertex</code> 和 <code>IntermediateResultPartition</code> 连接起来，进而在不同的 <code>ExecutionVertex</code> 之间建立联系。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java">	<span class="kd">private</span> <span class="nf">final</span> <span class="n">IntermediateResultPartition</span> <span class="nf">source</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">ExecutionVertex</span> <span class="nf">target</span><span class="p">;</span>
+
+	<span class="kd">private</span> <span class="nf">final</span> <span class="kt">int</span> <span class="nf">inputNum</span><span class="p">;</span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="构建-executiongraph-的流程">构建 ExecutionGraph 的流程</h2>
+
+<p>创建 <code>ExecutionGraph</code> 的入口在 <code>ExecutionGraphBuilder#buildGraph()</code> 中。</p>
+
+<h3 id="1-创建-executiongraph-对象并设置基本属性">1. 创建 ExecutionGraph 对象并设置基本属性</h3>
+
+<p>设置 JobInformation, SlotProvider 等信息，下面罗列了一些比较重要的属性：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java">	<span class="cm">/** Job specific information like the job id, job name, job configuration, etc. */</span>
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">JobInformation</span> <span class="nf">jobInformation</span><span class="p">;</span>
+
+	<span class="cm">/** The slot provider to use for allocating slots for tasks as they are needed. */</span>
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">SlotProvider</span> <span class="nf">slotProvider</span><span class="p">;</span>
+
+	<span class="cm">/** The classloader for the user code. Needed for calls into user code classes. */</span>
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">ClassLoader</span> <span class="nf">userClassLoader</span><span class="p">;</span>
+
+	<span class="cm">/** All job vertices that are part of this graph. */</span>
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">ConcurrentHashMap</span><span class="o">&lt;</span><span class="n">JobVertexID</span><span class="p">,</span> <span class="n">ExecutionJobVertex</span><span class="o">&gt;</span> <span class="nf">tasks</span><span class="p">;</span>
+
+	<span class="cm">/** All vertices, in the order in which they were created. **/</span>
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">ExecutionJobVertex</span><span class="o">&gt;</span> <span class="nf">verticesInCreationOrder</span><span class="p">;</span>
+
+	<span class="cm">/** All intermediate results that are part of this graph. */</span>
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">ConcurrentHashMap</span><span class="o">&lt;</span><span class="n">IntermediateDataSetID</span><span class="p">,</span> <span class="n">IntermediateResult</span><span class="o">&gt;</span> <span class="nf">intermediateResults</span><span class="p">;</span>
+
+	<span class="cm">/** Current status of the job execution. */</span>
+	<span class="kd">private</span> <span class="nf">volatile</span> <span class="n">JobStatus</span> <span class="nf">state</span> <span class="o">=</span> <span class="n">JobStatus</span><span class="p">.</span><span class="na">CREATED</span><span class="p">;</span>
+
+  	<span class="cm">/** Listeners that receive messages when the entire job switches it status
+</span><span class="cm">	 * (such as from RUNNING to FINISHED). */</span>
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">JobStatusListener</span><span class="o">&gt;</span> <span class="nf">jobStatusListeners</span><span class="p">;</span>
+
+	<span class="cm">/** Listeners that receive messages whenever a single task execution changes its status. */</span>
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">ExecutionStatusListener</span><span class="o">&gt;</span> <span class="nf">executionListeners</span><span class="p">;</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="2-jobvertex-初始化">2. JobVertex 初始化</h3>
+
+<p>JobVertex 在  Master 上进行初始化，主要关注<code>OutputFormatVertex</code> 和 <code>InputFormatVertex</code>，其他类型的 vertex 在这里没有什么特殊操作。File output format 在这一步准备好输出目录, Input splits 在这一步创建对应的 splits。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="k">for</span> <span class="p">(</span><span class="n">JobVertex</span> <span class="nf">vertex</span> <span class="o">:</span> <span class="n">jobGraph</span><span class="p">.</span><span class="na">getVertices</span><span class="p">())</span> <span class="p">{</span>
+			<span class="p">....</span>
+			<span class="k">try</span> <span class="p">{</span>
+				<span class="n">vertex</span><span class="p">.</span><span class="na">initializeOnMaster</span><span class="p">(</span><span class="n">classLoader</span><span class="p">);</span>
+			<span class="p">}</span>
+			<span class="k">catch</span> <span class="p">(</span><span class="n">Throwable</span> <span class="nf">t</span><span class="p">)</span> <span class="p">{</span>
+					<span class="k">throw</span> <span class="k">new</span> <span class="n">JobExecutionException</span><span class="p">(</span><span class="n">jobId</span><span class="p">,</span>
+							<span class="s">&#34;Cannot initialize task &#39;&#34;</span> <span class="o">+</span> <span class="n">vertex</span><span class="p">.</span><span class="na">getName</span><span class="p">()</span> <span class="o">+</span> <span class="s">&#34;&#39;: &#34;</span> <span class="o">+</span> <span class="n">t</span><span class="p">.</span><span class="na">getMessage</span><span class="p">(),</span> <span class="n">t</span><span class="p">);</span>
+			<span class="p">}</span>
+		<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="4-生成-executiongraph-内部的节点和连接">4. 生成 ExecutionGraph 内部的节点和连接</h3>
+
+<p>对所有的 Jobvertext 进行拓扑排序，并生成 <code>ExecutionGraph</code> 内部的节点和连接</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="c1">//topologically sort the job vertices and attach the graph to the existing one
+</span><span class="c1"></span><span class="n">List</span><span class="o">&lt;</span><span class="n">JobVertex</span><span class="o">&gt;</span> <span class="nf">sortedTopology</span> <span class="o">=</span> <span class="n">jobGraph</span><span class="p">.</span><span class="na">getVerticesSortedTopologicallyFromSources</span><span class="p">();</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">log</span><span class="p">.</span><span class="na">isDebugEnabled</span><span class="p">())</span> <span class="p">{</span>
+			<span class="n">log</span><span class="p">.</span><span class="na">debug</span><span class="p">(</span><span class="s">&#34;Adding {} vertices from job graph {} ({}).&#34;</span><span class="p">,</span> <span class="n">sortedTopology</span><span class="p">.</span><span class="na">size</span><span class="p">(),</span> <span class="n">jobName</span><span class="p">,</span> <span class="n">jobId</span><span class="p">);</span>
+		<span class="p">}</span>
+		<span class="n">executionGraph</span><span class="p">.</span><span class="na">attachJobGraph</span><span class="p">(</span><span class="n">sortedTopology</span><span class="p">);</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="4-1-对-jobvertex-进行拓扑排序">4.1 对 JobVertex 进行拓扑排序</h4>
+
+<p>所谓拓扑排序，即保证如果存在 A -&gt; B 的有向边，那么在排序后的列表中 A 节点一定在 B 节点之前。具体的算法这里不再详细分析。</p>
+
+<h4 id="4-2-创建-executionjobvertex">4.2 创建 ExecutionJobVertex</h4>
+
+<p>按照拓扑排序的结果依次为每个 <code>JobVertex</code> 创建对应的 <code>ExecutionJobVertex</code>。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java">		<span class="k">for</span> <span class="p">(</span><span class="n">JobVertex</span> <span class="nf">jobVertex</span> <span class="o">:</span> <span class="n">topologiallySorted</span><span class="p">)</span> <span class="p">{</span>
+
+			<span class="k">if</span> <span class="p">(</span><span class="n">jobVertex</span><span class="p">.</span><span class="na">isInputVertex</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">jobVertex</span><span class="p">.</span><span class="na">isStoppable</span><span class="p">())</span> <span class="p">{</span>
+				<span class="k">this</span><span class="p">.</span><span class="na">isStoppable</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+			<span class="p">}</span>
+
+			<span class="c1">// create the execution job vertex and attach it to the graph
+</span><span class="c1"></span>			<span class="c1">//创建 ExecutionJobVertex
+</span><span class="c1"></span>			<span class="n">ExecutionJobVertex</span> <span class="nf">ejv</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ExecutionJobVertex</span><span class="p">(</span>
+				<span class="k">this</span><span class="p">,</span>
+				<span class="n">jobVertex</span><span class="p">,</span>
+				<span class="n">1</span><span class="p">,</span>
+				<span class="n">rpcTimeout</span><span class="p">,</span>
+				<span class="n">globalModVersion</span><span class="p">,</span>
+				<span class="n">createTimestamp</span><span class="p">);</span>
+
+			<span class="c1">//连接上游节点
+</span><span class="c1"></span>			<span class="n">ejv</span><span class="p">.</span><span class="na">connectToPredecessors</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="na">intermediateResults</span><span class="p">);</span>
+
+			<span class="n">ExecutionJobVertex</span> <span class="nf">previousTask</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="na">tasks</span><span class="p">.</span><span class="na">putIfAbsent</span><span class="p">(</span><span class="n">jobVertex</span><span class="p">.</span><span class="na">getID</span><span class="p">(),</span> <span class="n">ejv</span><span class="p">);</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">previousTask</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+				<span class="k">throw</span> <span class="k">new</span> <span class="n">JobException</span><span class="p">(</span><span class="n">String</span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="s">&#34;Encountered two job vertices with ID %s : previous=[%s] / new=[%s]&#34;</span><span class="p">,</span>
+					<span class="n">jobVertex</span><span class="p">.</span><span class="na">getID</span><span class="p">(),</span> <span class="n">ejv</span><span class="p">,</span> <span class="n">previousTask</span><span class="p">));</span>
+			<span class="p">}</span>
+
+			<span class="k">for</span> <span class="p">(</span><span class="n">IntermediateResult</span> <span class="nf">res</span> <span class="o">:</span> <span class="n">ejv</span><span class="p">.</span><span class="na">getProducedDataSets</span><span class="p">())</span> <span class="p">{</span>
+				<span class="n">IntermediateResult</span> <span class="nf">previousDataSet</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="na">intermediateResults</span><span class="p">.</span><span class="na">putIfAbsent</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span> <span class="n">res</span><span class="p">);</span>
+				<span class="k">if</span> <span class="p">(</span><span class="n">previousDataSet</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+					<span class="k">throw</span> <span class="k">new</span> <span class="n">JobException</span><span class="p">(</span><span class="n">String</span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="s">&#34;Encountered two intermediate data set with ID %s : previous=[%s] / new=[%s]&#34;</span><span class="p">,</span>
+						<span class="n">res</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span> <span class="n">res</span><span class="p">,</span> <span class="n">previousDataSet</span><span class="p">));</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+
+			<span class="k">this</span><span class="p">.</span><span class="na">verticesInCreationOrder</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">ejv</span><span class="p">);</span>
+			<span class="k">this</span><span class="p">.</span><span class="na">numVerticesTotal</span> <span class="o">+=</span> <span class="n">ejv</span><span class="p">.</span><span class="na">getParallelism</span><span class="p">();</span>
+			<span class="n">newExecJobVertices</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">ejv</span><span class="p">);</span>
+		<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>在创建 <code>ExecutionJobVertex</code> 的时候会创建对应的 <code>ExecutionVertex</code>， <code>IntermediateResult</code>，<code>ExecutionEdge</code> ， <code>IntermediateResultPartition</code> 等对象，这里涉及到的对象相对较多，概括起来大致是这样的：</p>
+
 <ul>
 <li>每一个 <code>JobVertex</code> 对应一个 ExecutionJobVertex,</li>
 <li>每一个 <code>ExecutionJobVertex</code> 有 parallelism 个 <code>ExecutionVertex</code></li>
 <li>每一个 <code>JobVertex</code> 可能有 n(n&gt;=0) 个 <code>IntermediateDataSet</code>，在 <code>ExecutionJobVertex</code> 中，一个 <code>IntermediateDataSet</code> 对应一个 <code>IntermediateResult</code>, 每一个 <code>IntermediateResult</code> 都有 parallelism 个生产者, 对应 parallelism 个<code>IntermediateResultPartition</code></li>
 <li>每一个 <code>ExecutionJobVertex</code> 都会和前向的 <code>IntermediateResult</code> 连接，实际上是 <code>ExecutionVertex</code> 和 <code>IntermediateResult</code> 建立连接，生成 <code>ExecutionEdge</code></li>
 </ul>
-<h3 id="5-配置-state-checkpointing-忽略"><a href="#5-配置-state-checkpointing-忽略" class="headerlink" title="5. 配置 state checkpointing (忽略)"></a>5. 配置 state checkpointing (忽略)</h3><h2 id="从-ExecutionGraph-到实际运行的任务"><a href="#从-ExecutionGraph-到实际运行的任务" class="headerlink" title="从 ExecutionGraph 到实际运行的任务"></a>从 ExecutionGraph 到实际运行的任务</h2><p><code>ExecutionGraph</code> 是在创建 <code>JobMaster</code> 时就构建完成的，之后就可以被调度执行了。下面简单概括下调度执行的流程，具体分析见后续的文章。</p>
-<h3 id="ExecutionGraph-scheduleForExecution"><a href="#ExecutionGraph-scheduleForExecution" class="headerlink" title="ExecutionGraph.scheduleForExecution"></a>ExecutionGraph.scheduleForExecution</h3><p>按照拓扑顺序为所有的 <code>ExecutionJobVertex</code> 分配资源，其中每一个 <code>ExecutionVertex</code> 都需要分配一个 slot，<code>ExecutionVertex</code> 的一次执行对应一个 <code>Execution</code>，在分配资源的时候会依照 <code>SlotSharingGroup</code> 和 <code>CoLocationConstraint</code> 确定，分配的时候会考虑 slot 重用的情况。</p>
+
+<h3 id="5-配置-state-checkpointing-忽略">5. 配置 state checkpointing (忽略)</h3>
+
+<h2 id="从-executiongraph-到实际运行的任务">从 ExecutionGraph 到实际运行的任务</h2>
+
+<p><code>ExecutionGraph</code> 是在创建 <code>JobMaster</code> 时就构建完成的，之后就可以被调度执行了。下面简单概括下调度执行的流程，具体分析见后续的文章。</p>
+
+<h3 id="executiongraph-scheduleforexecution">ExecutionGraph.scheduleForExecution</h3>
+
+<p>按照拓扑顺序为所有的 <code>ExecutionJobVertex</code> 分配资源，其中每一个 <code>ExecutionVertex</code> 都需要分配一个 slot，<code>ExecutionVertex</code> 的一次执行对应一个 <code>Execution</code>，在分配资源的时候会依照 <code>SlotSharingGroup</code> 和 <code>CoLocationConstraint</code> 确定，分配的时候会考虑 slot 重用的情况。</p>
+
 <p>在所有的节点资源都获取成功后，会逐一调用 <code>Execution.deploy()</code> 来部署 <code>Execution</code>, 使用 <code>TaskDeploymentDescriptor</code> 来描述 <code>Execution</code>，并提交到分配给该 Execution 的 slot 对应的 TaskManager, 最终被分配给对应的 <code>TaskExecutor</code> 执行。</p>
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>本文简单概括了 <code>ExecutionGraph</code> 涉及到的概念和其生成过程。</p>
+
+<h2 id="小结">小结</h2>
+
+<p>本文简单概括了 <code>ExecutionGraph</code> 涉及到的概念和其生成过程。</p>
+
 <p>到目前为止，我们了解了 <code>StreamGraph</code>, <code>JobGraph</code> 和 <code>ExecutionGraph</code> 的生成过程，以及他们内部的节点和连接的对应关系。总的来说， <code>streamGraph</code> 是最原始的，更贴近用户逻辑的 DAG 执行图；<code>JobGraph</code> 是对 <code>StreamGraph</code> 的进一步优化，将能够合并的算子合并为一个节点以降低运行时数据传输的开销；<code>ExecutionGraph</code> 则是作业运行是用来调度的执行图，可以看作是并行化版本的 <code>JobGraph</code>,将 DAG 拆分到基本的调度单元。</p>
+
 <p>-EOF-</p>
-</span>
-      
+
     </div>
 
-    <footer class="post-footer">
-      
-        <div class="post-tags">
-          
-            <a href="/tags/Flink/" rel="tag">#Flink</a>
-          
-        </div>
-      
-
-      
-        <div class="post-nav">
-          <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/aloha-introduce/" rel="prev">Aloha：一个分布式任务调度框架</a>
-            
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">原始链接</span>
+    <span class="item-content"><a href="https://blog.jrwang.me/2019/flink-source-code-executiongraph/">https://blog.jrwang.me/2019/flink-source-code-executiongraph/</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2019-02-23
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/flink/">Flink</a>
           </div>
-
-          <div class="post-nav-next post-nav-item">
-            
-              <a href="/2019/flink-source-code-jobgraph/" rel="next">Flink 源码阅读笔记（2）- JobGraph 的生成</a>
-            
-          </div>
-        </div>
-      
-
-      
-      
+      <nav class="post-nav">
+        <a class="prev" href="/2019/flink-source-code-rpc/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">Flink 源码阅读笔记（4）- RPC</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/2019/flink-source-code-jobgraph/">
+            <span class="next-text nav-default">Flink 源码阅读笔记（2）- JobGraph 的生成</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
     </footer>
   </article>
-
-
-
-    <div class="post-spread">
-      
-    </div>
-  </div>
-
- </div>
-
+        </div>
         
 
-        
-          <div class="comments" id="comments">
-            
-          </div>
-        
-      </div>
-
-      
   
-  <div class="sidebar-toggle">
-    <div class="sidebar-toggle-line-wrap">
-      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
-    </div>
-  </div>
 
-  <aside id="sidebar" class="sidebar">
-    <div class="sidebar-inner">
+  
+    <script src="https://utteranc.es/client.js"
+            repo="jrthe42/blog-comment"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/utterance">comments powered by utterances.</a></noscript>
 
-      
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview">
-            站点概览
-          </li>
-        </ul>
-      
-
-      <section class="site-overview">
-        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
-          <p class="site-author-name" itemprop="name">JR</p>
-        </div>
-        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
-        <nav class="site-state motion-element">
-          <div class="site-state-item site-state-posts">
-            <a href="/archives">
-              <span class="site-state-item-count">43</span>
-              <span class="site-state-item-name">日志</span>
-            </a>
-          </div>
-
-          
-
-          <div class="site-state-item site-state-tags">
-            <a href="/tags">
-              <span class="site-state-item-count">21</span>
-              <span class="site-state-item-name">标签</span>
-              </a>
-          </div>
-
-        </nav>
-
-        
-
-        <div class="links-of-author motion-element">
-          
-            
-              <span class="links-of-author-item">
-                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://music.jrwang.me" target="_blank">Music</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://jrwang.me" target="_blank">Site</a>
-              </span>
-            
-          
-        </div>
-
-        
-        
-          <div class="cc-license motion-element" itemprop="license">
-            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
-              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
-            </a>
-          </div>
-        
-
-        <div class="links-of-author motion-element">
-          
-        </div>
-
-      </section>
-
-      
-        <section class="post-toc-wrap sidebar-panel-active">
-          <div class="post-toc-indicator-top post-toc-indicator"></div>
-          <div class="post-toc">
-            
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#核心概念"><span class="nav-number">1.</span> <span class="nav-text">核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ExecutionJobVertex"><span class="nav-number">1.1.</span> <span class="nav-text">ExecutionJobVertex</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ExecutionVertex"><span class="nav-number">1.2.</span> <span class="nav-text">ExecutionVertex</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Execution"><span class="nav-number">1.3.</span> <span class="nav-text">Execution</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IntermediateResult"><span class="nav-number">1.4.</span> <span class="nav-text">IntermediateResult</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ExecutionEdge"><span class="nav-number">1.5.</span> <span class="nav-text">ExecutionEdge</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#构建-ExecutionGraph-的流程"><span class="nav-number">2.</span> <span class="nav-text">构建 ExecutionGraph 的流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-创建-ExecutionGraph-对象并设置基本属性"><span class="nav-number">2.1.</span> <span class="nav-text">1. 创建 ExecutionGraph 对象并设置基本属性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-JobVertex-初始化"><span class="nav-number">2.2.</span> <span class="nav-text">2. JobVertex 初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-生成-ExecutionGraph-内部的节点和连接"><span class="nav-number">2.3.</span> <span class="nav-text">4. 生成 ExecutionGraph 内部的节点和连接</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-对-JobVertex-进行拓扑排序"><span class="nav-number">2.3.1.</span> <span class="nav-text">4.1 对 JobVertex 进行拓扑排序</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-2-创建-ExecutionJobVertex"><span class="nav-number">2.3.2.</span> <span class="nav-text">4.2 创建 ExecutionJobVertex</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-配置-state-checkpointing-忽略"><span class="nav-number">2.4.</span> <span class="nav-text">5. 配置 state checkpointing (忽略)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#从-ExecutionGraph-到实际运行的任务"><span class="nav-number">3.</span> <span class="nav-text">从 ExecutionGraph 到实际运行的任务</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ExecutionGraph-scheduleForExecution"><span class="nav-number">3.1.</span> <span class="nav-text">ExecutionGraph.scheduleForExecution</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li></ol></div>
-            
-          </div>
-          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
-        </section>
-      
-
-    </div>
-  </aside>
-
-
+      </div>
     </main>
 
     <footer id="footer" class="footer">
-      <div class="footer-inner"> <div class="copyright" >
-  
-  &copy; &nbsp;  2015 - 
-  <span itemprop="copyrightYear">2019</span>
-  <span class="with-love">
-    <i class="icon-next-heart"></i>
+      <div class="social-links">
+      <a href="mailto:jrthe42@gmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/jrthe42" class="iconfont icon-github" title="github"></a>
+      <a href="https://weibo.com/jrthe42" class="iconfont icon-weibo" title="weibo"></a>
+  <a href="https://blog.jrwang.me/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
   </span>
-  <span class="author" itemprop="copyrightHolder">JR</span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2015 - 
+    2019
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </span>
 </div>
-
-<div class="powered-by">
-  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
-</div>
-
-<div class="powered-by">
-  主题 -
-  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
-    NexT.Mist
-  </a>
-</div>
-
-<div class="theme-info">
-  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
-</div>
-
-
- </div>
     </footer>
 
-    <div class="back-to-top"></div>
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
   </div>
-
-  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
-
   
-  
-  
-    
-    
-
-  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.f79f403f.min.js"></script>
 
 
-  
-  
-  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
-  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
-
-
-  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
-  
-
-  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
-  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
-
-  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
-
-
-
-
-  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
-  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
-
-  
-  
-<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
-
-
-<script type="text/javascript" id="sidebar.toc.highlight">
-  $(document).ready(function () {
-    var tocSelector = '.post-toc';
-    var $tocSelector = $(tocSelector);
-    var activeCurrentSelector = '.active-current';
-
-    $tocSelector
-      .on('activate.bs.scrollspy', function () {
-        var $currentActiveElement = $(tocSelector + ' .active').last();
-
-        removeCurrentActiveClass();
-        $currentActiveElement.addClass('active-current');
-
-        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
-      })
-      .on('clear.bs.scrollspy', function () {
-        removeCurrentActiveClass();
-      });
-
-    function removeCurrentActiveClass () {
-      $(tocSelector + ' ' + activeCurrentSelector)
-        .removeClass(activeCurrentSelector.substring(1));
-    }
-
-    function processTOC () {
-      getTOCMaxHeight();
-      toggleTOCOverflowIndicators();
-    }
-
-    function getTOCMaxHeight () {
-      var height = $('.sidebar').height() -
-                   $tocSelector.position().top -
-                   $('.post-toc-indicator-bottom').height();
-
-      $tocSelector.css('height', height);
-
-      return height;
-    }
-
-    function toggleTOCOverflowIndicators () {
-      tocOverflowIndicator(
-        '.post-toc-indicator-top',
-        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
-      );
-
-      tocOverflowIndicator(
-        '.post-toc-indicator-bottom',
-        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
-      )
-    }
-
-    $(document).on('sidebar.motion.complete', function () {
-      processTOC();
-    });
-
-    $('body').scrollspy({ target: tocSelector });
-    $(window).on('resize', function () {
-      if ( $('.sidebar').hasClass('sidebar-active') ) {
-        processTOC();
-      }
-    });
-
-    onScroll($tocSelector);
-
-    function onScroll (element) {
-      element.on('mousewheel DOMMouseScroll', function (event) {
-          var oe = event.originalEvent;
-          var delta = oe.wheelDelta || -oe.detail;
-
-          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
-          event.preventDefault();
-
-          toggleTOCOverflowIndicators();
-      });
-    }
-
-    function tocOverflowIndicator (indicator, action) {
-      var $indicator = $(indicator);
-      var opacity = action === 'show' ? 0.4 : 0;
-      $indicator.velocity ?
-        $indicator.velocity('stop').velocity({
-          opacity: opacity
-        }, { duration: 100 }) :
-        $indicator.stop().animate({
-          opacity: opacity
-        }, 100);
-    }
-
-  });
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-66913886-2', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
 </script>
-
-<script type="text/javascript" id="sidebar.nav">
-  $(document).ready(function () {
-    var html = $('html');
-    var TAB_ANIMATE_DURATION = 200;
-    var hasVelocity = $.isFunction(html.velocity);
-
-    $('.sidebar-nav li').on('click', function () {
-      var item = $(this);
-      var activeTabClassName = 'sidebar-nav-active';
-      var activePanelClassName = 'sidebar-panel-active';
-      if (item.hasClass(activeTabClassName)) {
-        return;
-      }
-
-      var currentTarget = $('.' + activePanelClassName);
-      var target = $('.' + item.data('target'));
-
-      hasVelocity ?
-        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
-          target
-            .velocity('stop')
-            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
-            .addClass(activePanelClassName);
-        }) :
-        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
-          currentTarget.hide();
-          target
-            .stop()
-            .css({'opacity': 0, 'display': 'block'})
-            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
-              currentTarget.removeClass(activePanelClassName);
-              target.addClass(activePanelClassName);
-            });
-        });
-
-      item.siblings().removeClass(activeTabClassName);
-      item.addClass(activeTabClassName);
-    });
-
-    $('.post-toc a').on('click', function (e) {
-      e.preventDefault();
-      var targetSelector = escapeSelector(this.getAttribute('href'));
-      var offset = $(targetSelector).offset().top;
-      hasVelocity ?
-        html.velocity('stop').velocity('scroll', {
-          offset: offset  + 'px',
-          mobileHA: false
-        }) :
-        $('html, body').stop().animate({
-          scrollTop: offset
-        }, 500);
-    });
-
-    // Expand sidebar on post detail page by default, when post has a toc.
-    var $tocContent = $('.post-toc-content');
-    if (isDesktop() && CONFIG.sidebar === 'post') {
-      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
-        displaySidebar();
-      }
-    }
-  });
-</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
 
 
 
-  <script type="text/javascript">
-    $(document).ready(function () {
-      if (CONFIG.sidebar === 'always') {
-        displaySidebar();
-      }
-      if (isMobile()) {
-        FastClick.attach(document.body);
-      }
-    });
-  </script>
 
-  
 
-  
-  
 
-  
-  <script type="text/javascript" src="/js/lazyload.js"></script>
-  <script type="text/javascript">
-    $(function () {
-      $("#posts").find('img').lazyload({
-        placeholder: "/images/loading.gif",
-        effect: "fadeIn"
-      });
-    });
-  </script>
+
 </body>
 </html>

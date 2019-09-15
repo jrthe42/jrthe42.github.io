@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Design Pattern on JR&#39;s Blog</title>
+    <link>https://blog.jrwang.me/tags/design-pattern/</link>
+    <description>Recent content in Design Pattern on JR&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 20 Nov 2015 20:40:11 +0000</lastBuildDate>
+    
+	<atom:link href="https://blog.jrwang.me/tags/design-pattern/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Java 中的动态代理与反射</title>
+      <link>https://blog.jrwang.me/2015/java-dynamic-proxy-and-java-reflection/</link>
+      <pubDate>Fri, 20 Nov 2015 20:40:11 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2015/java-dynamic-proxy-and-java-reflection/</guid>
+      <description>代理， 是一种十分常见的设计模式，即为其他对象提供一个代理从而控制对这个对象的访问。使用代理模式的场景有很多，比如控制对远程对象的访问；对象实</description>
+    </item>
+    
+  </channel>
+</rss>

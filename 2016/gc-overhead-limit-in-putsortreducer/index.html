@@ -1,638 +1,438 @@
-<!doctype html>
-<html class="theme-next use-motion theme-next-mist">
+<!DOCTYPE html>
+<html lang="zh-cn">
 <head>
-  
-
-<meta charset="UTF-8"/>
-<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>记一次使用 PutSortReducer 时 OOM 错误的排查过程 - JR&#39;s Blog</title>
+  <meta name="renderer" content="webkit" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-
 
 <meta http-equiv="Cache-Control" content="no-transform" />
 <meta http-equiv="Cache-Control" content="no-siteapp" />
 
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="jrthe42" /><meta name="description" content="之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我" /><meta name="keywords" content="jrthe42, Blog, Programming" />
 
 
 
 
 
-  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+<meta name="generator" content="Hugo 0.58.0 with theme even" />
+
+
+<link rel="canonical" href="https://blog.jrwang.me/2016/gc-overhead-limit-in-putsortreducer/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+<link href="/dist/even.7d171193.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="记一次使用 PutSortReducer 时 OOM 错误的排查过程" />
+<meta property="og:description" content="之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.jrwang.me/2016/gc-overhead-limit-in-putsortreducer/" />
+<meta property="article:published_time" content="2016-04-22T15:44:11+00:00" />
+<meta property="article:modified_time" content="2016-04-22T15:44:11+00:00" />
+<meta itemprop="name" content="记一次使用 PutSortReducer 时 OOM 错误的排查过程">
+<meta itemprop="description" content="之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我">
+
+
+<meta itemprop="datePublished" content="2016-04-22T15:44:11&#43;00:00" />
+<meta itemprop="dateModified" content="2016-04-22T15:44:11&#43;00:00" />
+<meta itemprop="wordCount" content="1952">
 
 
 
+<meta itemprop="keywords" content="HBase,MapReduce,Original," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="记一次使用 PutSortReducer 时 OOM 错误的排查过程"/>
+<meta name="twitter:description" content="之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我"/>
 
-<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
-
-
-    <meta name="description" content="想入非非就是寻找神奇" />
-
-
-
-  <meta name="keywords" content="Original,HBase,MapReduce," />
-
-
-
-
-
-  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
-
-
-<meta name="description" content="之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我非常困惑。谷歌搜索了一圈也没有发现可行的解决方案，无奈只能自己解决了。经过仔细排查，最终定位了出错的原因，这里做一个简单的记录。 GC 日志及堆转储快照的分析目前给执行">
-<meta name="keywords" content="Original,HBase,MapReduce">
-<meta property="og:type" content="article">
-<meta property="og:title" content="记一次使用 PutSortReducer 时 OOM 错误的排查过程">
-<meta property="og:url" content="http://blog.jrwang.me/2016/gc-overhead-limit-in-putsortreducer/index.html">
-<meta property="og:site_name" content="JR&#39;s Blog">
-<meta property="og:description" content="之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我非常困惑。谷歌搜索了一圈也没有发现可行的解决方案，无奈只能自己解决了。经过仔细排查，最终定位了出错的原因，这里做一个简单的记录。 GC 日志及堆转储快照的分析目前给执行">
-<meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://blog.jrwang.me/img/gc-overhead-limit-in-putsortreducer/putsortreducer_gc_detail.PNG">
-<meta property="og:image" content="http://blog.jrwang.me/img/gc-overhead-limit-in-putsortreducer/putsortreducer_heap_dump_1.PNG">
-<meta property="og:image" content="http://blog.jrwang.me/img/gc-overhead-limit-in-putsortreducer/putsortreducerheap_dump_2.PNG">
-<meta property="og:updated_time" content="2019-03-19T16:00:00.797Z">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="记一次使用 PutSortReducer 时 OOM 错误的排查过程">
-<meta name="twitter:description" content="之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我非常困惑。谷歌搜索了一圈也没有发现可行的解决方案，无奈只能自己解决了。经过仔细排查，最终定位了出错的原因，这里做一个简单的记录。 GC 日志及堆转储快照的分析目前给执行">
-<meta name="twitter:image" content="http://blog.jrwang.me/img/gc-overhead-limit-in-putsortreducer/putsortreducer_gc_detail.PNG">
-
-
-<script type="text/javascript" id="hexo.configuration">
-  var CONFIG = {
-    scheme: 'Mist',
-    sidebar: 'hide'
-  };
-</script>
-
-  <title> 记一次使用 PutSortReducer 时 OOM 错误的排查过程 | JR's Blog </title>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
-
-  <!--[if lte IE 8]>
-  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
-    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
-      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
-           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
-           style='margin-left:auto;margin-right:auto;display: block;'/>
-    </a>
-  </div>
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
 <![endif]-->
-  
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-  ga('create', 'UA-66913886-2', 'auto');
-  ga('send', 'pageview');
-</script>
 
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
 
-
-
-  <div class="container one-column page-post-detail">
-    <div class="headband"></div>
-
-    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
-      <div class="header-inner"><h1 class="site-meta">
-  <span class="logo-line-before"><i></i></span>
-  <a href="/" class="brand" rel="start">
-      <span class="logo">
-        <i class="icon-next-logo"></i>
-      </span>
-      <span class="site-title">JR's Blog</span>
-  </a>
-  <span class="logo-line-after"><i></i></span>
-</h1>
-
-<div class="site-nav-toggle">
-  <button>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-    <span class="btn-bar"></span>
-  </button>
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">JRTHE42</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">JRTHE42</a>
 </div>
 
-<nav class="site-nav">
-  
-
-  
-    <ul id="menu" class="menu ">
-      
-        
-        <li class="menu-item menu-item-home">
-          <a href="/" rel="section">
-            <i class="menu-item-icon icon-next-home"></i> <br />
-            首页
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-archives">
-          <a href="/archives" rel="section">
-            <i class="menu-item-icon icon-next-archives"></i> <br />
-            归档
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-tags">
-          <a href="/tags" rel="section">
-            <i class="menu-item-icon icon-next-tags"></i> <br />
-            标签
-          </a>
-        </li>
-      
-
-      
-      
-    </ul>
-  
-
-  
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
 </nav>
-
- </div>
     </header>
 
     <main id="main" class="main">
-      <div class="main-inner">
-        <div id="content" class="content"> 
-
-  <div id="posts" class="posts-expand">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
     
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              记一次使用 PutSortReducer 时 OOM 错误的排查过程
-            
-          
-        </h1>
-      
+      <h1 class="post-title">记一次使用 PutSortReducer 时 OOM 错误的排查过程</h1>
 
       <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-04-22T15:44:11+08:00" content="2016-04-22">
-            2016-04-22
-          </time>
-        </span>
-
+        <span class="post-time"> 2016-04-22 </span>
         
-
-        
-          
         
       </div>
     </header>
 
-    <div class="post-body">
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#gc-日志及堆转储快照的分析">GC 日志及堆转储快照的分析</a></li>
+<li><a href="#putsortreducer-源码分析">PutSortReducer 源码分析</a></li>
+<li><a href="#解决方法">解决方法</a></li>
+<li><a href="#小结">小结</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      
 
-      
-      
+<p>之前写过一篇文章介绍如何<a href="/2015/import-data-to-hbase-using-bulk-loding">使用 Bulk Load 的方式向 HBase 中批量导入数据</a>。前两天在运行导入任务时总是会有一个 Reduce 出现 <code>GC overhead limit exceeded</code> 的错误从而导致任务失败，这一度让我非常困惑。谷歌搜索了一圈也没有发现可行的解决方案，无奈只能自己解决了。经过仔细排查，最终定位了出错的原因，这里做一个简单的记录。</p>
 
-      
-        <span itemprop="articleBody"><p>之前写过一篇文章介绍如何<a href="/2015/import-data-to-hbase-using-bulk-loding">使用 Bulk Load 的方式向 HBase 中批量导入数据</a>。前两天在运行导入任务时总是会有一个 Reduce 出现 <code>GC overhead limit exceeded</code> 的错误从而导致任务失败，这一度让我非常困惑。谷歌搜索了一圈也没有发现可行的解决方案，无奈只能自己解决了。经过仔细排查，最终定位了出错的原因，这里做一个简单的记录。</p>
-<h3 id="GC-日志及堆转储快照的分析"><a href="#GC-日志及堆转储快照的分析" class="headerlink" title="GC 日志及堆转储快照的分析"></a>GC 日志及堆转储快照的分析</h3><p>目前给执行 Reduce 任务的 Container 配置的堆内存是 756M。为了搜集 GC 日志并在发生 Out of Memory 时将堆内存文件保存下来，需要调整一下配置，将 <code>mapreduce.reduce.java.opts</code> 这一项调整为 <code>-XX:+PrintGCDetails -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/@taskid@.hprof</code>。开启 GC 日志记录，并在发生 OOM 时将堆内存转存到 /tmp 文件夹下。其中 @taskid@ 会被替换为任务的 Id。</p>
+<h3 id="gc-日志及堆转储快照的分析">GC 日志及堆转储快照的分析</h3>
+
+<p>目前给执行 Reduce 任务的 Container 配置的堆内存是 756M。为了搜集 GC 日志并在发生 Out of Memory 时将堆内存文件保存下来，需要调整一下配置，将 <code>mapreduce.reduce.java.opts</code> 这一项调整为 <code>-XX:+PrintGCDetails -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/@taskid@.hprof</code>。开启 GC 日志记录，并在发生 OOM 时将堆内存转存到 /tmp 文件夹下。其中 @taskid@ 会被替换为任务的 Id。</p>
+
 <p>GC 日志可在相应任务的标准输出中查看。要查看 Yarn 任务的日志信息，需要开启日志聚合功能，可以使用  <code>yarn logs -applicationId application_1391047358335_0041 -containerId container_1391047358335_0041_01_000002 -nodeAddress nmhost:8041</code> 命令查看，也可在 JobHistory 的 WebUI 中查看，这里不多做介绍。</p>
-<p><img src="/img/gc-overhead-limit-in-putsortreducer/putsortreducer_gc_detail.PNG" alt="GC-detail"></p>
+
+<p><img src="/img/gc-overhead-limit-in-putsortreducer/putsortreducer_gc_detail.PNG" alt="GC-detail" /></p>
+
 <p>从 GC 日志中可以看到，在多次发生 Full GC (Stop-The-World) 后，堆中已使用的内存始终接近于堆的内存总量，因而出现了 OOM 的错误。此时，程序应该仍在申请新的内存空间，然而却没有足够的空间可以分配了。</p>
-<p><img src="/img/gc-overhead-limit-in-putsortreducer/putsortreducer_heap_dump_1.PNG" alt="heap-dump-1"><br><img src="/img/gc-overhead-limit-in-putsortreducer/putsortreducerheap_dump_2.PNG" alt="heap-dump-2"></p>
+
+<p><img src="/img/gc-overhead-limit-in-putsortreducer/putsortreducer_heap_dump_1.PNG" alt="heap-dump-1" />
+<img src="/img/gc-overhead-limit-in-putsortreducer/putsortreducerheap_dump_2.PNG" alt="heap-dump-2" /></p>
+
 <p>因为配置了堆内存转储，这里直接通过 jhat 来分析生成的堆转储快照。从各类对象占用的内存来看，此时堆中存在大量的 <code>TreeMap$Entry</code> 和 <code>KeyValue</code> 的实例。这些实例到底是怎么出现的呢？要弄清楚这一点，我们还是要结合具体的代码来看一下。</p>
-<h3 id="PutSortReducer-源码分析"><a href="#PutSortReducer-源码分析" class="headerlink" title="PutSortReducer 源码分析"></a>PutSortReducer 源码分析</h3><p>我们在使用 Bulk Load 和 MapReduce 的方式向 HBase 中导入数据时，使用自定义的 Mapper 进行数据转换，Reducer 则是使用 HBase 的 PutSortReducer 类。PutSortReducer 类的<a href="https://github.com/apache/hbase/blob/master/hbase-server/src/main/java/org/apache/hadoop/hbase/mapreduce/PutSortReducer.java" target="_blank" rel="noopener">源代码</a>可以在开源社区找到，其实内部的逻辑还挺简单的，我们来分析一下：</p>
+
+<h3 id="putsortreducer-源码分析">PutSortReducer 源码分析</h3>
+
+<p>我们在使用 Bulk Load 和 MapReduce 的方式向 HBase 中导入数据时，使用自定义的 Mapper 进行数据转换，Reducer 则是使用 HBase 的 PutSortReducer 类。PutSortReducer 类的<a href="https://github.com/apache/hbase/blob/master/hbase-server/src/main/java/org/apache/hadoop/hbase/mapreduce/PutSortReducer.java">源代码</a>可以在开源社区找到，其实内部的逻辑还挺简单的，我们来分析一下：</p>
+
 <p>PutSortReducer 的主要作用是对从 Map 阶段获取的所有 Put 进行排序，并按序写入输出流中，最终写入 HFile 文件是由 HFileOutputFormat2 完成的。每处理一行（Row）会调用一次 reduce 方法，该行所有的 put 都会通过迭代对象传入。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">PutSortReducer</span> <span class="keyword">extends</span></span></span><br><span class="line"><span class="class">    <span class="title">Reducer</span>&lt;<span class="title">ImmutableBytesWritable</span>, <span class="title">Put</span>, <span class="title">ImmutableBytesWritable</span>, <span class="title">KeyValue</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">reduce</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">      ImmutableBytesWritable row,</span></span></span><br><span class="line"><span class="function"><span class="params">      java.lang.Iterable&lt;Put&gt; puts,</span></span></span><br><span class="line"><span class="function"><span class="params">      Reducer&lt;ImmutableBytesWritable, Put,</span></span></span><br><span class="line"><span class="function"><span class="params">              ImmutableBytesWritable, KeyValue&gt;.Context context)</span></span></span><br><span class="line"><span class="function">      <span class="keyword">throws</span> java.io.IOException, InterruptedException</span></span><br><span class="line"><span class="function">  </span>&#123;</span><br><span class="line">    <span class="comment">// although reduce() is called per-row, handle pathological case</span></span><br><span class="line">    <span class="comment">// 设定一个内存阈值，默认是 1 GB</span></span><br><span class="line">    <span class="keyword">long</span> threshold = context.getConfiguration().getLong(</span><br><span class="line">        <span class="string">"putsortreducer.row.threshold"</span>, <span class="number">1L</span> * (<span class="number">1</span>&lt;&lt;<span class="number">30</span>));</span><br><span class="line">    Iterator&lt;Put&gt; iter = puts.iterator();</span><br><span class="line">    <span class="keyword">while</span> (iter.hasNext()) &#123;</span><br><span class="line">      <span class="comment">//使用TreeSet进行排序（TreeSet是基于红黑树的，可以用于排序）</span></span><br><span class="line">      TreeSet&lt;KeyValue&gt; map = <span class="keyword">new</span> TreeSet&lt;KeyValue&gt;(CellComparator.COMPARATOR);</span><br><span class="line">      <span class="keyword">long</span> curSize = <span class="number">0</span>; <span class="comment">//记录当前已处理 KeyValue 的总大小</span></span><br><span class="line">      <span class="comment">// stop at the end or the RAM threshold</span></span><br><span class="line">      <span class="keyword">while</span> (iter.hasNext() &amp;&amp; curSize &lt; threshold) &#123; <span class="comment">//内存不可超出阈值</span></span><br><span class="line">        Put p = iter.next();</span><br><span class="line">        <span class="keyword">for</span> (List&lt;Cell&gt; cells: p.getFamilyCellMap().values()) &#123;</span><br><span class="line">          <span class="keyword">for</span> (Cell cell: cells) &#123;</span><br><span class="line">            KeyValue kv = KeyValueUtil.ensureKeyValue(cell);</span><br><span class="line">            <span class="keyword">if</span> (map.add(kv)) &#123;<span class="comment">// don't count duplicated kv into size</span></span><br><span class="line">              curSize += kv.heapSize(); <span class="comment">//累加内存大小</span></span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      context.setStatus(<span class="string">"Read "</span> + map.size() + <span class="string">" entries of "</span> + map.getClass()</span><br><span class="line">          + <span class="string">"("</span> + StringUtils.humanReadableInt(curSize) + <span class="string">")"</span>);</span><br><span class="line">      <span class="keyword">int</span> index = <span class="number">0</span>;</span><br><span class="line">      <span class="comment">//按序输出</span></span><br><span class="line">      <span class="keyword">for</span> (KeyValue kv : map) &#123;</span><br><span class="line">        context.write(row, kv);</span><br><span class="line">        <span class="keyword">if</span> (++index % <span class="number">100</span> == <span class="number">0</span>)</span><br><span class="line">          context.setStatus(<span class="string">"Wrote "</span> + index);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// if we have more entries to process</span></span><br><span class="line">      <span class="comment">// 如果还有Put没有处理完，会强行 flush，下一次循环中处理剩下的put</span></span><br><span class="line">      <span class="comment">// 但是因为不能保证总体的有序性了，就需要生成一个新的StoreFile</span></span><br><span class="line">      <span class="keyword">if</span> (iter.hasNext()) &#123;</span><br><span class="line">        <span class="comment">// force flush because we cannot guarantee intra-row sorted order</span></span><br><span class="line">        context.write(<span class="keyword">null</span>, <span class="keyword">null</span>);</span><br><span class="line">        <span class="comment">//这会关闭当前的Writer(StoreFile.Writer)，并形成了一个StoreFile</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">class</span> <span class="n">PutSortReducer</span> <span class="nf">extends</span>
+    <span class="n">Reducer</span><span class="o">&lt;</span><span class="n">ImmutableBytesWritable</span><span class="p">,</span> <span class="n">Put</span><span class="p">,</span> <span class="n">ImmutableBytesWritable</span><span class="p">,</span> <span class="n">KeyValue</span><span class="o">&gt;</span> <span class="p">{</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">protected</span> <span class="nf">void</span> <span class="n">reduce</span><span class="p">(</span>
+      <span class="n">ImmutableBytesWritable</span> <span class="nf">row</span><span class="p">,</span>
+      <span class="n">java</span><span class="p">.</span><span class="na">lang</span><span class="p">.</span><span class="na">Iterable</span><span class="o">&lt;</span><span class="n">Put</span><span class="o">&gt;</span> <span class="nf">puts</span><span class="p">,</span>
+      <span class="n">Reducer</span><span class="o">&lt;</span><span class="n">ImmutableBytesWritable</span><span class="p">,</span> <span class="n">Put</span><span class="p">,</span>
+              <span class="n">ImmutableBytesWritable</span><span class="p">,</span> <span class="n">KeyValue</span><span class="o">&gt;</span><span class="p">.</span><span class="na">Context</span> <span class="nf">context</span><span class="p">)</span>
+      <span class="kd">throws</span> <span class="nf">java</span><span class="p">.</span><span class="na">io</span><span class="p">.</span><span class="na">IOException</span><span class="p">,</span> <span class="n">InterruptedException</span>
+  <span class="p">{</span>
+    <span class="c1">// although reduce() is called per-row, handle pathological case
+</span><span class="c1"></span>    <span class="c1">// 设定一个内存阈值，默认是 1 GB
+</span><span class="c1"></span>    <span class="kt">long</span> <span class="nf">threshold</span> <span class="o">=</span> <span class="n">context</span><span class="p">.</span><span class="na">getConfiguration</span><span class="p">().</span><span class="na">getLong</span><span class="p">(</span>
+        <span class="s">&#34;putsortreducer.row.threshold&#34;</span><span class="p">,</span> <span class="n">1L</span> <span class="o">*</span> <span class="p">(</span><span class="n">1</span><span class="o">&lt;&lt;</span><span class="n">30</span><span class="p">));</span>
+    <span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Put</span><span class="o">&gt;</span> <span class="nf">iter</span> <span class="o">=</span> <span class="n">puts</span><span class="p">.</span><span class="na">iterator</span><span class="p">();</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">iter</span><span class="p">.</span><span class="na">hasNext</span><span class="p">())</span> <span class="p">{</span>
+      <span class="c1">//使用TreeSet进行排序（TreeSet是基于红黑树的，可以用于排序）
+</span><span class="c1"></span>      <span class="n">TreeSet</span><span class="o">&lt;</span><span class="n">KeyValue</span><span class="o">&gt;</span> <span class="nf">map</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TreeSet</span><span class="o">&lt;</span><span class="n">KeyValue</span><span class="o">&gt;</span><span class="p">(</span><span class="n">CellComparator</span><span class="p">.</span><span class="na">COMPARATOR</span><span class="p">);</span>
+      <span class="kt">long</span> <span class="nf">curSize</span> <span class="o">=</span> <span class="n">0</span><span class="p">;</span> <span class="c1">//记录当前已处理 KeyValue 的总大小
+</span><span class="c1"></span>      <span class="c1">// stop at the end or the RAM threshold
+</span><span class="c1"></span>      <span class="k">while</span> <span class="p">(</span><span class="n">iter</span><span class="p">.</span><span class="na">hasNext</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">curSize</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">)</span> <span class="p">{</span> <span class="c1">//内存不可超出阈值
+</span><span class="c1"></span>        <span class="n">Put</span> <span class="nf">p</span> <span class="o">=</span> <span class="n">iter</span><span class="p">.</span><span class="na">next</span><span class="p">();</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Cell</span><span class="o">&gt;</span> <span class="nf">cells</span><span class="o">:</span> <span class="n">p</span><span class="p">.</span><span class="na">getFamilyCellMap</span><span class="p">().</span><span class="na">values</span><span class="p">())</span> <span class="p">{</span>
+          <span class="k">for</span> <span class="p">(</span><span class="n">Cell</span> <span class="nf">cell</span><span class="o">:</span> <span class="n">cells</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">KeyValue</span> <span class="nf">kv</span> <span class="o">=</span> <span class="n">KeyValueUtil</span><span class="p">.</span><span class="na">ensureKeyValue</span><span class="p">(</span><span class="n">cell</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">map</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">kv</span><span class="p">))</span> <span class="p">{</span><span class="c1">// don&#39;t count duplicated kv into size
+</span><span class="c1"></span>              <span class="n">curSize</span> <span class="o">+=</span> <span class="n">kv</span><span class="p">.</span><span class="na">heapSize</span><span class="p">();</span> <span class="c1">//累加内存大小
+</span><span class="c1"></span>            <span class="p">}</span>
+          <span class="p">}</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+      <span class="n">context</span><span class="p">.</span><span class="na">setStatus</span><span class="p">(</span><span class="s">&#34;Read &#34;</span> <span class="o">+</span> <span class="n">map</span><span class="p">.</span><span class="na">size</span><span class="p">()</span> <span class="o">+</span> <span class="s">&#34; entries of &#34;</span> <span class="o">+</span> <span class="n">map</span><span class="p">.</span><span class="na">getClass</span><span class="p">()</span>
+          <span class="o">+</span> <span class="s">&#34;(&#34;</span> <span class="o">+</span> <span class="n">StringUtils</span><span class="p">.</span><span class="na">humanReadableInt</span><span class="p">(</span><span class="n">curSize</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#34;)&#34;</span><span class="p">);</span>
+      <span class="kt">int</span> <span class="nf">index</span> <span class="o">=</span> <span class="n">0</span><span class="p">;</span>
+      <span class="c1">//按序输出
+</span><span class="c1"></span>      <span class="k">for</span> <span class="p">(</span><span class="n">KeyValue</span> <span class="nf">kv</span> <span class="o">:</span> <span class="n">map</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">context</span><span class="p">.</span><span class="na">write</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">kv</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">++</span><span class="n">index</span> <span class="o">%</span> <span class="n">100</span> <span class="o">==</span> <span class="n">0</span><span class="p">)</span>
+          <span class="n">context</span><span class="p">.</span><span class="na">setStatus</span><span class="p">(</span><span class="s">&#34;Wrote &#34;</span> <span class="o">+</span> <span class="n">index</span><span class="p">);</span>
+      <span class="p">}</span>
+
+      <span class="c1">// if we have more entries to process
+</span><span class="c1"></span>      <span class="c1">// 如果还有Put没有处理完，会强行 flush，下一次循环中处理剩下的put
+</span><span class="c1"></span>      <span class="c1">// 但是因为不能保证总体的有序性了，就需要生成一个新的StoreFile
+</span><span class="c1"></span>      <span class="k">if</span> <span class="p">(</span><span class="n">iter</span><span class="p">.</span><span class="na">hasNext</span><span class="p">())</span> <span class="p">{</span>
+        <span class="c1">// force flush because we cannot guarantee intra-row sorted order
+</span><span class="c1"></span>        <span class="n">context</span><span class="p">.</span><span class="na">write</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="kc">null</span><span class="p">);</span>
+        <span class="c1">//这会关闭当前的Writer(StoreFile.Writer)，并形成了一个StoreFile
+</span><span class="c1"></span>      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>现在我们知道 <code>KeyValue</code> 和 <code>HashMap$Entry</code> 是从哪里来的了。在 Reduce 过程中， PutSortReducer 类对每一行（Row）会进行一次 Reduce 操作，在这一次操作中会处理该行的所有数据。Reduce 内部排序是通过 TreeSet（红黑树结构）实现的，为了处理同一行记录非常多的情况，PutSortReducer 使用了一个刷写阈值，并维持一个当前已经放入树中的 KeyValue 的总内存大小，当大小超过刷写阈值时就会进行一次强制的写入操作。不过在 PutSortReducer 中默认的阈值是 1 GB。</p>
+
 <p>在我们的表结构设计中，有的表会使用多 Version 的方式存储，将 Version 作为其中的一个维度，对于一些特殊的情况（这里不便描述）会出现一行中存在大量 Column (不同的 Version) 的情况，这里就很不幸地遇到了。因为 KeyValue 的内存总量仍然没有达到刷写阈值（默认 1GB），然而此时堆中已经没有足够的内存了。</p>
-<h3 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h3><p>解决方法其实很简单，可以将 Reduce 的内存总量及对内存调整的更大一些，不过更好的方法是对 PutSortReducer 中的刷写阈值进行调整。在 Reduce 中会读取 <code>putsortreducer.row.threshold</code> 属性，没有则使用默认值，也就是 1GB，因而我们可以在任务提交前设置该阈值。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">long</span> reduceThreshMem = <span class="number">1L</span> * (<span class="number">1</span> &lt;&lt; <span class="number">28</span>)</span><br><span class="line">conf.setLong(<span class="string">"putsortreducer.row.threshold"</span>, reduceThreshMem);</span><br></pre></td></tr></table></figure>
+
+<h3 id="解决方法">解决方法</h3>
+
+<p>解决方法其实很简单，可以将 Reduce 的内存总量及对内存调整的更大一些，不过更好的方法是对 PutSortReducer 中的刷写阈值进行调整。在 Reduce 中会读取 <code>putsortreducer.row.threshold</code> 属性，没有则使用默认值，也就是 1GB，因而我们可以在任务提交前设置该阈值。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kt">long</span> <span class="nf">reduceThreshMem</span> <span class="o">=</span> <span class="n">1L</span> <span class="o">*</span> <span class="p">(</span><span class="n">1</span> <span class="o">&lt;&lt;</span> <span class="n">28</span><span class="p">)</span>
+<span class="n">conf</span><span class="p">.</span><span class="na">setLong</span><span class="p">(</span><span class="s">&#34;putsortreducer.row.threshold&#34;</span><span class="p">,</span> <span class="n">reduceThreshMem</span><span class="p">);</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>将该值调整为 512 MB后重新运行，成功完成任务。当然，这个阈值的设置可以依据 JVM 虚拟机的堆内存进行调整，建议设置保守一点，以保证任务正常执行下去。</p>
+
 <p>因为每次强制刷写后都会生成一个 StoreFile，在极端的情况下生成的文件数量可能会很多，在使用 bulk load 载入的时候可能会出错 <code>ERROR mapreduce.LoadIncrementalHFiles: Trying to load more than 32 hfiles to family f of region ...</code> (没错，我也遇到了T@T.)，可以修改一下这个属性 <code>hbase.mapreduce.bulkload.max.hfiles.perRegion.perFamily</code>，默认是 32。</p>
-<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>这篇文章主要是对使用 PutSortReducer 中遇到的问题及解决过程做一个总结。PutSortReducer 在极端情况下可能会造成内存溢出的问题，主要是内部使用的内存阈值和当前分配的堆内存不匹配造成的，在使用的时候按需调整该阈值即可。</p>
+
+<h3 id="小结">小结</h3>
+
+<p>这篇文章主要是对使用 PutSortReducer 中遇到的问题及解决过程做一个总结。PutSortReducer 在极端情况下可能会造成内存溢出的问题，主要是内部使用的内存阈值和当前分配的堆内存不匹配造成的，在使用的时候按需调整该阈值即可。</p>
+
 <p>-EOF-</p>
-</span>
-      
+
     </div>
 
-    <footer class="post-footer">
-      
-        <div class="post-tags">
-          
-            <a href="/tags/Original/" rel="tag">#Original</a>
-          
-            <a href="/tags/HBase/" rel="tag">#HBase</a>
-          
-            <a href="/tags/MapReduce/" rel="tag">#MapReduce</a>
-          
-        </div>
-      
-
-      
-        <div class="post-nav">
-          <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2016/java-simpledateformat-multithread-threadlocal/" rel="prev">SimpleDateFormat 的线程安全问题与 ThreadLocal</a>
-            
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">原始链接</span>
+    <span class="item-content"><a href="https://blog.jrwang.me/2016/gc-overhead-limit-in-putsortreducer/">https://blog.jrwang.me/2016/gc-overhead-limit-in-putsortreducer/</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2016-04-22
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/hbase/">HBase</a>
+          <a href="/tags/mapreduce/">MapReduce</a>
+          <a href="/tags/original/">Original</a>
           </div>
-
-          <div class="post-nav-next post-nav-item">
-            
-              <a href="/2016/java-collections-set/" rel="next">Java 容器源码分析之 Set</a>
-            
-          </div>
-        </div>
-      
-
-      
-      
+      <nav class="post-nav">
+        <a class="prev" href="/2016/java-simpledateformat-multithread-threadlocal/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">SimpleDateFormat 的线程安全问题与 ThreadLocal</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/2016/java-collections-set/">
+            <span class="next-text nav-default">Java 容器源码分析之 Set</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
     </footer>
   </article>
-
-
-
-    <div class="post-spread">
-      
-    </div>
-  </div>
-
- </div>
-
+        </div>
         
 
-        
-          <div class="comments" id="comments">
-            
-          </div>
-        
-      </div>
-
-      
   
-  <div class="sidebar-toggle">
-    <div class="sidebar-toggle-line-wrap">
-      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
-    </div>
-  </div>
 
-  <aside id="sidebar" class="sidebar">
-    <div class="sidebar-inner">
+  
+    <script src="https://utteranc.es/client.js"
+            repo="jrthe42/blog-comment"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/utterance">comments powered by utterances.</a></noscript>
 
-      
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview">
-            站点概览
-          </li>
-        </ul>
-      
-
-      <section class="site-overview">
-        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-          <img class="site-author-image" src="/images/avatar.png" alt="JR" itemprop="image"/>
-          <p class="site-author-name" itemprop="name">JR</p>
-        </div>
-        <p class="site-description motion-element" itemprop="description">想入非非就是寻找神奇</p>
-        <nav class="site-state motion-element">
-          <div class="site-state-item site-state-posts">
-            <a href="/archives">
-              <span class="site-state-item-count">43</span>
-              <span class="site-state-item-name">日志</span>
-            </a>
-          </div>
-
-          
-
-          <div class="site-state-item site-state-tags">
-            <a href="/tags">
-              <span class="site-state-item-count">21</span>
-              <span class="site-state-item-name">标签</span>
-              </a>
-          </div>
-
-        </nav>
-
-        
-
-        <div class="links-of-author motion-element">
-          
-            
-              <span class="links-of-author-item">
-                <a href="https://github.com/jrthe42" target="_blank">GitHub</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://weibo.com/jrthe42" target="_blank">Weibo</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://music.jrwang.me" target="_blank">Music</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://wiki.jrwang.me" target="_blank">Wiki</a>
-              </span>
-            
-              <span class="links-of-author-item">
-                <a href="http://jrwang.me" target="_blank">Site</a>
-              </span>
-            
-          
-        </div>
-
-        
-        
-          <div class="cc-license motion-element" itemprop="license">
-            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
-              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
-            </a>
-          </div>
-        
-
-        <div class="links-of-author motion-element">
-          
-        </div>
-
-      </section>
-
-      
-        <section class="post-toc-wrap sidebar-panel-active">
-          <div class="post-toc-indicator-top post-toc-indicator"></div>
-          <div class="post-toc">
-            
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#GC-日志及堆转储快照的分析"><span class="nav-number">1.</span> <span class="nav-text">GC 日志及堆转储快照的分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PutSortReducer-源码分析"><span class="nav-number">2.</span> <span class="nav-text">PutSortReducer 源码分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决方法"><span class="nav-number">3.</span> <span class="nav-text">解决方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#小结"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li></ol></div>
-            
-          </div>
-          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
-        </section>
-      
-
-    </div>
-  </aside>
-
-
+      </div>
     </main>
 
     <footer id="footer" class="footer">
-      <div class="footer-inner"> <div class="copyright" >
-  
-  &copy; &nbsp;  2015 - 
-  <span itemprop="copyrightYear">2019</span>
-  <span class="with-love">
-    <i class="icon-next-heart"></i>
+      <div class="social-links">
+      <a href="mailto:jrthe42@gmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/jrthe42" class="iconfont icon-github" title="github"></a>
+      <a href="https://weibo.com/jrthe42" class="iconfont icon-weibo" title="weibo"></a>
+  <a href="https://blog.jrwang.me/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
   </span>
-  <span class="author" itemprop="copyrightHolder">JR</span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2015 - 
+    2019
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </span>
 </div>
-
-<div class="powered-by">
-  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
-</div>
-
-<div class="powered-by">
-  主题 -
-  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
-    NexT.Mist
-  </a>
-</div>
-
-<div class="theme-info">
-  Modified By <a class="theme-link" href="http://jrwang.me">JR</a>
-</div>
-
-
- </div>
     </footer>
 
-    <div class="back-to-top"></div>
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
   </div>
-
-  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
-
   
-  
-  
-    
-    
-
-  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.f79f403f.min.js"></script>
 
 
-  
-  
-  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
-  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
-
-
-  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
-  
-
-  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
-  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
-
-  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
-
-
-
-
-  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
-  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
-
-  
-  
-<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
-
-
-<script type="text/javascript" id="sidebar.toc.highlight">
-  $(document).ready(function () {
-    var tocSelector = '.post-toc';
-    var $tocSelector = $(tocSelector);
-    var activeCurrentSelector = '.active-current';
-
-    $tocSelector
-      .on('activate.bs.scrollspy', function () {
-        var $currentActiveElement = $(tocSelector + ' .active').last();
-
-        removeCurrentActiveClass();
-        $currentActiveElement.addClass('active-current');
-
-        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
-      })
-      .on('clear.bs.scrollspy', function () {
-        removeCurrentActiveClass();
-      });
-
-    function removeCurrentActiveClass () {
-      $(tocSelector + ' ' + activeCurrentSelector)
-        .removeClass(activeCurrentSelector.substring(1));
-    }
-
-    function processTOC () {
-      getTOCMaxHeight();
-      toggleTOCOverflowIndicators();
-    }
-
-    function getTOCMaxHeight () {
-      var height = $('.sidebar').height() -
-                   $tocSelector.position().top -
-                   $('.post-toc-indicator-bottom').height();
-
-      $tocSelector.css('height', height);
-
-      return height;
-    }
-
-    function toggleTOCOverflowIndicators () {
-      tocOverflowIndicator(
-        '.post-toc-indicator-top',
-        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
-      );
-
-      tocOverflowIndicator(
-        '.post-toc-indicator-bottom',
-        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
-      )
-    }
-
-    $(document).on('sidebar.motion.complete', function () {
-      processTOC();
-    });
-
-    $('body').scrollspy({ target: tocSelector });
-    $(window).on('resize', function () {
-      if ( $('.sidebar').hasClass('sidebar-active') ) {
-        processTOC();
-      }
-    });
-
-    onScroll($tocSelector);
-
-    function onScroll (element) {
-      element.on('mousewheel DOMMouseScroll', function (event) {
-          var oe = event.originalEvent;
-          var delta = oe.wheelDelta || -oe.detail;
-
-          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
-          event.preventDefault();
-
-          toggleTOCOverflowIndicators();
-      });
-    }
-
-    function tocOverflowIndicator (indicator, action) {
-      var $indicator = $(indicator);
-      var opacity = action === 'show' ? 0.4 : 0;
-      $indicator.velocity ?
-        $indicator.velocity('stop').velocity({
-          opacity: opacity
-        }, { duration: 100 }) :
-        $indicator.stop().animate({
-          opacity: opacity
-        }, 100);
-    }
-
-  });
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-66913886-2', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
 </script>
-
-<script type="text/javascript" id="sidebar.nav">
-  $(document).ready(function () {
-    var html = $('html');
-    var TAB_ANIMATE_DURATION = 200;
-    var hasVelocity = $.isFunction(html.velocity);
-
-    $('.sidebar-nav li').on('click', function () {
-      var item = $(this);
-      var activeTabClassName = 'sidebar-nav-active';
-      var activePanelClassName = 'sidebar-panel-active';
-      if (item.hasClass(activeTabClassName)) {
-        return;
-      }
-
-      var currentTarget = $('.' + activePanelClassName);
-      var target = $('.' + item.data('target'));
-
-      hasVelocity ?
-        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
-          target
-            .velocity('stop')
-            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
-            .addClass(activePanelClassName);
-        }) :
-        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
-          currentTarget.hide();
-          target
-            .stop()
-            .css({'opacity': 0, 'display': 'block'})
-            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
-              currentTarget.removeClass(activePanelClassName);
-              target.addClass(activePanelClassName);
-            });
-        });
-
-      item.siblings().removeClass(activeTabClassName);
-      item.addClass(activeTabClassName);
-    });
-
-    $('.post-toc a').on('click', function (e) {
-      e.preventDefault();
-      var targetSelector = escapeSelector(this.getAttribute('href'));
-      var offset = $(targetSelector).offset().top;
-      hasVelocity ?
-        html.velocity('stop').velocity('scroll', {
-          offset: offset  + 'px',
-          mobileHA: false
-        }) :
-        $('html, body').stop().animate({
-          scrollTop: offset
-        }, 500);
-    });
-
-    // Expand sidebar on post detail page by default, when post has a toc.
-    var $tocContent = $('.post-toc-content');
-    if (isDesktop() && CONFIG.sidebar === 'post') {
-      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
-        displaySidebar();
-      }
-    }
-  });
-</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
 
 
 
-  <script type="text/javascript">
-    $(document).ready(function () {
-      if (CONFIG.sidebar === 'always') {
-        displaySidebar();
-      }
-      if (isMobile()) {
-        FastClick.attach(document.body);
-      }
-    });
-  </script>
 
-  
 
-  
-  
 
-  
-  <script type="text/javascript" src="/js/lazyload.js"></script>
-  <script type="text/javascript">
-    $(function () {
-      $("#posts").find('img').lazyload({
-        placeholder: "/images/loading.gif",
-        effect: "fadeIn"
-      });
-    });
-  </script>
+
 </body>
 </html>
