@@ -6,10 +6,19 @@
     <description>Recent content in 实时计算 on JR&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Wed, 04 Sep 2019 21:31:00 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 15 Sep 2019 20:34:45 +0800</lastBuildDate>
     
 	<atom:link href="https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Flink 源码阅读笔记（16） - Flink SQL 的元数据管理</title>
+      <link>https://blog.jrwang.me/2019/2019-09-12-flink-sourcecode-sql-catalog/</link>
+      <pubDate>Sun, 15 Sep 2019 20:34:45 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/2019/2019-09-12-flink-sourcecode-sql-catalog/</guid>
+      <description>为了使用 SQL，一个首先需要解决的是元数据管理的问题。元数据的管理包括表的元数据和 UDF 的元数据，这使得完全使用 SQL 语句来构建实时任务成为可能。 Catalog</description>
+    </item>
     
     <item>
       <title>Flink 源码阅读笔记（15） - Flink SQL 整体执行框架</title>

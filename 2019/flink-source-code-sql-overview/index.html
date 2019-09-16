@@ -43,14 +43,14 @@
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://blog.jrwang.me/2019/flink-source-code-sql-overview/" />
 <meta property="article:published_time" content="2019-09-04T21:31:00+00:00" />
-<meta property="article:modified_time" content="2019-09-04T21:31:00+00:00" />
+<meta property="article:modified_time" content="2019-09-16T00:00:00+00:00" />
 <meta itemprop="name" content="Flink 源码阅读笔记（15） - Flink SQL 整体执行框架">
 <meta itemprop="description" content="在数据处理领域，无论是实时数据处理还是离线数据处理，使用 SQL 简化开发将会是未来的整体发展趋势。尽管 SQL 简化了使用的门槛，但是如何将 SQL 等价转换到现">
 
 
 <meta itemprop="datePublished" content="2019-09-04T21:31:00&#43;00:00" />
-<meta itemprop="dateModified" content="2019-09-04T21:31:00&#43;00:00" />
-<meta itemprop="wordCount" content="4685">
+<meta itemprop="dateModified" content="2019-09-16T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="4736">
 
 
 
@@ -915,6 +915,8 @@
 
 <p><img src="/img/flink/flink-sql-operation-and-relnode.svg" alt="flink-sql-operation-and-relnode" /></p>
 
+<p><em>更正</em> ：在最新的代码中，<code>RexNodeConverter</code> 已更名为 <code>ExpressionConverter</code>。</p>
+
 <h2 id="小结">小结</h2>
 
 <p>在这篇文章中，我们主要对 Flink 1.9 版本中 SQL 的整体执行框架进行了介绍。在这个版本中，Flink 提供了两套 SQL Runner，其中 Blink 将会在后续版本中取代已有的 SQL Runner 成为新的标准，因此我们主要是以 Blink Runner 为例介绍 SQL 的解析和优化流程。在后续的文章中，我们将更详细了解元数据管理、 SQL 算子的实现原理、代码生成等具体的实现细节。</p>
@@ -942,7 +944,7 @@
   <p class="copyright-item">
     <span class="item-title">上次更新</span>
     <span class="item-content">
-        2019-09-04
+        2019-09-16
         
     </span>
   </p>
@@ -959,9 +961,9 @@
           <a href="/tags/sql/">SQL</a>
           </div>
       <nav class="post-nav">
-        <a class="prev" href="/2019/aloha-introduce/">
+        <a class="prev" href="/2019/2019-09-12-flink-sourcecode-sql-catalog/">
             <i class="iconfont icon-left"></i>
-            <span class="prev-text nav-default">Aloha：一个分布式任务调度框架</span>
+            <span class="prev-text nav-default">Flink 源码阅读笔记（16） - Flink SQL 的元数据管理</span>
             <span class="prev-text nav-mobile">上一篇</span>
           </a>
         <a class="next" href="/2019/flink-source-code-async-io/">
