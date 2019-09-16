@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>RPC on JR&#39;s Blog</title>
+    <link>https://blog.jrwang.me/tags/rpc/</link>
+    <description>Recent content in RPC on JR&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 15 Mar 2019 23:58:18 +0000</lastBuildDate>
+    
+	<atom:link href="https://blog.jrwang.me/tags/rpc/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Aloha：一个分布式任务调度框架</title>
+      <link>https://blog.jrwang.me/2019/aloha-introduce/</link>
+      <pubDate>Fri, 15 Mar 2019 23:58:18 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2019/aloha-introduce/</guid>
+      <description>概览 Aloha 是一个基于 Scala 实现的分布式的任务调度和管理框架，提供插件式扩展功能，可以用来调度各种类型的任务。Aloha 的典型的应用场景是作为统一的任</description>
+    </item>
+    
+    <item>
+      <title>Google 开源 RPC 框架 gRPC 初探</title>
+      <link>https://blog.jrwang.me/2016/grpc-at-first-view/</link>
+      <pubDate>Thu, 25 Aug 2016 18:10:35 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2016/grpc-at-first-view/</guid>
+      <description>gRPC 是 Google 开源的一款高性能 RPC 框架，前两天发布了 1.0 版本。RPC (Remote Procedure Call) 即远程过程调用，通过 RPC ，客户端的应用程序可以方便地调用另外一台机器上的服务端程</description>
+    </item>
+    
+  </channel>
+</rss>

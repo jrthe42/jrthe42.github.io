@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>SQL on JR&#39;s Blog</title>
+    <link>https://blog.jrwang.me/tags/sql/</link>
+    <description>Recent content in SQL on JR&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 15 Sep 2019 20:34:45 +0800</lastBuildDate>
+    
+	<atom:link href="https://blog.jrwang.me/tags/sql/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Flink 源码阅读笔记（16） - Flink SQL 的元数据管理</title>
+      <link>https://blog.jrwang.me/2019/2019-09-12-flink-sourcecode-sql-catalog/</link>
+      <pubDate>Sun, 15 Sep 2019 20:34:45 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/2019/2019-09-12-flink-sourcecode-sql-catalog/</guid>
+      <description>为了使用 SQL，一个首先需要解决的是元数据管理的问题。元数据的管理包括表的元数据和 UDF 的元数据，这使得完全使用 SQL 语句来构建实时任务成为可能。 Catalog</description>
+    </item>
+    
+    <item>
+      <title>Flink 源码阅读笔记（15） - Flink SQL 整体执行框架</title>
+      <link>https://blog.jrwang.me/2019/flink-source-code-sql-overview/</link>
+      <pubDate>Wed, 04 Sep 2019 21:31:00 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2019/flink-source-code-sql-overview/</guid>
+      <description>在数据处理领域，无论是实时数据处理还是离线数据处理，使用 SQL 简化开发将会是未来的整体发展趋势。尽管 SQL 简化了使用的门槛，但是如何将 SQL 等价转换到现</description>
+    </item>
+    
+    <item>
+      <title>从 SQL 语句中解析出源表和结果表</title>
+      <link>https://blog.jrwang.me/2018/parse-table-in-sql/</link>
+      <pubDate>Wed, 30 May 2018 15:15:57 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2018/parse-table-in-sql/</guid>
+      <description>SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。 在 Calcite 中，解析出的 AST 是</description>
+    </item>
+    
+  </channel>
+</rss>

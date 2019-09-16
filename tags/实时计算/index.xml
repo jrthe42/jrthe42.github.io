@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>实时计算 on JR&#39;s Blog</title>
+    <link>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</link>
+    <description>Recent content in 实时计算 on JR&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 15 Sep 2019 20:34:45 +0800</lastBuildDate>
+    
+	<atom:link href="https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Flink 源码阅读笔记（16） - Flink SQL 的元数据管理</title>
+      <link>https://blog.jrwang.me/2019/2019-09-12-flink-sourcecode-sql-catalog/</link>
+      <pubDate>Sun, 15 Sep 2019 20:34:45 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/2019/2019-09-12-flink-sourcecode-sql-catalog/</guid>
+      <description>为了使用 SQL，一个首先需要解决的是元数据管理的问题。元数据的管理包括表的元数据和 UDF 的元数据，这使得完全使用 SQL 语句来构建实时任务成为可能。 Catalog</description>
+    </item>
+    
+    <item>
+      <title>Flink 源码阅读笔记（15） - Flink SQL 整体执行框架</title>
+      <link>https://blog.jrwang.me/2019/flink-source-code-sql-overview/</link>
+      <pubDate>Wed, 04 Sep 2019 21:31:00 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2019/flink-source-code-sql-overview/</guid>
+      <description>在数据处理领域，无论是实时数据处理还是离线数据处理，使用 SQL 简化开发将会是未来的整体发展趋势。尽管 SQL 简化了使用的门槛，但是如何将 SQL 等价转换到现</description>
+    </item>
+    
+  </channel>
+</rss>

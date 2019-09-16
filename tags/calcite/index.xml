@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Calcite on JR&#39;s Blog</title>
+    <link>https://blog.jrwang.me/tags/calcite/</link>
+    <description>Recent content in Calcite on JR&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 30 May 2018 15:15:57 +0000</lastBuildDate>
+    
+	<atom:link href="https://blog.jrwang.me/tags/calcite/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>从 SQL 语句中解析出源表和结果表</title>
+      <link>https://blog.jrwang.me/2018/parse-table-in-sql/</link>
+      <pubDate>Wed, 30 May 2018 15:15:57 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2018/parse-table-in-sql/</guid>
+      <description>SQL 解析器可以将 SQL 语句解析成一棵抽象语法树(AST)。遍历 AST，从所有的叶子节点中可以找到本条SQL 语句中需要的所有表。 在 Calcite 中，解析出的 AST 是</description>
+    </item>
+    
+  </channel>
+</rss>

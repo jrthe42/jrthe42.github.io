@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>HBase on JR&#39;s Blog</title>
+    <link>https://blog.jrwang.me/tags/hbase/</link>
+    <description>Recent content in HBase on JR&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 22 Apr 2016 15:44:11 +0000</lastBuildDate>
+    
+	<atom:link href="https://blog.jrwang.me/tags/hbase/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>记一次使用 PutSortReducer 时 OOM 错误的排查过程</title>
+      <link>https://blog.jrwang.me/2016/gc-overhead-limit-in-putsortreducer/</link>
+      <pubDate>Fri, 22 Apr 2016 15:44:11 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2016/gc-overhead-limit-in-putsortreducer/</guid>
+      <description>之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我</description>
+    </item>
+    
+    <item>
+      <title>使用 Bulk Load 快速向 HBase 中导入数据</title>
+      <link>https://blog.jrwang.me/2015/import-data-to-hbase-using-bulk-loding/</link>
+      <pubDate>Sun, 06 Dec 2015 19:20:11 +0000</pubDate>
+      
+      <guid>https://blog.jrwang.me/2015/import-data-to-hbase-using-bulk-loding/</guid>
+      <description>前言 Apache HBase 是目前大数据系统中应用最为广泛的分布式数据库之一。我们经常面临向 HBase 中导入大量数据的情景，通常会选择使用标准的客户端 API 对 HBase 进行直接的操</description>
+    </item>
+    
+  </channel>
+</rss>
