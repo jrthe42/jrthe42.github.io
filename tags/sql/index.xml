@@ -12,7 +12,7 @@
     
     
     <item>
-      <title>Flink 源码阅读笔记（16） - Flink SQL 的元数据管理</title>
+      <title>Flink 源码阅读笔记（16）- Flink SQL 的元数据管理</title>
       <link>https://blog.jrwang.me/2019/2019-09-12-flink-sourcecode-sql-catalog/</link>
       <pubDate>Sun, 15 Sep 2019 20:34:45 +0800</pubDate>
       
@@ -21,7 +21,7 @@
     </item>
     
     <item>
-      <title>Flink 源码阅读笔记（15） - Flink SQL 整体执行框架</title>
+      <title>Flink 源码阅读笔记（15）- Flink SQL 整体执行框架</title>
       <link>https://blog.jrwang.me/2019/flink-source-code-sql-overview/</link>
       <pubDate>Wed, 04 Sep 2019 21:31:00 +0000</pubDate>
       
