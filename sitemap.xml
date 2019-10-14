@@ -17,7 +17,49 @@
   
   <url>
     <loc>https://blog.jrwang.me/tags/flink/</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.jrwang.me/2019/2019-09-16-flink-sourcecode-sql-time-attribute.md/</loc>
+    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.jrwang.me/</loc>
+    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.jrwang.me/post/</loc>
+    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.jrwang.me/tags/sql/</loc>
+    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.jrwang.me/tags/</loc>
+    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</loc>
+    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -25,41 +67,6 @@
   <url>
     <loc>https://blog.jrwang.me/2019/2019-09-12-flink-sourcecode-sql-catalog/</loc>
     <lastmod>2019-09-15T20:34:45+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://blog.jrwang.me/</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://blog.jrwang.me/post/</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://blog.jrwang.me/tags/sql/</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://blog.jrwang.me/tags/</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>

@@ -273,7 +273,7 @@
 <span class="p">}</span></code></pre></td></tr></table>
 </div>
 </div>
-<p>如果使用 Table API，我们可能需要将 <code>DataStream</code> 或者 <code>DataSet</code> 转化为 <code>Table</code> 并注册到 <code>Catalog</code> 中。如果使用 <code>TableEnvironment.sqlQuery()</code>，我们同样得到 <code>Table</code> 对象。我们在上一篇文章的 <a href="/2019/flink-source-code-sql-overview/#table-api">Table API 一节</a>中曾经提过，在 Flink SQL 中，<code>Table</code> 对象的底层其实对应一个 <code>QueryOperation</code>。因此如果要将 <code>Table</code> 注册到 <code>Catalog</code> 中，其实是将 <code>QueryOperation</code> 封装为 <code>QueryOperationView</code> 注册到 <code>Catalog</code> 中。</p>
+<p>如果使用 Table API，我们可能需要将 <code>DataStream</code> 或者 <code>DataSet</code> 转化为 <code>Table</code> 并注册到 <code>Catalog</code> 中。如果使用 <code>TableEnvironment.sqlQuery()</code>，我们同样得到 <code>Table</code> 对象。我们在上一篇文章的 <a href="/2019/flink-source-code-sql-overview/#table-api">Table API 一节</a>中曾经提过，在 Flink SQL 中，<code>Table</code> 对象的底层其实对应一个 <code>QueryOperation</code>。因此如果要将 <code>Table</code> 注册到 <code>Catalog</code> 中，其实是将 <code>QueryOperation</code> 封装为 <code>QueryOperationCatalogView</code> 注册到 <code>Catalog</code> 中。</p>
 
 <p>此外，Flink SQL 提供了对 DDL 语句的支持，通过 CREATE TABLE 语句同样可以注册表到 <code>Catalog</code> 中。这里 FLink SQL 会解析 SQL 语句，从中提取出表结构、表属性等信息，封装在 <code>CatalogTableImpl</code> 中。</p>
 
@@ -336,9 +336,9 @@
           <a href="/tags/sql/">SQL</a>
           </div>
       <nav class="post-nav">
-        <a class="prev" href="/2019/aloha-introduce/">
+        <a class="prev" href="/2019/2019-09-16-flink-sourcecode-sql-time-attribute.md/">
             <i class="iconfont icon-left"></i>
-            <span class="prev-text nav-default">Aloha：一个分布式任务调度框架</span>
+            <span class="prev-text nav-default">Flink 源码阅读笔记（17）- Flink SQL 中的时间属性</span>
             <span class="prev-text nav-mobile">上一篇</span>
           </a>
         <a class="next" href="/2019/flink-source-code-sql-overview/">

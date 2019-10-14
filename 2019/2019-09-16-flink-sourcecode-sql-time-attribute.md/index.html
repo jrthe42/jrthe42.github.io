@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Flink 源码阅读笔记（17）- Flink SQL 中的时间属性 - JR&#39;s Blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="jrthe42" /><meta name="description" content="在流计算中，时间属性承担了一个极其重要的作用，所有基于时间的操作，例如窗口操作，都需要正确获取时间信息。我们曾经在Flink 源码阅读笔记（1" /><meta name="keywords" content="jrthe42, Blog, Programming" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.58.0 with theme even" />
+
+
+<link rel="canonical" href="https://blog.jrwang.me/2019/2019-09-16-flink-sourcecode-sql-time-attribute.md/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+<link href="/dist/even.7d171193.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="Flink 源码阅读笔记（17）- Flink SQL 中的时间属性" />
+<meta property="og:description" content="在流计算中，时间属性承担了一个极其重要的作用，所有基于时间的操作，例如窗口操作，都需要正确获取时间信息。我们曾经在Flink 源码阅读笔记（1" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.jrwang.me/2019/2019-09-16-flink-sourcecode-sql-time-attribute.md/" />
+<meta property="article:published_time" content="2019-09-29T20:05:03+08:00" />
+<meta property="article:modified_time" content="2019-09-29T20:05:03+08:00" />
+<meta itemprop="name" content="Flink 源码阅读笔记（17）- Flink SQL 中的时间属性">
+<meta itemprop="description" content="在流计算中，时间属性承担了一个极其重要的作用，所有基于时间的操作，例如窗口操作，都需要正确获取时间信息。我们曾经在Flink 源码阅读笔记（1">
+
+
+<meta itemprop="datePublished" content="2019-09-29T20:05:03&#43;08:00" />
+<meta itemprop="dateModified" content="2019-09-29T20:05:03&#43;08:00" />
+<meta itemprop="wordCount" content="4988">
+
+
+
+<meta itemprop="keywords" content="Flink,实时计算,SQL," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Flink 源码阅读笔记（17）- Flink SQL 中的时间属性"/>
+<meta name="twitter:description" content="在流计算中，时间属性承担了一个极其重要的作用，所有基于时间的操作，例如窗口操作，都需要正确获取时间信息。我们曾经在Flink 源码阅读笔记（1"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">JRTHE42</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">JRTHE42</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">Flink 源码阅读笔记（17）- Flink SQL 中的时间属性</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2019-09-29 </span>
+        
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#时间属性概览">时间属性概览</a></li>
+<li><a href="#定义表的时间属性">定义表的时间属性</a>
+<ul>
+<li><a href="#datastream-转换为-table">DataStream 转换为 Table</a></li>
+<li><a href="#使用-tablesource">使用 TableSource</a></li>
+</ul></li>
+<li><a href="#sql-引擎中时间属性的转换">SQL 引擎中时间属性的转换</a>
+<ul>
+<li><a href="#更新-tableschema">更新 TableSchema</a></li>
+<li><a href="#转换到-calcite">转换到 Calcite</a></li>
+<li><a href="#查询计划转换">查询计划转换</a></li>
+<li><a href="#物化时间属性">物化时间属性</a></li>
+<li><a href="#生成物理执行计划">生成物理执行计划</a></li>
+</ul></li>
+<li><a href="#小结">小结</a></li>
+<li><a href="#参考">参考</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      
+
+<p>在流计算中，时间属性承担了一个极其重要的作用，所有基于时间的操作，例如窗口操作，都需要正确获取时间信息。我们曾经在<a href="/2019/flink-source-code-time-and-window/">Flink 源码阅读笔记（12）- 时间、定时器和窗口</a>这篇文章中分析过 Flink 内部时间属性、水位线等机制的具体实现。在这篇文章中，我们将介绍在 SQL 和 Table API 中时间属性相关的一些细节。</p>
+
+<h2 id="时间属性概览">时间属性概览</h2>
+
+<p>在 Flink SQL 中，表可以提供逻辑上的时间属性用于获取时间信息，时间属性可以是处理时间也可以是事件时间。在声明一张表的时候，时间属性可以在表的 schema 中定义。有些特定的操作，如窗口关联和窗口聚合操作必须基于时间属性字段，因而时间属性可以被看作一种特殊的字段类型；但是时间属性可以当作常规的时间戳字段来使用，一旦需要在计算中使用到时间属性，就需要“物化”（materialized）时间属性，时间属性字段就会被转换成一个常规的时间戳类型。被物化后的时间属性不再与 Flink 的时间系统和水位线相关联，因而也就不可以再应用在基于时间的操作中。</p>
+
+<p>在 Flink SQL 的类型系统中，时间属性和常规的时间戳类型共用同样的逻辑类型 <code>TimestampType</code>，但是通过 <code>TimestampKind</code> 进行区分：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">enum</span> <span class="n">TimestampKind</span> <span class="p">{</span>
+	<span class="n">REGULAR</span><span class="p">,</span> <span class="c1">//常规的时间戳类型
+</span><span class="c1"></span>	<span class="n">ROWTIME</span><span class="p">,</span> <span class="c1">//事件时间
+</span><span class="c1"></span>	<span class="n">PROCTIME</span> <span class="c1">//处理时间
+</span><span class="c1"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>由于 Flink SQL 使用 Calcite 完成查询计划的优化，Flink 的所有逻辑类型在 Calcite 中都有对应的 <code>RelDataType</code>，并且为时间属性单独创建了一种新的 <code>RelDataType</code>，即 <code>TimeIndicatorRelDataType</code>:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">class</span> <span class="nf">TimeIndicatorRelDataType</span><span class="p">(</span>
+    <span class="n">typeSystem</span><span class="o">:</span> <span class="n">RelDataTypeSystem</span><span class="p">,</span>
+    <span class="n">originalType</span><span class="o">:</span> <span class="n">BasicSqlType</span><span class="p">,</span>
+    <span class="n">val</span> <span class="nf">isEventTime</span><span class="o">:</span> <span class="n">Boolean</span><span class="p">)</span> <span class="c1">//通过 isEventTime 区分是事件时间还是处理时间
+</span><span class="c1"></span>  <span class="kd">extends</span> <span class="nf">BasicSqlType</span><span class="p">(</span>
+    <span class="n">typeSystem</span><span class="p">,</span>
+    <span class="n">originalType</span><span class="p">.</span><span class="na">getSqlTypeName</span><span class="p">,</span>
+    <span class="n">originalType</span><span class="p">.</span><span class="na">getPrecision</span><span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="定义表的时间属性">定义表的时间属性</h2>
+
+<p>有两种方式来定义一张表的时间属性，一种方式是在将 <code>DataStream</code> 转换成 <code>Table</code> 的过程中，另一种方式是直接在 <code>TableSource</code> 的具体实现中定义。</p>
+
+<h3 id="datastream-转换为-table">DataStream 转换为 Table</h3>
+
+<p>在将 <code>DataStream</code> 转换成一个 Table 的过程中，可以用特殊的表达式来声明时间属性对应的列：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="c1">//处理时间
+</span><span class="c1"></span><span class="k">val</span> <span class="n">table</span> <span class="k">=</span> <span class="n">tEnv</span><span class="o">.</span><span class="n">fromDataStream</span><span class="o">(</span><span class="n">stream</span><span class="o">,</span> &#39;UserActionTimestamp<span class="o">,</span> &#39;Username<span class="o">,</span> &#39;Data<span class="o">,</span> &#39;UserActionTime<span class="o">.</span><span class="n">proctime</span><span class="o">)</span>
+
+<span class="c1">//事件时间
+</span><span class="c1"></span><span class="k">val</span> <span class="n">table</span> <span class="k">=</span> <span class="n">tEnv</span><span class="o">.</span><span class="n">fromDataStream</span><span class="o">(</span><span class="n">stream</span><span class="o">,</span> &#39;Username<span class="o">,</span> &#39;Data<span class="o">,</span> &#39;UserActionTime<span class="o">.</span><span class="n">rowtime</span><span class="o">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>其中 <code>'field.proctime</code> 或这 <code>'field.rowtime</code> 即声明时间属性，表达式会被转换为 <code>PROCTIME</code> 和 <code>ROWTIME</code> 这两个内置函数的调用 <code>UnresolvedCallExpression</code>：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala">  <span class="c1">// Time definition
+</span><span class="c1"></span>  <span class="cm">/**
+</span><span class="cm">    * Declares a field as the rowtime attribute for indicating, accessing, and working in
+</span><span class="cm">    * Flink&#39;s event time.
+</span><span class="cm">    */</span>
+  <span class="k">def</span> <span class="n">rowtime</span><span class="k">:</span> <span class="kt">Expression</span> <span class="o">=</span> <span class="n">unresolvedCall</span><span class="o">(</span><span class="nc">ROWTIME</span><span class="o">,</span> <span class="n">expr</span><span class="o">)</span>
+
+  <span class="cm">/**
+</span><span class="cm">    * Declares a field as the proctime attribute for indicating, accessing, and working in
+</span><span class="cm">    * Flink&#39;s processing time.
+</span><span class="cm">    */</span>
+  <span class="k">def</span> <span class="n">proctime</span><span class="k">:</span> <span class="kt">Expression</span> <span class="o">=</span> <span class="n">unresolvedCall</span><span class="o">(</span><span class="nc">PROCTIME</span><span class="o">,</span> <span class="n">expr</span><span class="o">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>非 Scala 环境下则通过 <code>ExpressionParser</code> 完成表达式的解析。</p>
+
+<h3 id="使用-tablesource">使用 TableSource</h3>
+
+<p>如果要在 <code>TableSource</code> 中定义时间属性，则需要 <code>TableSource</code> 实现 <code>DefinedProctimeAttribute</code> 或者 <code>DefinedRowAttribute</code> 接口，并且引用的时间属性必须出现在 <code>TableSchema</code> 中，类型为 timestamp 类型。如果要同时使用处理时间和事件时间，对应的 <code>TableSource</code> 需要同时实现这两个接口：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">interface</span> <span class="n">DefinedProctimeAttribute</span> <span class="p">{</span>
+	<span class="nd">@Nullable</span>
+	<span class="n">String</span> <span class="nf">getProctimeAttribute</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="kd">public</span> <span class="nf">interface</span> <span class="n">DefinedRowtimeAttributes</span> <span class="p">{</span>
+	<span class="n">List</span><span class="o">&lt;</span><span class="n">RowtimeAttributeDescriptor</span><span class="o">&gt;</span> <span class="nf">getRowtimeAttributeDescriptors</span><span class="p">();</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>其中 <code>RowtimeAttributeDescriptor</code> 是对事件时间的描述，包括如何提取事件时间，以及 watermark 的生成策略等：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">final</span> <span class="kd">class</span> <span class="nf">RowtimeAttributeDescriptor</span> <span class="p">{</span>
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">String</span> <span class="nf">attributeName</span><span class="p">;</span> <span class="c1">//时间属性名称
+</span><span class="c1"></span>	<span class="kd">private</span> <span class="nf">final</span> <span class="n">TimestampExtractor</span> <span class="nf">timestampExtractor</span><span class="p">;</span> <span class="c1">//如何提取事件时间
+</span><span class="c1"></span>	<span class="kd">private</span> <span class="nf">final</span> <span class="n">WatermarkStrategy</span> <span class="nf">watermarkStrategy</span><span class="p">;</span> <span class="c1">//如何生成 watermark
+</span><span class="c1"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>尽管返回值是 <code>List&lt;RowtimeAttributeDescriptor&gt;</code>，但目前 Flink SQL 只支持单个事件时间属性。</p>
+
+<h2 id="sql-引擎中时间属性的转换">SQL 引擎中时间属性的转换</h2>
+
+<h3 id="更新-tableschema">更新 TableSchema</h3>
+
+<p>在将 <code>DataStream</code> 转换成一个 <code>Table</code> 的过程中，首先需要生成表结构。<code>Table</code> 的底层对应的是一个 <code>QueryOperation</code>，在这里就是 <code>ScalaDataStreamQueryOperation</code> (或者 <code>JavaDataStreamQueryOperation</code>，对应 Java API)。<code>QueryOperation</code> 提供了 <code>TableSchema</code> 和字段映射关系：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">class</span> <span class="n">ScalaDataStreamQueryOperation</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span> <span class="nf">implements</span> <span class="n">QueryOperation</span> <span class="p">{</span>
+	<span class="kd">private</span> <span class="nf">final</span> <span class="n">DataStream</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span> <span class="nf">dataStream</span><span class="p">;</span>
+	<span class="kd">private</span> <span class="nf">final</span> <span class="kt">int</span><span class="p">[]</span> <span class="nf">fieldIndices</span><span class="p">;</span> <span class="c1">//字段索引映射关系
+</span><span class="c1"></span>	<span class="kd">private</span> <span class="nf">final</span> <span class="n">TableSchema</span> <span class="nf">tableSchema</span><span class="p">;</span> <span class="c1">//表结构
+</span><span class="c1"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>获得 <code>TableSchema</code> 的逻辑主要被封装在 <code>FieldInfoUtils.getFieldsInfo</code> 方法中，主要是通过解析 <code>Expression</code> 获得表结构中每一列对应的字段在 <code>DataStream</code> 中元素的索引，并得到对应字段的类型：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="cm">/**
+</span><span class="cm"> * Utility methods for extracting names and indices of fields from different {@link TypeInformation}s.
+</span><span class="cm"> */</span>
+<span class="kd">public</span> <span class="nf">class</span> <span class="n">FieldInfoUtils</span> <span class="p">{</span>
+	<span class="kd">private</span> <span class="nf">static</span> <span class="kd">class</span> <span class="nf">ExprToFieldInfo</span> <span class="kd">extends</span> <span class="nf">ApiExpressionDefaultVisitor</span><span class="o">&lt;</span><span class="n">FieldInfo</span><span class="o">&gt;</span> <span class="p">{</span>
+		<span class="nd">@Override</span>
+		<span class="kd">public</span> <span class="nf">FieldInfo</span> <span class="n">visit</span><span class="p">(</span><span class="n">UnresolvedReferenceExpression</span> <span class="nf">unresolvedReference</span><span class="p">)</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="n">createFieldInfo</span><span class="p">(</span><span class="n">unresolvedReference</span><span class="p">,</span> <span class="kc">null</span><span class="p">);</span>
+		<span class="p">}</span>
+
+		<span class="nd">@Override</span>
+		<span class="kd">public</span> <span class="nf">FieldInfo</span> <span class="n">visit</span><span class="p">(</span><span class="n">UnresolvedCallExpression</span> <span class="nf">unresolvedCall</span><span class="p">)</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">unresolvedCall</span><span class="p">.</span><span class="na">getFunctionDefinition</span><span class="p">()</span> <span class="o">==</span> <span class="n">BuiltInFunctionDefinitions</span><span class="p">.</span><span class="na">AS</span><span class="p">)</span> <span class="p">{</span>
+				<span class="k">return</span> <span class="n">visitAlias</span><span class="p">(</span><span class="n">unresolvedCall</span><span class="p">);</span>
+			<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">isRowTimeExpression</span><span class="p">(</span><span class="n">unresolvedCall</span><span class="p">))</span> <span class="p">{</span>
+				<span class="k">return</span> <span class="n">createRowtimeFieldInfo</span><span class="p">(</span><span class="n">unresolvedCall</span><span class="p">,</span> <span class="kc">null</span><span class="p">);</span>
+			<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">isProcTimeExpression</span><span class="p">(</span><span class="n">unresolvedCall</span><span class="p">))</span> <span class="p">{</span>
+				<span class="k">return</span> <span class="n">createProctimeFieldInfo</span><span class="p">(</span><span class="n">unresolvedCall</span><span class="p">,</span> <span class="kc">null</span><span class="p">);</span>
+			<span class="p">}</span>
+
+			<span class="k">return</span> <span class="n">defaultMethod</span><span class="p">(</span><span class="n">unresolvedCall</span><span class="p">);</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="kd">private</span> <span class="nf">static</span> <span class="kt">boolean</span> <span class="nf">isRowTimeExpression</span><span class="p">(</span><span class="n">Expression</span> <span class="nf">origExpr</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="n">origExpr</span> <span class="nf">instanceof</span> <span class="n">UnresolvedCallExpression</span> <span class="o">&amp;&amp;</span>
+			<span class="p">((</span><span class="n">UnresolvedCallExpression</span><span class="p">)</span> <span class="n">origExpr</span><span class="p">).</span><span class="na">getFunctionDefinition</span><span class="p">()</span> <span class="o">==</span> <span class="n">BuiltInFunctionDefinitions</span><span class="p">.</span><span class="na">ROWTIME</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="kd">private</span> <span class="nf">static</span> <span class="kt">boolean</span> <span class="nf">isProcTimeExpression</span><span class="p">(</span><span class="n">Expression</span> <span class="nf">origExpr</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="n">origExpr</span> <span class="nf">instanceof</span> <span class="n">UnresolvedCallExpression</span> <span class="o">&amp;&amp;</span>
+			<span class="p">((</span><span class="n">UnresolvedCallExpression</span><span class="p">)</span> <span class="n">origExpr</span><span class="p">).</span><span class="na">getFunctionDefinition</span><span class="p">()</span> <span class="o">==</span> <span class="n">BuiltInFunctionDefinitions</span><span class="p">.</span><span class="na">PROCTIME</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="kd">private</span> <span class="nf">static</span> <span class="n">FieldInfo</span> <span class="nf">createTimeAttributeField</span><span class="p">(</span>
+			<span class="n">UnresolvedReferenceExpression</span> <span class="nf">reference</span><span class="p">,</span>
+			<span class="n">TimestampKind</span> <span class="nf">kind</span><span class="p">,</span> <span class="c1">//这里的Kind是TimestampKind.PROCTIME或TimestampKind.ROWTIME
+</span><span class="c1"></span>			<span class="nd">@Nullable</span> <span class="n">String</span> <span class="nf">alias</span><span class="p">)</span> <span class="p">{</span>
+		<span class="kd">final</span> <span class="nf">int</span> <span class="n">idx</span><span class="p">;</span>
+		<span class="c1">//对于时间属性，没有对应的索引，用特殊的标识
+</span><span class="c1"></span>		<span class="k">if</span> <span class="p">(</span><span class="n">kind</span> <span class="o">==</span> <span class="n">TimestampKind</span><span class="p">.</span><span class="na">PROCTIME</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">idx</span> <span class="o">=</span> <span class="n">TimeIndicatorTypeInfo</span><span class="p">.</span><span class="na">PROCTIME_STREAM_MARKER</span><span class="p">;</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="n">idx</span> <span class="o">=</span> <span class="n">TimeIndicatorTypeInfo</span><span class="p">.</span><span class="na">ROWTIME_STREAM_MARKER</span><span class="p">;</span>
+		<span class="p">}</span>
+
+		<span class="n">String</span> <span class="nf">originalName</span> <span class="o">=</span> <span class="n">reference</span><span class="p">.</span><span class="na">getName</span><span class="p">();</span>
+		<span class="k">return</span> <span class="k">new</span> <span class="n">FieldInfo</span><span class="p">(</span>
+			<span class="n">alias</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">?</span> <span class="n">alias</span> <span class="o">:</span> <span class="n">originalName</span><span class="p">,</span>
+			<span class="n">idx</span><span class="p">,</span>
+			<span class="n">createTimeIndicatorType</span><span class="p">(</span><span class="n">kind</span><span class="p">));</span>
+	<span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>由于时间属性对应的表达式是内置函数的调用，因而可以通过判断对应的函数定义识别出来。</p>
+
+<p>时间属性并不对应 <code>DataStream</code> 中元素真实的字段，因此会用特殊的标识来作为索引：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">class</span> <span class="n">TimeIndicatorTypeInfo</span> <span class="nf">extends</span> <span class="n">SqlTimeTypeInfo</span><span class="o">&lt;</span><span class="n">Timestamp</span><span class="o">&gt;</span> <span class="p">{</span>
+	<span class="kd">public</span> <span class="nf">static</span> <span class="kd">final</span> <span class="nf">int</span> <span class="n">ROWTIME_STREAM_MARKER</span> <span class="o">=</span> <span class="o">-</span><span class="n">1</span><span class="p">;</span>
+	<span class="kd">public</span> <span class="nf">static</span> <span class="kd">final</span> <span class="nf">int</span> <span class="n">PROCTIME_STREAM_MARKER</span> <span class="o">=</span> <span class="o">-</span><span class="n">2</span><span class="p">;</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>如果通过 <code>TableSource</code> 注册一张表，首先会通过 <code>TableSourceValidation.validateTableSource()</code> 验证表结构、时间属性等信息，然后会被封装为 <code>ConnectorCatalogTable</code>，在这里会完成 <code>TableSchema</code> 的更新：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">class</span> <span class="n">ConnectorCatalogTable</span><span class="o">&lt;</span><span class="n">T1</span><span class="p">,</span> <span class="n">T2</span><span class="o">&gt;</span> <span class="nf">extends</span> <span class="n">AbstractCatalogTable</span> <span class="p">{</span>
+	<span class="kd">public</span> <span class="nf">static</span> <span class="o">&lt;</span><span class="n">T1</span><span class="o">&gt;</span> <span class="nf">ConnectorCatalogTable</span> <span class="n">source</span><span class="p">(</span><span class="n">TableSource</span><span class="o">&lt;</span><span class="n">T1</span><span class="o">&gt;</span> <span class="nf">source</span><span class="p">,</span> <span class="kt">boolean</span> <span class="nf">isBatch</span><span class="p">)</span> <span class="p">{</span>
+		<span class="c1">//更新 TableSchema
+</span><span class="c1"></span>		<span class="kd">final</span> <span class="nf">TableSchema</span> <span class="n">tableSchema</span> <span class="o">=</span> <span class="n">calculateSourceSchema</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">isBatch</span><span class="p">);</span>
+		<span class="k">return</span> <span class="k">new</span> <span class="n">ConnectorCatalogTable</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="n">tableSchema</span><span class="p">,</span> <span class="n">isBatch</span><span class="p">);</span>
+	<span class="p">}</span>
+
+	<span class="kd">private</span> <span class="nf">static</span> <span class="o">&lt;</span><span class="n">T1</span><span class="o">&gt;</span> <span class="nf">TableSchema</span> <span class="n">calculateSourceSchema</span><span class="p">(</span><span class="n">TableSource</span><span class="o">&lt;</span><span class="n">T1</span><span class="o">&gt;</span> <span class="nf">source</span><span class="p">,</span> <span class="kt">boolean</span> <span class="nf">isBatch</span><span class="p">)</span> <span class="p">{</span>
+		<span class="n">TableSchema</span> <span class="nf">tableSchema</span> <span class="o">=</span> <span class="n">source</span><span class="p">.</span><span class="na">getTableSchema</span><span class="p">();</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">isBatch</span><span class="p">)</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="n">tableSchema</span><span class="p">;</span>
+		<span class="p">}</span>
+
+		<span class="n">DataType</span><span class="p">[]</span> <span class="nf">types</span> <span class="o">=</span> <span class="n">Arrays</span><span class="p">.</span><span class="na">copyOf</span><span class="p">(</span><span class="n">tableSchema</span><span class="p">.</span><span class="na">getFieldDataTypes</span><span class="p">(),</span> <span class="n">tableSchema</span><span class="p">.</span><span class="na">getFieldCount</span><span class="p">());</span>
+		<span class="n">String</span><span class="p">[]</span> <span class="nf">fieldNames</span> <span class="o">=</span> <span class="n">tableSchema</span><span class="p">.</span><span class="na">getFieldNames</span><span class="p">();</span>
+		<span class="c1">//检查是否实现了 DefinedRowtimeAttributes 接口
+</span><span class="c1"></span>		<span class="k">if</span> <span class="p">(</span><span class="n">source</span> <span class="nf">instanceof</span> <span class="n">DefinedRowtimeAttributes</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">updateRowtimeIndicators</span><span class="p">((</span><span class="n">DefinedRowtimeAttributes</span><span class="p">)</span> <span class="n">source</span><span class="p">,</span> <span class="n">fieldNames</span><span class="p">,</span> <span class="n">types</span><span class="p">);</span>
+		<span class="p">}</span>
+		<span class="c1">//检查是否实现了 DefinedProctimeAttribute 接口
+</span><span class="c1"></span>		<span class="k">if</span> <span class="p">(</span><span class="n">source</span> <span class="nf">instanceof</span> <span class="n">DefinedProctimeAttribute</span><span class="p">)</span> <span class="p">{</span>
+			<span class="n">updateProctimeIndicator</span><span class="p">((</span><span class="n">DefinedProctimeAttribute</span><span class="p">)</span> <span class="n">source</span><span class="p">,</span> <span class="n">fieldNames</span><span class="p">,</span> <span class="n">types</span><span class="p">);</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="n">TableSchema</span><span class="p">.</span><span class="na">builder</span><span class="p">().</span><span class="na">fields</span><span class="p">(</span><span class="n">fieldNames</span><span class="p">,</span> <span class="n">types</span><span class="p">).</span><span class="na">build</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="kd">private</span> <span class="nf">static</span> <span class="kt">void</span> <span class="nf">updateRowtimeIndicators</span><span class="p">(</span>
+			<span class="n">DefinedRowtimeAttributes</span> <span class="nf">source</span><span class="p">,</span>
+			<span class="n">String</span><span class="p">[]</span> <span class="nf">fieldNames</span><span class="p">,</span>
+			<span class="n">DataType</span><span class="p">[]</span> <span class="nf">types</span><span class="p">)</span> <span class="p">{</span>
+		<span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">rowtimeAttributes</span> <span class="o">=</span> <span class="n">source</span><span class="p">.</span><span class="na">getRowtimeAttributeDescriptors</span><span class="p">()</span>
+			<span class="p">.</span><span class="na">stream</span><span class="p">()</span>
+			<span class="p">.</span><span class="na">map</span><span class="p">(</span><span class="n">RowtimeAttributeDescriptor</span><span class="o">::</span><span class="n">getAttributeName</span><span class="p">)</span>
+			<span class="p">.</span><span class="na">collect</span><span class="p">(</span><span class="n">Collectors</span><span class="p">.</span><span class="na">toList</span><span class="p">());</span>
+
+		<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="nf">i</span> <span class="o">=</span> <span class="n">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">fieldNames</span><span class="p">.</span><span class="na">length</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">rowtimeAttributes</span><span class="p">.</span><span class="na">contains</span><span class="p">(</span><span class="n">fieldNames</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="p">{</span>
+				<span class="c1">// bridged to timestamp for compatible flink-planner
+</span><span class="c1"></span>				<span class="n">types</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="k">new</span> <span class="n">AtomicDataType</span><span class="p">(</span><span class="k">new</span> <span class="n">TimestampType</span><span class="p">(</span><span class="kc">true</span><span class="p">,</span> <span class="n">TimestampKind</span><span class="p">.</span><span class="na">ROWTIME</span><span class="p">,</span> <span class="n">3</span><span class="p">))</span>
+						<span class="p">.</span><span class="na">bridgedTo</span><span class="p">(</span><span class="n">java</span><span class="p">.</span><span class="na">sql</span><span class="p">.</span><span class="na">Timestamp</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>经过更新后的 <code>TableSchema</code>，时间属性列的 <code>LogicalType</code> 就是用特殊 <code>TimestampKind</code> 表征的 <code>TimestampType</code>。</p>
+
+<h3 id="转换到-calcite">转换到 Calcite</h3>
+
+<p>在 <code>DatabaseCalciteSchema</code> 中， Flink SQL 中注册的表被转换成 <code>Calcite</code> 中使用的表：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">class</span> <span class="nf">DatabaseCalciteSchema</span> <span class="kd">extends</span> <span class="nf">FlinkSchema</span> <span class="p">{</span>
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="nf">Table</span> <span class="n">getTable</span><span class="p">(</span><span class="n">String</span> <span class="nf">tableName</span><span class="p">)</span> <span class="p">{</span>
+		<span class="n">ObjectPath</span> <span class="nf">tablePath</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectPath</span><span class="p">(</span><span class="n">databaseName</span><span class="p">,</span> <span class="n">tableName</span><span class="p">);</span>
+
+		<span class="k">try</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">catalog</span><span class="p">.</span><span class="na">tableExists</span><span class="p">(</span><span class="n">tablePath</span><span class="p">))</span> <span class="p">{</span>
+				<span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+			<span class="p">}</span>
+
+			<span class="n">CatalogBaseTable</span> <span class="nf">table</span> <span class="o">=</span> <span class="n">catalog</span><span class="p">.</span><span class="na">getTable</span><span class="p">(</span><span class="n">tablePath</span><span class="p">);</span>
+
+			<span class="c1">//将 Flink Catalog 中注册的表转换为 Calcite 中的 Table
+</span><span class="c1"></span>			<span class="k">if</span> <span class="p">(</span><span class="n">table</span> <span class="nf">instanceof</span> <span class="n">QueryOperationCatalogView</span><span class="p">)</span> <span class="p">{</span>
+				<span class="n">QueryOperationCatalogView</span> <span class="nf">view</span> <span class="o">=</span> <span class="p">(</span><span class="n">QueryOperationCatalogView</span><span class="p">)</span> <span class="n">table</span><span class="p">;</span>
+				<span class="n">QueryOperation</span> <span class="nf">operation</span> <span class="o">=</span> <span class="n">view</span><span class="p">.</span><span class="na">getQueryOperation</span><span class="p">();</span>
+				<span class="k">if</span> <span class="p">(</span><span class="n">operation</span> <span class="nf">instanceof</span> <span class="n">DataStreamQueryOperation</span><span class="p">)</span> <span class="p">{</span>
+					<span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">qualifiedName</span> <span class="o">=</span> <span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="n">catalogName</span><span class="p">,</span> <span class="n">databaseName</span><span class="p">,</span> <span class="n">tableName</span><span class="p">);</span>
+					<span class="p">((</span><span class="n">DataStreamQueryOperation</span><span class="p">)</span> <span class="n">operation</span><span class="p">).</span><span class="na">setQualifiedName</span><span class="p">(</span><span class="n">qualifiedName</span><span class="p">);</span>
+				<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">operation</span> <span class="nf">instanceof</span> <span class="n">RichTableSourceQueryOperation</span><span class="p">)</span> <span class="p">{</span>
+					<span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">qualifiedName</span> <span class="o">=</span> <span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="n">catalogName</span><span class="p">,</span> <span class="n">databaseName</span><span class="p">,</span> <span class="n">tableName</span><span class="p">);</span>
+					<span class="p">((</span><span class="n">RichTableSourceQueryOperation</span><span class="p">)</span> <span class="n">operation</span><span class="p">).</span><span class="na">setQualifiedName</span><span class="p">(</span><span class="n">qualifiedName</span><span class="p">);</span>
+				<span class="p">}</span>
+				<span class="k">return</span> <span class="n">QueryOperationCatalogViewTable</span><span class="p">.</span><span class="na">createCalciteTable</span><span class="p">(</span><span class="n">view</span><span class="p">);</span>
+			<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">table</span> <span class="nf">instanceof</span> <span class="n">ConnectorCatalogTable</span><span class="p">)</span> <span class="p">{</span>
+				<span class="k">return</span> <span class="n">convertConnectorTable</span><span class="p">((</span><span class="n">ConnectorCatalogTable</span><span class="o">&lt;?</span><span class="p">,</span> <span class="o">?&gt;</span><span class="p">)</span> <span class="n">table</span><span class="p">,</span> <span class="n">tablePath</span><span class="p">);</span>
+			<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">table</span> <span class="nf">instanceof</span> <span class="n">CatalogTable</span><span class="p">)</span> <span class="p">{</span>
+				<span class="k">return</span> <span class="n">convertCatalogTable</span><span class="p">(</span><span class="n">tablePath</span><span class="p">,</span> <span class="p">(</span><span class="n">CatalogTable</span><span class="p">)</span> <span class="n">table</span><span class="p">);</span>
+			<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+				<span class="k">throw</span> <span class="k">new</span> <span class="n">TableException</span><span class="p">(</span><span class="s">&#34;Unsupported table type: &#34;</span> <span class="o">+</span> <span class="n">table</span><span class="p">);</span>
+			<span class="p">}</span>
+		<span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">TableNotExistException</span> <span class="o">|</span> <span class="n">CatalogException</span> <span class="nf">e</span><span class="p">)</span> <span class="p">{</span>
+			<span class="c1">// TableNotExistException should never happen, because we are checking it exists
+</span><span class="c1"></span>			<span class="c1">// via catalog.tableExists
+</span><span class="c1"></span>			<span class="k">throw</span> <span class="k">new</span> <span class="n">TableException</span><span class="p">(</span><span class="n">format</span><span class="p">(</span>
+					<span class="s">&#34;A failure occurred when accessing table. Table path [%s, %s, %s]&#34;</span><span class="p">,</span>
+					<span class="n">catalogName</span><span class="p">,</span>
+					<span class="n">databaseName</span><span class="p">,</span>
+					<span class="n">tableName</span><span class="p">),</span> <span class="n">e</span><span class="p">);</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>在 Flink SQL 中定义的表结构 <code>TableSchema</code> 也会经过 <code>FlinkTypeFactory</code> 转换，<code>LogicalType</code>也会被转换成 Calcite 内部使用的 <code>RelDataType</code>:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="cm">/**
+</span><span class="cm">  * Flink specific type factory that represents the interface between Flink&#39;s [[LogicalType]]
+</span><span class="cm">  * and Calcite&#39;s [[RelDataType]].
+</span><span class="cm">  */</span>
+<span class="k">class</span> <span class="nc">FlinkTypeFactory</span><span class="o">(</span><span class="n">typeSystem</span><span class="k">:</span> <span class="kt">RelDataTypeSystem</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">JavaTypeFactoryImpl</span><span class="o">(</span><span class="n">typeSystem</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="n">createFieldTypeFromLogicalType</span><span class="o">(</span><span class="n">t</span><span class="k">:</span> <span class="kt">LogicalType</span><span class="o">)</span><span class="k">:</span> <span class="kt">RelDataType</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="o">......</span>
+    <span class="k">val</span> <span class="n">relType</span> <span class="k">=</span> <span class="n">t</span><span class="o">.</span><span class="n">getTypeRoot</span> <span class="k">match</span> <span class="o">{</span>
+      <span class="k">case</span> <span class="nc">LogicalTypeRoot</span><span class="o">.</span><span class="nc">TIMESTAMP_WITHOUT_TIME_ZONE</span> <span class="k">=&gt;</span>
+        <span class="k">val</span> <span class="n">timestampType</span> <span class="k">=</span> <span class="n">t</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">TimestampType</span><span class="o">]</span>
+        <span class="n">timestampType</span><span class="o">.</span><span class="n">getKind</span> <span class="k">match</span> <span class="o">{</span>
+          <span class="c1">//时间戳类型识别出常规的时间戳和时间属性
+</span><span class="c1"></span>          <span class="k">case</span> <span class="nc">TimestampKind</span><span class="o">.</span><span class="nc">PROCTIME</span> <span class="k">=&gt;</span> <span class="n">createProctimeIndicatorType</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span>
+          <span class="k">case</span> <span class="nc">TimestampKind</span><span class="o">.</span><span class="nc">ROWTIME</span> <span class="k">=&gt;</span> <span class="n">createRowtimeIndicatorType</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span>
+          <span class="k">case</span> <span class="nc">TimestampKind</span><span class="o">.</span><span class="nc">REGULAR</span> <span class="k">=&gt;</span> <span class="n">createSqlType</span><span class="o">(</span><span class="nc">TIMESTAMP</span><span class="o">)</span>
+        <span class="o">}</span>
+      <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span>
+        <span class="n">seenTypes</span><span class="o">.</span><span class="n">get</span><span class="o">(</span><span class="n">t</span><span class="o">)</span> <span class="k">match</span> <span class="o">{</span>
+          <span class="k">case</span> <span class="nc">Some</span><span class="o">(</span><span class="n">retType</span><span class="k">:</span> <span class="kt">RelDataType</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">retType</span>
+          <span class="k">case</span> <span class="nc">None</span> <span class="k">=&gt;</span>
+            <span class="k">val</span> <span class="n">refType</span> <span class="k">=</span> <span class="n">newRelDataType</span><span class="o">()</span>
+            <span class="n">seenTypes</span><span class="o">.</span><span class="n">put</span><span class="o">(</span><span class="n">t</span><span class="o">,</span> <span class="n">refType</span><span class="o">)</span>
+            <span class="n">refType</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="o">.....</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>经过这一步转换，时间属性被转换成 <code>TimeIndicatorRelDataType</code> 类型。</p>
+
+<h3 id="查询计划转换">查询计划转换</h3>
+
+<p>在 Calcite 优化查询计划是，会识别特殊语句中的时间属性，并转换成对应的 RelNode。例如，在 <code>FlinkLogicalJoin</code> 中，如果关联条件中包含了时间窗口，就会被转换为 <code>StreamExecWindowJoin</code>；而不包含时间窗口的 <code>FlinkLogicalJoin</code> 则会被转换为 <code>StreamExecJoin</code>。其区别就在于对时间属性的识别：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="cm">/**
+</span><span class="cm">  * Rule that converts non-SEMI/ANTI [[FlinkLogicalJoin]] with window bounds in join condition
+</span><span class="cm">  * to [[StreamExecWindowJoin]].
+</span><span class="cm">  */</span>
+<span class="kd">class</span> <span class="nf">StreamExecWindowJoinRule</span>
+  <span class="kd">extends</span> <span class="nf">ConverterRule</span><span class="p">(</span>
+    <span class="n">classOf</span><span class="p">[</span><span class="n">FlinkLogicalJoin</span><span class="p">],</span>
+    <span class="n">FlinkConventions</span><span class="p">.</span><span class="na">LOGICAL</span><span class="p">,</span>
+    <span class="n">FlinkConventions</span><span class="p">.</span><span class="na">STREAM_PHYSICAL</span><span class="p">,</span>
+    <span class="s">&#34;StreamExecWindowJoinRule&#34;</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="n">override</span> <span class="nf">def</span> <span class="n">matches</span><span class="p">(</span><span class="n">call</span><span class="o">:</span> <span class="n">RelOptRuleCall</span><span class="p">)</span><span class="o">:</span> <span class="n">Boolean</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="p">......</span>
+
+    <span class="n">val</span> <span class="nf">tableConfig</span> <span class="o">=</span> <span class="n">FlinkRelOptUtil</span><span class="p">.</span><span class="na">getTableConfigFromContext</span><span class="p">(</span><span class="n">join</span><span class="p">)</span>
+    <span class="c1">//提取时间窗口的边界
+</span><span class="c1"></span>    <span class="n">val</span> <span class="p">(</span><span class="n">windowBounds</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="n">WindowJoinUtil</span><span class="p">.</span><span class="na">extractWindowBoundsFromPredicate</span><span class="p">(</span>
+      <span class="n">join</span><span class="p">.</span><span class="na">getCondition</span><span class="p">,</span>
+      <span class="n">join</span><span class="p">.</span><span class="na">getLeft</span><span class="p">.</span><span class="na">getRowType</span><span class="p">.</span><span class="na">getFieldCount</span><span class="p">,</span>
+      <span class="n">joinRowType</span><span class="p">,</span>
+      <span class="n">join</span><span class="p">.</span><span class="na">getCluster</span><span class="p">.</span><span class="na">getRexBuilder</span><span class="p">,</span>
+      <span class="n">tableConfig</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">windowBounds</span><span class="p">.</span><span class="na">isDefined</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">//如果识别到时间窗口，该规则匹配
+</span><span class="c1"></span>      <span class="k">if</span> <span class="p">(</span><span class="n">windowBounds</span><span class="p">.</span><span class="na">get</span><span class="p">.</span><span class="na">isEventTime</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kc">true</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="c1">// Check that no event-time attributes are in the input because the processing time window
+</span><span class="c1"></span>        <span class="c1">// join does not correctly hold back watermarks.
+</span><span class="c1"></span>        <span class="c1">// We rely on projection pushdown to remove unused attributes before the join.
+</span><span class="c1"></span>        <span class="o">!</span><span class="n">joinRowType</span><span class="p">.</span><span class="na">getFieldList</span><span class="p">.</span><span class="na">exists</span><span class="p">(</span><span class="n">f</span> <span class="o">=&gt;</span> <span class="n">FlinkTypeFactory</span><span class="p">.</span><span class="na">isRowtimeIndicatorType</span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="na">getType</span><span class="p">))</span>
+      <span class="p">}</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="c1">// the given join does not have valid window bounds. We cannot translate it.
+</span><span class="c1"></span>      <span class="kc">false</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>窗口聚合也是同理，只是规则匹配中是对 <code>HOP</code>, <code>TUMBLE</code> 等窗口函数的识别。</p>
+
+<h3 id="物化时间属性">物化时间属性</h3>
+
+<p>时间属性是一个逻辑上的列，因为它并不真实对应底层 <code>DataStream</code> 元素中具体的字段。因此，如果在计算操作中要用到时间属性列的值，就需要“物化”（materialized）时间属性。这一部分的逻辑主要是在 <code>RelTimeIndicatorConverter</code> 中。</p>
+
+<p>对于 PROCTIME 时间属性，就是将其转换为对内置函数 <code>FlinkSqlOperatorTable.PROCTIME_MATERIALIZE</code> 的调用；而对于 ROWTIME 时间属性，则是对其进行一次强制的类型转换，转换为常规的时间戳。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="cm">/**
+</span><span class="cm">  * Helper class for shared logic of materializing time attributes in [[RelNode]] and [[RexNode]].
+</span><span class="cm">  */</span>
+<span class="k">class</span> <span class="nc">RexTimeIndicatorMaterializerUtils</span><span class="o">(</span><span class="n">rexBuilder</span><span class="k">:</span> <span class="kt">RexBuilder</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="n">materialize</span><span class="o">(</span><span class="n">expr</span><span class="k">:</span> <span class="kt">RexNode</span><span class="o">)</span><span class="k">:</span> <span class="kt">RexNode</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">isTimeIndicatorType</span><span class="o">(</span><span class="n">expr</span><span class="o">.</span><span class="n">getType</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">isRowtimeIndicatorType</span><span class="o">(</span><span class="n">expr</span><span class="o">.</span><span class="n">getType</span><span class="o">))</span> <span class="o">{</span>
+        <span class="c1">// cast rowtime indicator to regular timestamp
+</span><span class="c1"></span>        <span class="n">rexBuilder</span><span class="o">.</span><span class="n">makeAbstractCast</span><span class="o">(</span><span class="n">timestamp</span><span class="o">(</span><span class="n">expr</span><span class="o">.</span><span class="n">getType</span><span class="o">.</span><span class="n">isNullable</span><span class="o">),</span> <span class="n">expr</span><span class="o">)</span>
+      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+        <span class="c1">// generate proctime access
+</span><span class="c1"></span>        <span class="n">rexBuilder</span><span class="o">.</span><span class="n">makeCall</span><span class="o">(</span><span class="nc">FlinkSqlOperatorTable</span><span class="o">.</span><span class="nc">PROCTIME_MATERIALIZE</span><span class="o">,</span> <span class="n">expr</span><span class="o">)</span>
+      <span class="o">}</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="n">expr</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="生成物理执行计划">生成物理执行计划</h3>
+
+<p>SQL 的查询计划最终需要被转换为 Flink 的算子，即生成物理执行计划。对于一个查询计划来说，首先需要进行转换的就是 Scan 操作，在里将底层的 POJO、Tuple 等对象映射为 Table 中使用的 Row。在这里就需要考虑到时间属性的映射。</p>
+
+<p>首先，我们来看下在 <code>StreamExecDataStreamScan</code> 中是如何完成字段映射的转换的：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="k">class</span> <span class="nc">StreamExecDataStreamScan</span><span class="o">(</span>
+    <span class="n">cluster</span><span class="k">:</span> <span class="kt">RelOptCluster</span><span class="o">,</span>
+    <span class="n">traitSet</span><span class="k">:</span> <span class="kt">RelTraitSet</span><span class="o">,</span>
+    <span class="n">table</span><span class="k">:</span> <span class="kt">RelOptTable</span><span class="o">,</span>
+    <span class="n">outputRowType</span><span class="k">:</span> <span class="kt">RelDataType</span><span class="o">)</span>
+  <span class="k">extends</span> <span class="nc">TableScan</span><span class="o">(</span><span class="n">cluster</span><span class="o">,</span> <span class="n">traitSet</span><span class="o">,</span> <span class="n">table</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">override</span> <span class="k">protected</span> <span class="k">def</span> <span class="n">translateToPlanInternal</span><span class="o">(</span>
+      <span class="n">planner</span><span class="k">:</span> <span class="kt">StreamPlanner</span><span class="o">)</span><span class="k">:</span> <span class="kt">Transformation</span><span class="o">[</span><span class="kt">BaseRow</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">config</span> <span class="k">=</span> <span class="n">planner</span><span class="o">.</span><span class="n">getTableConfig</span>
+    <span class="k">val</span> <span class="n">inputDataStream</span><span class="k">:</span> <span class="kt">DataStream</span><span class="o">[</span><span class="kt">Any</span><span class="o">]</span> <span class="k">=</span> <span class="n">dataStreamTable</span><span class="o">.</span><span class="n">dataStream</span>
+    <span class="k">val</span> <span class="n">transform</span> <span class="k">=</span> <span class="n">inputDataStream</span><span class="o">.</span><span class="n">getTransformation</span>
+
+    <span class="k">val</span> <span class="n">rowtimeExpr</span> <span class="k">=</span> <span class="n">getRowtimeExpression</span><span class="o">(</span><span class="n">planner</span><span class="o">.</span><span class="n">getRelBuilder</span><span class="o">)</span>
+
+    <span class="c1">// when there is row time extraction expression, we need internal conversion
+</span><span class="c1"></span>    <span class="c1">// when the physical type of the input date stream is not BaseRow, we need internal conversion.
+</span><span class="c1"></span>    <span class="k">if</span> <span class="o">(</span><span class="n">rowtimeExpr</span><span class="o">.</span><span class="n">isDefined</span> <span class="o">||</span> <span class="nc">ScanUtil</span><span class="o">.</span><span class="n">needsConversion</span><span class="o">(</span><span class="n">dataStreamTable</span><span class="o">.</span><span class="n">dataType</span><span class="o">))</span> <span class="o">{</span>
+
+      <span class="c1">// extract time if the index is -1 or -2.
+</span><span class="c1"></span>      <span class="k">val</span> <span class="o">(</span><span class="n">extractElement</span><span class="o">,</span> <span class="n">resetElement</span><span class="o">)</span> <span class="k">=</span>
+        <span class="k">if</span> <span class="o">(</span><span class="nc">ScanUtil</span><span class="o">.</span><span class="n">hasTimeAttributeField</span><span class="o">(</span><span class="n">dataStreamTable</span><span class="o">.</span><span class="n">fieldIndexes</span><span class="o">))</span> <span class="o">{</span>
+          <span class="o">(</span><span class="s">s&#34;ctx.</span><span class="si">$ELEMENT</span><span class="s"> = </span><span class="si">$ELEMENT</span><span class="s">;&#34;</span><span class="o">,</span> <span class="s">s&#34;ctx.</span><span class="si">$ELEMENT</span><span class="s"> = null;&#34;</span><span class="o">)</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+          <span class="o">(</span><span class="s">&#34;&#34;</span><span class="o">,</span> <span class="s">&#34;&#34;</span><span class="o">)</span>
+        <span class="o">}</span>
+      <span class="k">val</span> <span class="n">ctx</span> <span class="k">=</span> <span class="nc">CodeGeneratorContext</span><span class="o">(</span><span class="n">config</span><span class="o">).</span><span class="n">setOperatorBaseClass</span><span class="o">(</span>
+        <span class="n">classOf</span><span class="o">[</span><span class="kt">AbstractProcessStreamOperator</span><span class="o">[</span><span class="kt">BaseRow</span><span class="o">]])</span>
+      <span class="c1">//生成字段映射的代码
+</span><span class="c1"></span>      <span class="nc">ScanUtil</span><span class="o">.</span><span class="n">convertToInternalRow</span><span class="o">(</span>
+        <span class="n">ctx</span><span class="o">,</span>
+        <span class="n">transform</span><span class="o">,</span>
+        <span class="n">dataStreamTable</span><span class="o">.</span><span class="n">fieldIndexes</span><span class="o">,</span> <span class="c1">//字段索引
+</span><span class="c1"></span>        <span class="n">dataStreamTable</span><span class="o">.</span><span class="n">dataType</span><span class="o">,</span>
+        <span class="n">getRowType</span><span class="o">,</span>
+        <span class="n">getTable</span><span class="o">.</span><span class="n">getQualifiedName</span><span class="o">,</span>
+        <span class="n">config</span><span class="o">,</span>
+        <span class="n">rowtimeExpr</span><span class="o">,</span> <span class="c1">//RowTime 表达式
+</span><span class="c1"></span>        <span class="n">beforeConvert</span> <span class="k">=</span> <span class="n">extractElement</span><span class="o">,</span>
+        <span class="n">afterConvert</span> <span class="k">=</span> <span class="n">resetElement</span><span class="o">)</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="n">transform</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">Transformation</span><span class="o">[</span><span class="kt">BaseRow</span><span class="o">]]</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="c1">//获取 RowTime 时间属性的表达式
+</span><span class="c1"></span>  <span class="k">private</span> <span class="k">def</span> <span class="n">getRowtimeExpression</span><span class="o">(</span><span class="n">relBuilder</span><span class="k">:</span> <span class="kt">FlinkRelBuilder</span><span class="o">)</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">RexNode</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">fieldIdxs</span> <span class="k">=</span> <span class="n">dataStreamTable</span><span class="o">.</span><span class="n">fieldIndexes</span>
+
+    <span class="k">if</span> <span class="o">(!</span><span class="n">fieldIdxs</span><span class="o">.</span><span class="n">contains</span><span class="o">(</span><span class="nc">ROWTIME_STREAM_MARKER</span><span class="o">))</span> <span class="o">{</span>
+      <span class="nc">None</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span> 
+      <span class="c1">//根据字段映射中的特殊marker来查找 rowtime 字段
+</span><span class="c1"></span>      <span class="k">val</span> <span class="n">rowtimeField</span> <span class="k">=</span> <span class="n">dataStreamTable</span><span class="o">.</span><span class="n">fieldNames</span><span class="o">(</span><span class="n">fieldIdxs</span><span class="o">.</span><span class="n">indexOf</span><span class="o">(</span><span class="nc">ROWTIME_STREAM_MARKER</span><span class="o">))</span>
+
+      <span class="c1">// get expression to extract timestamp
+</span><span class="c1"></span>      <span class="n">fromDataTypeToLogicalType</span><span class="o">(</span><span class="n">dataStreamTable</span><span class="o">.</span><span class="n">dataType</span><span class="o">)</span> <span class="k">match</span> <span class="o">{</span>
+        <span class="c1">//如果这个datastream本身已经完成了 rowtime 时间属性的提取
+</span><span class="c1"></span>        <span class="k">case</span> <span class="n">dataType</span><span class="k">:</span> <span class="kt">RowType</span>
+          <span class="k">if</span> <span class="n">dataType</span><span class="o">.</span><span class="n">getFieldNames</span><span class="o">.</span><span class="n">contains</span><span class="o">(</span><span class="n">rowtimeField</span><span class="o">)</span> <span class="o">&amp;&amp;</span>
+              <span class="nc">TypeCheckUtils</span><span class="o">.</span><span class="n">isRowTime</span><span class="o">(</span><span class="n">dataType</span><span class="o">.</span><span class="n">getTypeAt</span><span class="o">(</span><span class="n">dataType</span><span class="o">.</span><span class="n">getFieldIndex</span><span class="o">(</span><span class="n">rowtimeField</span><span class="o">)))</span> <span class="k">=&gt;</span>
+          <span class="c1">// if rowtimeField already existed in the data stream, use the default rowtime
+</span><span class="c1"></span>          <span class="nc">None</span>
+        <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span>
+          <span class="c1">// 用内置函数 StreamRecordTimestampSqlFunction 来提取 rowtime 时间属性
+</span><span class="c1"></span>          <span class="c1">// extract timestamp from StreamRecord
+</span><span class="c1"></span>          <span class="nc">Some</span><span class="o">(</span>
+            <span class="n">relBuilder</span><span class="o">.</span><span class="n">cast</span><span class="o">(</span>
+              <span class="n">relBuilder</span><span class="o">.</span><span class="n">call</span><span class="o">(</span><span class="k">new</span> <span class="nc">StreamRecordTimestampSqlFunction</span><span class="o">),</span>
+              <span class="n">relBuilder</span><span class="o">.</span><span class="n">getTypeFactory</span><span class="o">.</span><span class="n">createFieldTypeFromLogicalType</span><span class="o">(</span>
+                <span class="k">new</span> <span class="nc">TimestampType</span><span class="o">(</span><span class="kc">true</span><span class="o">,</span> <span class="nc">TimestampKind</span><span class="o">.</span><span class="nc">ROWTIME</span><span class="o">,</span> <span class="mi">3</span><span class="o">)).</span><span class="n">getSqlTypeName</span><span class="o">))</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>在进行字段映射的时候，一个关键的处理就是时间属性要怎么映射。ROWTIME 时间属性被转换为 <code>StreamRecordTimestampSqlFunction</code> 的调用。在前面物化时间属性的阶段，我们已经看到，PROCTIME 时间属性已经被转换为内置函数 <code>FlinkSqlOperatorTable.PROCTIME_MATERIALIZE</code> 的调用，而对于 ROWTIME 时间属性，只是进行了一次强制的类型转换。这主要是因为，PROCTIME 在流处理中，在不同的算子中，每一次调用都应该获取当前的系统时间；而对于 ROWTIME 而言，它的取值是固定的，因此只需要在最开始完成一次转换即可。RPOCTIME 和 ROWTIME 的取值最终都被转换成对内置函数的调用。</p>
+
+<p>这个函数调用的代码生成就比较简单了，RPOCTIME 转换成 <code>context.timerService().currentProcessingTime()</code>，ROWTIME 转换成 <code>context.timestamp()</code>，具体的代码生成可以参考 <code>GenerateUtils</code>。</p>
+
+<p>由于 PROCTIME 并不需要在 Scan 节点进行物化，因此在这里直接用 null 值替代，在后续需要的时候重新进行计算。</p>
+
+<p>而对于从 <code>TableSource</code> 注册而来的表，由于它不像 <code>DataStream</code> 那样，在定义 ROWTIME 时间属性之前已经完成了 timestamp 和 watermark 的指定。因此在转换 <code>TableSource</code> 的过程中，如果定义了 ROWTIME 时间属性，除了需要提取 ROWTIME 时间属性的值以外，还需要指定 watermark。</p>
+
+<p><code>RowtimeAttributeDescriptor</code> 是对 ROWTIME 时间属性的描述，包括如何提取事件时间的 <code>TimestampExtractor</code>：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="cm">/**
+</span><span class="cm"> * The {@link FieldComputer} interface returns an expression to compute the field of the table
+</span><span class="cm"> * schema of a {@link TableSource} from one or more fields of the {@link TableSource}&#39;s return type.
+</span><span class="cm"> *
+</span><span class="cm"> * @param &lt;T&gt; The result type of the provided expression.
+</span><span class="cm"> */</span>
+<span class="kd">public</span> <span class="nf">interface</span> <span class="n">FieldComputer</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="p">{</span>
+	<span class="n">String</span><span class="p">[]</span> <span class="nf">getArgumentFields</span><span class="p">();</span>
+
+
+	<span class="n">TypeInformation</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="nf">getReturnType</span><span class="p">();</span>
+
+	<span class="kt">void</span> <span class="nf">validateArgumentFields</span><span class="p">(</span><span class="n">TypeInformation</span><span class="o">&lt;?&gt;</span><span class="p">[]</span> <span class="n">argumentFieldTypes</span><span class="p">);</span>
+
+	<span class="cm">/**
+</span><span class="cm">	 * Returns the {@link Expression} that computes the value of the field.
+</span><span class="cm">	 *
+</span><span class="cm">	 * @param fieldAccesses Field access expressions for the argument fields.
+</span><span class="cm">	 * @return The expression to extract the timestamp from the {@link TableSource} return type.
+</span><span class="cm">	 */</span>
+	<span class="n">Expression</span> <span class="nf">getExpression</span><span class="p">(</span><span class="n">ResolvedFieldReference</span><span class="p">[]</span> <span class="nf">fieldAccesses</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">//Provides an expression to extract the timestamp for a rowtime attribute.
+</span><span class="c1"></span><span class="kd">public</span> <span class="nf">abstract</span> <span class="kd">class</span> <span class="nf">TimestampExtractor</span> <span class="kd">implements</span> <span class="nf">FieldComputer</span><span class="o">&lt;</span><span class="n">Long</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Descriptor</span> <span class="p">{</span>
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="nf">TypeInformation</span><span class="o">&lt;</span><span class="n">Long</span><span class="o">&gt;</span> <span class="nf">getReturnType</span><span class="p">()</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="n">Types</span><span class="p">.</span><span class="na">LONG</span><span class="p">;</span> <span class="c1">//返回类型是 Long
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>通常提取 ROWTIME 的方式是根据已有的字段来生成，即：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">final</span> <span class="kd">class</span> <span class="nf">ExistingField</span> <span class="kd">extends</span> <span class="nf">TimestampExtractor</span> <span class="p">{</span>
+	<span class="kd">private</span> <span class="nf">String</span> <span class="n">field</span><span class="p">;</span>
+	
+	<span class="cm">/**
+</span><span class="cm">	 * Returns an {@link Expression} that casts a {@link Long}, {@link Timestamp}, or
+</span><span class="cm">	 * timestamp formatted {@link String} field (e.g., &#34;2018-05-28 12:34:56.000&#34;)
+</span><span class="cm">	 * into a rowtime attribute.
+</span><span class="cm">	 */</span>
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="nf">Expression</span> <span class="n">getExpression</span><span class="p">(</span><span class="n">ResolvedFieldReference</span><span class="p">[]</span> <span class="nf">fieldAccesses</span><span class="p">)</span> <span class="p">{</span>
+		<span class="n">ResolvedFieldReference</span> <span class="nf">fieldAccess</span> <span class="o">=</span> <span class="n">fieldAccesses</span><span class="p">[</span><span class="n">0</span><span class="p">];</span>
+		<span class="n">DataType</span> <span class="nf">type</span> <span class="o">=</span> <span class="n">fromLegacyInfoToDataType</span><span class="p">(</span><span class="n">fieldAccess</span><span class="p">.</span><span class="na">resultType</span><span class="p">());</span>
+
+		<span class="c1">//字段引用的表达式
+</span><span class="c1"></span>		<span class="n">FieldReferenceExpression</span> <span class="nf">fieldReferenceExpr</span> <span class="o">=</span> <span class="k">new</span> <span class="n">FieldReferenceExpression</span><span class="p">(</span>
+				<span class="n">fieldAccess</span><span class="p">.</span><span class="na">name</span><span class="p">(),</span>
+				<span class="n">type</span><span class="p">,</span>
+				<span class="n">0</span><span class="p">,</span>
+				<span class="n">fieldAccess</span><span class="p">.</span><span class="na">fieldIndex</span><span class="p">());</span>
+		<span class="c1">//支持的输入字段类型，包括 BIGINT、TIMESTAMP_WITHOUT_TIME_ZONE 和 VARCHAR
+</span><span class="c1"></span>		<span class="k">switch</span> <span class="p">(</span><span class="n">type</span><span class="p">.</span><span class="na">getLogicalType</span><span class="p">().</span><span class="na">getTypeRoot</span><span class="p">())</span> <span class="p">{</span>
+			<span class="k">case</span> <span class="n">BIGINT</span><span class="o">:</span>
+			<span class="k">case</span> <span class="n">TIMESTAMP_WITHOUT_TIME_ZONE</span><span class="o">:</span>
+				<span class="c1">//直接引用相应的字段即可
+</span><span class="c1"></span>				<span class="k">return</span> <span class="n">fieldReferenceExpr</span><span class="p">;</span>
+			<span class="k">case</span> <span class="n">VARCHAR</span><span class="o">:</span>
+				<span class="c1">//进行一次类型转换
+</span><span class="c1"></span>				<span class="n">DataType</span> <span class="nf">outputType</span> <span class="o">=</span> <span class="n">TIMESTAMP</span><span class="p">(</span><span class="n">3</span><span class="p">).</span><span class="na">bridgedTo</span><span class="p">(</span><span class="n">Timestamp</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+				<span class="k">return</span> <span class="k">new</span> <span class="n">CallExpression</span><span class="p">(</span>
+						<span class="n">CAST</span><span class="p">,</span>
+						<span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="n">fieldReferenceExpr</span><span class="p">,</span> <span class="n">typeLiteral</span><span class="p">(</span><span class="n">outputType</span><span class="p">)),</span>
+						<span class="n">outputType</span><span class="p">);</span>
+			<span class="k">default</span><span class="o">:</span>
+				<span class="k">throw</span> <span class="k">new</span> <span class="n">RuntimeException</span><span class="p">(</span><span class="s">&#34;Unsupport type: &#34;</span> <span class="o">+</span> <span class="n">type</span><span class="p">);</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>TimestampExtractor</code> 提供的提取时间属性的 <code>Expression</code>, 要先被转换为 <code>RexNode</code> 之后才可以被用在代码生成中，通过 <code>TableSourceUtil.getRowtimeExtractionExpression</code> 完成。如同前面提到对 <code>StreamRecordTimestampSqlFunction</code> 调用，这两种获得时间属性的的方式本质上是一样的，只是调用的函数不一致。</p>
+
+<p>在完成了字段映射和时间属性的提取后，还需要指定 watermark，这正是 <code>RowtimeAttributeDescriptor</code> 中 <code>WatermarkStrategy</code> 的用处：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="k">class</span> <span class="nc">StreamExecTableSourceScan</span><span class="o">(</span>
+    <span class="n">cluster</span><span class="k">:</span> <span class="kt">RelOptCluster</span><span class="o">,</span>
+    <span class="n">traitSet</span><span class="k">:</span> <span class="kt">RelTraitSet</span><span class="o">,</span>
+    <span class="n">relOptTable</span><span class="k">:</span> <span class="kt">FlinkRelOptTable</span><span class="o">)</span>
+  <span class="k">extends</span> <span class="nc">PhysicalTableSourceScan</span><span class="o">(</span><span class="n">cluster</span><span class="o">,</span> <span class="n">traitSet</span><span class="o">,</span> <span class="n">relOptTable</span><span class="o">)</span> <span class="o">{</span>
+
+  <span class="k">override</span> <span class="k">protected</span> <span class="k">def</span> <span class="n">translateToPlanInternal</span><span class="o">(</span>
+      <span class="n">planner</span><span class="k">:</span> <span class="kt">StreamPlanner</span><span class="o">)</span><span class="k">:</span> <span class="kt">Transformation</span><span class="o">[</span><span class="kt">BaseRow</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">config</span> <span class="k">=</span> <span class="n">planner</span><span class="o">.</span><span class="n">getTableConfig</span>
+    <span class="k">val</span> <span class="n">inputTransform</span> <span class="k">=</span> <span class="n">getSourceTransformation</span><span class="o">(</span><span class="n">planner</span><span class="o">.</span><span class="n">getExecEnv</span><span class="o">)</span>
+
+    <span class="c1">//1. 字段映射和时间提取
+</span><span class="c1"></span>    <span class="o">......</span>
+
+    <span class="c1">//2. 指定watermark
+</span><span class="c1"></span>    <span class="k">val</span> <span class="n">withWatermarks</span> <span class="k">=</span> <span class="k">if</span> <span class="o">(</span><span class="n">rowtimeDesc</span><span class="o">.</span><span class="n">isDefined</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">val</span> <span class="n">rowtimeFieldIdx</span> <span class="k">=</span> <span class="n">getRowType</span><span class="o">.</span><span class="n">getFieldNames</span><span class="o">.</span><span class="n">indexOf</span><span class="o">(</span><span class="n">rowtimeDesc</span><span class="o">.</span><span class="n">get</span><span class="o">.</span><span class="n">getAttributeName</span><span class="o">)</span>
+      <span class="k">val</span> <span class="n">watermarkStrategy</span> <span class="k">=</span> <span class="n">rowtimeDesc</span><span class="o">.</span><span class="n">get</span><span class="o">.</span><span class="n">getWatermarkStrategy</span>
+      <span class="n">watermarkStrategy</span> <span class="k">match</span> <span class="o">{</span>
+        <span class="k">case</span> <span class="n">p</span><span class="k">:</span> <span class="kt">PeriodicWatermarkAssigner</span> <span class="o">=&gt;</span>
+          <span class="k">val</span> <span class="n">watermarkGenerator</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">PeriodicWatermarkAssignerWrapper</span><span class="o">(</span><span class="n">rowtimeFieldIdx</span><span class="o">,</span> <span class="n">p</span><span class="o">)</span>
+          <span class="n">ingestedTable</span><span class="o">.</span><span class="n">assignTimestampsAndWatermarks</span><span class="o">(</span><span class="n">watermarkGenerator</span><span class="o">)</span>
+        <span class="k">case</span> <span class="n">p</span><span class="k">:</span> <span class="kt">PunctuatedWatermarkAssigner</span> <span class="o">=&gt;</span>
+          <span class="k">val</span> <span class="n">watermarkGenerator</span> <span class="k">=</span>
+            <span class="k">new</span> <span class="nc">PunctuatedWatermarkAssignerWrapper</span><span class="o">(</span><span class="n">rowtimeFieldIdx</span><span class="o">,</span> <span class="n">p</span><span class="o">,</span> <span class="n">producedDataType</span><span class="o">)</span>
+          <span class="n">ingestedTable</span><span class="o">.</span><span class="n">assignTimestampsAndWatermarks</span><span class="o">(</span><span class="n">watermarkGenerator</span><span class="o">)</span>
+        <span class="k">case</span> <span class="k">_:</span> <span class="kt">PreserveWatermarks</span> <span class="o">=&gt;</span>
+          <span class="c1">// The watermarks have already been provided by the underlying DataStream.
+</span><span class="c1"></span>          <span class="n">ingestedTable</span>
+      <span class="o">}</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="c1">// No need to generate watermarks if no rowtime attribute is specified.
+</span><span class="c1"></span>      <span class="n">ingestedTable</span>
+    <span class="o">}</span>
+    <span class="n">withWatermarks</span><span class="o">.</span><span class="n">getTransformation</span>
+
+  <span class="o">}</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>到这里，就完成了 ROWTIME 时间属性的提取的 watermark 的生成。 PROCTIME 在使用时按需要进行物化。</p>
+
+<h2 id="小结">小结</h2>
+
+<p>时间属性是广泛应用在窗口操作中，是流式 SQL 处理中非常重要的概念。本文对 Flink SQL 中时间属性的使用方法和具体实现进行了介绍。</p>
+
+<h2 id="参考">参考</h2>
+
+<ul>
+<li><a href="/2019/flink-source-code-time-and-window/">Flink 源码阅读笔记（12）- 时间、定时器和窗口</a></li>
+</ul>
+
+<p>-EOF-</p>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">原始链接</span>
+    <span class="item-content"><a href="https://blog.jrwang.me/2019/2019-09-16-flink-sourcecode-sql-time-attribute.md/">https://blog.jrwang.me/2019/2019-09-16-flink-sourcecode-sql-time-attribute.md/</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2019-09-29
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/flink/">Flink</a>
+          <a href="/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/">实时计算</a>
+          <a href="/tags/sql/">SQL</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/2019/aloha-introduce/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">Aloha：一个分布式任务调度框架</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/2019/2019-09-12-flink-sourcecode-sql-catalog/">
+            <span class="next-text nav-default">Flink 源码阅读笔记（16）- Flink SQL 的元数据管理</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+    <script src="https://utteranc.es/client.js"
+            repo="jrthe42/blog-comment"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/utterance">comments powered by utterances.</a></noscript>
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:jrthe42@gmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/jrthe42" class="iconfont icon-github" title="github"></a>
+      <a href="https://weibo.com/jrthe42" class="iconfont icon-weibo" title="weibo"></a>
+  <a href="https://blog.jrwang.me/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2015 - 
+    2019
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.f79f403f.min.js"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-66913886-2', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

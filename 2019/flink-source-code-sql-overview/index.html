@@ -630,7 +630,7 @@
 </div>
 <h3 id="sql-执行">SQL 执行</h3>
 
-<p>在得到 <code>Transformation</code> 后，利用 <code>Trasnformation</code> 生成 <code>StreamGraph</code> 后就可以提交 Flink 任务了。根据 <code>Trasnformation</code> 列表生成 <code>StreamGraph</code> 比较简单，依次将算子添加到 <code>StreamExecutionEnvironment</code> 即可。这里值得一提的一点在于，在 Blink Runner 中，Stream SQL 和 Batch SQL 都基于同样的 Streaming Runtime 架构，统一使用 <code>StreamExecutionEnvironment</code> 和 <code>Transformation</code> DAG。后续社区会统一 Stream 和 Batch 这两种模式的运行时环境、算子和 API 接口，Blink SQL Runner 算是率先的一个尝试。当然，在 Stream 和 Batch 模式下，算子内部的处理逻辑肯定是要单独进行优化的。Batch 任务运行在 <code>StreamExecutionEnvironment</code> 中需要进行一些特殊的设置，如调度模式，Shuffle 模式等等。</p>
+<p>在得到 <code>Transformation</code> 后，利用 <code>Transformation</code> 生成 <code>StreamGraph</code> 后就可以提交 Flink 任务了。根据 <code>Transformation</code> 列表生成 <code>StreamGraph</code> 比较简单，依次将算子添加到 <code>StreamExecutionEnvironment</code> 即可。这里值得一提的一点在于，在 Blink Runner 中，Stream SQL 和 Batch SQL 都基于同样的 Streaming Runtime 架构，统一使用 <code>StreamExecutionEnvironment</code> 和 <code>Transformation</code> DAG。后续社区会统一 Stream 和 Batch 这两种模式的运行时环境、算子和 API 接口，Blink SQL Runner 算是率先的一个尝试。当然，在 Stream 和 Batch 模式下，算子内部的处理逻辑肯定是要单独进行优化的。Batch 任务运行在 <code>StreamExecutionEnvironment</code> 中需要进行一些特殊的设置，如调度模式，Shuffle 模式等等。</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1

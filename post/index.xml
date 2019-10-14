@@ -6,7 +6,7 @@
     <description>Recent content in Posts on JR&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 15 Sep 2019 20:34:45 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 29 Sep 2019 20:05:03 +0800</lastBuildDate>
     
 	<atom:link href="https://blog.jrwang.me/post/index.xml" rel="self" type="application/rss+xml" />
     
@@ -18,6 +18,15 @@
       
       <guid>https://blog.jrwang.me/2019/aloha-introduce/</guid>
       <description>概览 Aloha 是一个基于 Scala 实现的分布式的任务调度和管理框架，提供插件式扩展功能，可以用来调度各种类型的任务。Aloha 的典型的应用场景是作为统一的任</description>
+    </item>
+    
+    <item>
+      <title>Flink 源码阅读笔记（17）- Flink SQL 中的时间属性</title>
+      <link>https://blog.jrwang.me/2019/2019-09-16-flink-sourcecode-sql-time-attribute.md/</link>
+      <pubDate>Sun, 29 Sep 2019 20:05:03 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/2019/2019-09-16-flink-sourcecode-sql-time-attribute.md/</guid>
+      <description>在流计算中，时间属性承担了一个极其重要的作用，所有基于时间的操作，例如窗口操作，都需要正确获取时间信息。我们曾经在Flink 源码阅读笔记（1</description>
     </item>
     
     <item>
