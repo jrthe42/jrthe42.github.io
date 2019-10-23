@@ -6,7 +6,7 @@
     <description>Recent content in Posts on JR&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 29 Sep 2019 20:05:03 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 19 Oct 2019 14:22:57 +0800</lastBuildDate>
     
 	<atom:link href="https://blog.jrwang.me/post/index.xml" rel="self" type="application/rss+xml" />
     
@@ -18,6 +18,15 @@
       
       <guid>https://blog.jrwang.me/2019/aloha-introduce/</guid>
       <description>概览 Aloha 是一个基于 Scala 实现的分布式的任务调度和管理框架，提供插件式扩展功能，可以用来调度各种类型的任务。Aloha 的典型的应用场景是作为统一的任</description>
+    </item>
+    
+    <item>
+      <title>Flink 源码阅读笔记（18）- Flink SQL 中的流和动态表</title>
+      <link>https://blog.jrwang.me/2019/2019-10-16-flink-sourcecode-stream-and-dynamic-table/</link>
+      <pubDate>Sat, 19 Oct 2019 14:22:57 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/2019/2019-10-16-flink-sourcecode-stream-and-dynamic-table/</guid>
+      <description>SQL 和关系代数在设计之初就针对的是静态的数据。静态数据是有界的，因此可以很容易地和表（关系）进行映射。但是对于一个不断变化的实时数据流而言，数</description>
     </item>
     
     <item>

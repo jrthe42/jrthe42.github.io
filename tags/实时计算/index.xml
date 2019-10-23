@@ -6,10 +6,19 @@
     <description>Recent content in 实时计算 on JR&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 29 Sep 2019 20:05:03 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 19 Oct 2019 14:22:57 +0800</lastBuildDate>
     
 	<atom:link href="https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Flink 源码阅读笔记（18）- Flink SQL 中的流和动态表</title>
+      <link>https://blog.jrwang.me/2019/2019-10-16-flink-sourcecode-stream-and-dynamic-table/</link>
+      <pubDate>Sat, 19 Oct 2019 14:22:57 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/2019/2019-10-16-flink-sourcecode-stream-and-dynamic-table/</guid>
+      <description>SQL 和关系代数在设计之初就针对的是静态的数据。静态数据是有界的，因此可以很容易地和表（关系）进行映射。但是对于一个不断变化的实时数据流而言，数</description>
+    </item>
     
     <item>
       <title>Flink 源码阅读笔记（17）- Flink SQL 中的时间属性</title>

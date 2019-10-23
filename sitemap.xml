@@ -17,48 +17,55 @@
   
   <url>
     <loc>https://blog.jrwang.me/tags/flink/</loc>
-    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>https://blog.jrwang.me/2019/2019-09-16-flink-sourcecode-sql-time-attribute.md/</loc>
-    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <loc>https://blog.jrwang.me/2019/2019-10-16-flink-sourcecode-stream-and-dynamic-table/</loc>
+    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/</loc>
-    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/post/</loc>
-    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/sql/</loc>
-    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/</loc>
-    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</loc>
+    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.jrwang.me/2019/2019-09-16-flink-sourcecode-sql-time-attribute.md/</loc>
     <lastmod>2019-09-29T20:05:03+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>

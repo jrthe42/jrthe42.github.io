@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Flink 源码阅读笔记（18）- Flink SQL 中的流和动态表 - JR&#39;s Blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="jrthe42" /><meta name="description" content="SQL 和关系代数在设计之初就针对的是静态的数据。静态数据是有界的，因此可以很容易地和表（关系）进行映射。但是对于一个不断变化的实时数据流而言，数" /><meta name="keywords" content="jrthe42, Blog, Programming" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.58.0 with theme even" />
+
+
+<link rel="canonical" href="https://blog.jrwang.me/2019/2019-10-16-flink-sourcecode-stream-and-dynamic-table/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+<link href="/dist/even.7d171193.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="Flink 源码阅读笔记（18）- Flink SQL 中的流和动态表" />
+<meta property="og:description" content="SQL 和关系代数在设计之初就针对的是静态的数据。静态数据是有界的，因此可以很容易地和表（关系）进行映射。但是对于一个不断变化的实时数据流而言，数" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.jrwang.me/2019/2019-10-16-flink-sourcecode-stream-and-dynamic-table/" />
+<meta property="article:published_time" content="2019-10-19T14:22:57+08:00" />
+<meta property="article:modified_time" content="2019-10-19T14:22:57+08:00" />
+<meta itemprop="name" content="Flink 源码阅读笔记（18）- Flink SQL 中的流和动态表">
+<meta itemprop="description" content="SQL 和关系代数在设计之初就针对的是静态的数据。静态数据是有界的，因此可以很容易地和表（关系）进行映射。但是对于一个不断变化的实时数据流而言，数">
+
+
+<meta itemprop="datePublished" content="2019-10-19T14:22:57&#43;08:00" />
+<meta itemprop="dateModified" content="2019-10-19T14:22:57&#43;08:00" />
+<meta itemprop="wordCount" content="4478">
+
+
+
+<meta itemprop="keywords" content="Flink,实时计算,SQL," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Flink 源码阅读笔记（18）- Flink SQL 中的流和动态表"/>
+<meta name="twitter:description" content="SQL 和关系代数在设计之初就针对的是静态的数据。静态数据是有界的，因此可以很容易地和表（关系）进行映射。但是对于一个不断变化的实时数据流而言，数"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">JRTHE42</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">JRTHE42</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">Flink 源码阅读笔记（18）- Flink SQL 中的流和动态表</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2019-10-19 </span>
+        
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#流和动态表">流和动态表</a></li>
+<li><a href="#动态表的实现">动态表的实现</a>
+<ul>
+<li><a href="#节点的输出类型">节点的输出类型</a></li>
+<li><a href="#updateasretractiontrait-和-accmodetrait"><code>UpdateAsRetractionTrait</code> 和 <code>AccModeTrait</code></a></li>
+<li><a href="#判断唯一键">判断唯一键</a></li>
+<li><a href="#三类-sink">三类 Sink</a></li>
+<li><a href="#table-转换为-stream">Table 转换为 Stream</a></li>
+<li><a href="#updateasretractiontrait-的初始化"><code>UpdateAsRetractionTrait</code> 的初始化</a></li>
+<li><a href="#物理执行计划">物理执行计划</a></li>
+</ul></li>
+<li><a href="#小结">小结</a></li>
+<li><a href="#参考">参考</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      
+
+<p>SQL 和关系代数在设计之初就针对的是静态的数据。静态数据是有界的，因此可以很容易地和表（关系）进行映射。但是对于一个不断变化的实时数据流而言，数据是无边界不断更新的，在将 SQL 应用在流上的时候，势必需要考虑数据的更新问题。例如，对与聚合操作而言，随着新数据源源不断地到达，聚合的结果必然是需要不断更新的。在这种情况下，目前包括 Flink、Calcite、Beam、 Kafka 等社区的开发人员一起在推动 Streaming SQL 的标准化，流和动态表的是这些工作的基础。</p>
+
+<h2 id="流和动态表">流和动态表</h2>
+
+<p>我们知道，从数据库的角度来看，一张表可以看作是一系列 Change log（INSERT、UPDATE、DELETE）聚合的结果。如果每一条 Change log 对应实时数据流中的一条消息，那么一张表和一个 Change log 的数据流就是可以互相转换的：</p>
+
+<ul>
+<li>The aggregation of a stream of updates over time yields a table</li>
+<li>The observation of changes to a table over time yield a stream</li>
+</ul>
+
+<p>在这样一个基本概念的指导下，将 SQL 应用到流上就是完全可能的，其难点就在于如何处理计算结果的更新。为此，社区提出了动态表的概念，通过将计算结果转换为 INSERT、UPDATE、DELETE 这三种类型的消息来完成到动态表的映射。关于动态表的更细致的介绍，可以查看<a href="https://ci.apache.org/projects/flink/flink-docs-master/dev/table/streaming/dynamic_tables.html">Flink官方的文档</a>和这个演讲<a href="https://docs.google.com/presentation/d/1e2tH9OoGKdgetVNimTm4aP8yTww9qbhY9E5IJrCDdKA/present?slide=id.g2ae3bde830_0_53">Foundations of Streaming SQL [Qcon London 2018]</a>，以获得更深入的了解。</p>
+
+<h2 id="动态表的实现">动态表的实现</h2>
+
+<h3 id="节点的输出类型">节点的输出类型</h3>
+
+<p>Flink SQL 在 <code>StreamPhysicalRel</code> 接口中，定义了一个关系表达式节点产生的消息类型：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="k">trait</span> <span class="nc">StreamPhysicalRel</span> <span class="k">extends</span> <span class="nc">FlinkPhysicalRel</span> <span class="o">{</span>
+  <span class="cm">/**
+</span><span class="cm">    * Whether the [[StreamPhysicalRel]] produces update and delete changes.
+</span><span class="cm">    */</span>
+  <span class="k">def</span> <span class="n">producesUpdates</span><span class="k">:</span> <span class="kt">Boolean</span>
+
+  <span class="cm">/**
+</span><span class="cm">    * Whether the [[StreamPhysicalRel]] produces retraction messages.
+</span><span class="cm">    */</span>
+  <span class="k">def</span> <span class="n">producesRetractions</span><span class="k">:</span> <span class="kt">Boolean</span>
+
+  <span class="cm">/**
+</span><span class="cm">    * Whether the [[StreamPhysicalRel]] requires retraction messages or not.
+</span><span class="cm">    */</span>
+  <span class="k">def</span> <span class="n">needsUpdatesAsRetraction</span><span class="o">(</span><span class="n">input</span><span class="k">:</span> <span class="kt">RelNode</span><span class="o">)</span><span class="k">:</span> <span class="kt">Boolean</span>
+
+  <span class="cm">/**
+</span><span class="cm">    * Whether the [[StreamPhysicalRel]] consumes retraction messages instead of forwarding them.
+</span><span class="cm">    * The node might or might not produce new retraction messages.
+</span><span class="cm">    */</span>
+  <span class="k">def</span> <span class="n">consumesRetractions</span><span class="k">:</span> <span class="kt">Boolean</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>其中，<code>producesUpdates()</code> 和 <code>producesRetractions()</code> 方法用于确定当前节点是否会产生 UPDATE 或 RETRACT 类型的消息，这两个方法比较容易理解。例如，对于 <code>StreamExecJoin</code> ，Join 操作在 outer join 的情况下会产生 RETRACT 和 UPDATE 消息；而 <code>StreamExecGroupAggregate</code> 只会产生 UPDATE 消息，但聚合操作不会产生 RETRACT 消息（即便这样，也并不意味着这个节点不会生成 DELETE 消息，因为 UPDATE 可能会被分解为 DELETE 和 INSERT，见下面的描述）。</p>
+
+<p><code>needsUpdatesAsRetraction(input: RelNode)</code> 这个方法是针对当前节点的子节点（上游节点）而言，这个方法的输入参数就是其子节点，其含义是当前节点是否需要其上游节点将 UPDATE 消息用 RETRACT 的形式发送（即，强制要求将 UPDATE 消息分解为 DELETE 和 INSERT 两条消息）。例如，对于 <code>StreamExecGroupAggregate</code> 聚合操作，就需要上游节点以 RETRACT 的形式发送消息，这样在上游更正计算结果时，当前已经聚合的结果才可以正常地进行更正（先从聚合结果中移除错误的记录，然后重新聚合）；对于 <code>StreamExecJoin</code> 来说，情况要复杂一点，涉及到对唯一键的判断，下文再详述。</p>
+
+<p><code>consumesRetractions()</code> 则表明当前节点是否需要处理上游节点产生的 RETRACT 消息，而非简单地向下游进行转发。这和节点自身是否生成 RETRACT 消息无关。<code>StreamExecGroupAggregate</code> 聚合操作就需要处理 RETRACT 消息；而 <code>StreamExecJoin</code> 的该方法返回值则是 false，这表明 Join 操作本身并不需要处理 RETRACT，只单纯向下游转发 RETRACT 消息即可。</p>
+
+<h3 id="updateasretractiontrait-和-accmodetrait"><code>UpdateAsRetractionTrait</code> 和 <code>AccModeTrait</code></h3>
+
+<p>Calcite 中用 <code>RelTrait</code> 描述一个 <code>RelNode</code> 节点的性质，Flink SQL 中用两类特质来描述输出类型相关的性质，分别是 <code>AccModeTrait</code> 和 <code>UpdateAsRetractionTrait</code>。顾名思义，<code>AccModeTrait</code> 定义了一个节点的输出模式，<code>UpdateAsRetractionTrait</code> 决定了一个节点是否要将 UPDATE 以 RETRACT 的形式输出。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="k">class</span> <span class="nc">UpdateAsRetractionTrait</span><span class="o">(</span><span class="n">updateAsRetraction</span><span class="k">:</span> <span class="kt">Boolean</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">RelTrait</span> <span class="o">{</span>
+<span class="o">}</span>
+
+<span class="k">object</span> <span class="nc">UpdateAsRetractionTrait</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="n">apply</span><span class="o">(</span><span class="n">updateAsRetraction</span><span class="k">:</span> <span class="kt">Boolean</span><span class="o">)</span><span class="k">:</span> <span class="kt">UpdateAsRetractionTrait</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="k">new</span> <span class="nc">UpdateAsRetractionTrait</span><span class="o">(</span><span class="n">updateAsRetraction</span><span class="o">)</span>
+  <span class="o">}</span>
+
+  <span class="c1">//默认不需要作为 RETRACT 输出
+</span><span class="c1"></span>  <span class="k">val</span> <span class="nc">DEFAULT</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">UpdateAsRetractionTrait</span><span class="o">(</span><span class="kc">false</span><span class="o">)</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">AccModeTrait</span><span class="o">(</span><span class="n">accMode</span><span class="k">:</span> <span class="kt">AccMode</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">RelTrait</span> <span class="o">{</span>
+<span class="o">}</span>
+
+<span class="cm">/**
+</span><span class="cm">  * The [[AccMode]] determines how insert, update, and delete changes of tables are encoded
+</span><span class="cm">  * by the messages that an operator emits.
+</span><span class="cm">  */</span>
+<span class="k">object</span> <span class="nc">AccMode</span> <span class="k">extends</span> <span class="nc">Enumeration</span> <span class="o">{</span>
+    <span class="cm">/**
+</span><span class="cm">    * unknown acc mode
+</span><span class="cm">    */</span>
+  <span class="k">val</span> <span class="nc">UNKNOWN</span> <span class="k">=</span> <span class="nc">Value</span>
+
+  <span class="cm">/**
+</span><span class="cm">    * An operator in [[Acc]] mode emits change messages as
+</span><span class="cm">    * [[org.apache.flink.table.dataformat.BaseRow]] which encode a data row with header info,
+</span><span class="cm">    * logically equivalent to (boolean, row).
+</span><span class="cm">    *
+</span><span class="cm">    * An operator in [[Acc]] mode may only produce update and delete messages, if the table has
+</span><span class="cm">    * a unique key and all key attributes are contained in the Row.
+</span><span class="cm">    *
+</span><span class="cm">    * Changes are encoded as follows:
+</span><span class="cm">    * - insert: (true, NewRow)
+</span><span class="cm">    * - update: (true, NewRow) // the Row includes the full unique key to identify the row to update
+</span><span class="cm">    * - delete: (false, OldRow) // the Row includes the full unique key to identify the row to delete
+</span><span class="cm">    */</span>
+  <span class="k">val</span> <span class="nc">Acc</span> <span class="k">=</span> <span class="nc">Value</span>
+
+  <span class="cm">/**
+</span><span class="cm">    * * An operator in [[AccRetract]] mode emits change messages as
+</span><span class="cm">    * [[org.apache.flink.table.dataformat.BaseRow]] which encode a data row with header info,
+</span><span class="cm">    * logically equivalent to (boolean, row).
+</span><span class="cm">    *
+</span><span class="cm">    * Changes are encoded as follows:
+</span><span class="cm">    * - insert: (true, NewRow)
+</span><span class="cm">    * - update: (false, OldRow), (true, NewRow) // updates are encoded in two messages!
+</span><span class="cm">    * - delete: (false, OldRow)
+</span><span class="cm">    */</span>
+  <span class="k">val</span> <span class="nc">AccRetract</span> <span class="k">=</span> <span class="nc">Value</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>可以看到，在 <code>AccMode.Acc</code> 和 <code>AccMode.AccRetract</code> 这两种模式下，区别在于对 UPDATE 消息的编码不同。</p>
+
+<p>在 <code>StreamExecRetractionRules</code> 中定义了三种规则用来生成 <code>StreamPhysicalRel</code> 中 retraction 相关的特质。其中 <code>AssignDefaultRetractionRule</code> 用来分配默认的特质，<code>SetUpdatesAsRetractionRule</code> 用来更新 <code>UpdateAsRetractionTrait</code>，<code>SetAccModeRule</code> 用来更新 <code>AccModeTrait</code>。</p>
+
+<p>在 <code>SetUpdatesAsRetractionRule</code> 更新 <code>UpdateAsRetractionTrait</code> 的时候，要依赖在 <code>StreamPhysicalRel</code> 中定义的几个方法。一个子节点在以下两种情况下需要产生 RETRACT 消息：</p>
+
+<ul>
+<li>父节点要求子节点必须将 UPDATE 作为 RETRACT 发送，例如父节点是 <code>StreamExecGroupAggregate</code></li>
+<li>通过传递性的，父节点的父节点要求将 UPDATE 作为 RETRACT 发送</li>
+</ul>
+
+<p>而在 <code>SetAccModeRule</code> 中更新 <code>UpdateAsRetractionTrait</code> 为 <code>AccMode.AccRetract</code>，则按照这样的规则：</p>
+
+<ul>
+<li>当前节点已经包含了 <code>SetUpdatesAsRetractionRule(true)</code> 的特质</li>
+<li>当前节点的子节点是 <code>AccMode.AccRetract</code>，且当前节点转发 RETRACT 消息（consumesRetractions 方法返回 false）</li>
+</ul>
+
+<p>按顺序应用上面的三条规则，就完成了一个 <code>StreamPhysicalRel</code> 中 retraction 相关的特质的填充。</p>
+
+<h3 id="判断唯一键">判断唯一键</h3>
+
+<p>唯一键（UniqueKey）字段可以用来区分一个节点输出的消息是否具有唯一性，可以由多个字段组合而成。当然，一个节点也可能不包含唯一键。唯一键在流 SQL 中的意义在于，如果能够确定唯一键，那么在一些特定条件下，输出的时候可以有减少消息的数量（例如，可以直接生成 UPDATE 消息，而不需要先 DELETE 再 INSERT），或是有针对性地优化中间状态的存储（例如，流 Join 状态的存储，后续分析 Join 实现的时候会详细介绍）。</p>
+
+<p>Flink SQL 中将唯一键作为元数据进行处理，主要是提供了一个 <code>MetadataHandler&lt;UniqueKeys&gt;</code> 的实现，即 <code>FlinkRelMdUniqueKeys</code>。 <code>FlinkRelMdUniqueKeys</code> 提供了获取一个 <code>RelNode</code> 的唯一键的方法，在需要查询唯一键时，通过 <code>RelOptCluster.getMetadataQuery.getUniqueKeys(relNode)</code> 进行查询即可。唯一键的判断在有些条件下比较复杂，目前 <code>FlinkRelMdUniqueKeys</code> 在参考 Calcite 自身提供的 <code>RelMdUniqueKeys</code> 的基础上进行了扩展，但应该也没有覆盖到全部的情况，我们简单地看一下。</p>
+
+<p>对于 Aggregate 操作，唯一键的判断比较简单，就是 Group By 分组对应的字段：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="k">class</span> <span class="nc">FlinkRelMdUniqueKeys</span> <span class="k">private</span> <span class="k">extends</span> <span class="nc">MetadataHandler</span><span class="o">[</span><span class="kt">BuiltInMetadata.UniqueKeys</span><span class="o">]</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="n">getUniqueKeys</span><span class="o">(</span>
+      <span class="n">rel</span><span class="k">:</span> <span class="kt">Aggregate</span><span class="o">,</span>
+      <span class="n">mq</span><span class="k">:</span> <span class="kt">RelMetadataQuery</span><span class="o">,</span>
+      <span class="n">ignoreNulls</span><span class="k">:</span> <span class="kt">Boolean</span><span class="o">)</span><span class="k">:</span> <span class="kt">JSet</span><span class="o">[</span><span class="kt">ImmutableBitSet</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="n">getUniqueKeysOnAggregate</span><span class="o">(</span><span class="n">rel</span><span class="o">.</span><span class="n">getGroupSet</span><span class="o">.</span><span class="n">toArray</span><span class="o">,</span> <span class="n">mq</span><span class="o">,</span> <span class="n">ignoreNulls</span><span class="o">)</span>
+  <span class="o">}</span>
+
+  <span class="k">def</span> <span class="n">getUniqueKeys</span><span class="o">(</span>
+      <span class="n">rel</span><span class="k">:</span> <span class="kt">StreamExecGroupAggregate</span><span class="o">,</span>
+      <span class="n">mq</span><span class="k">:</span> <span class="kt">RelMetadataQuery</span><span class="o">,</span>
+      <span class="n">ignoreNulls</span><span class="k">:</span> <span class="kt">Boolean</span><span class="o">)</span><span class="k">:</span> <span class="kt">JSet</span><span class="o">[</span><span class="kt">ImmutableBitSet</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="n">getUniqueKeysOnAggregate</span><span class="o">(</span><span class="n">rel</span><span class="o">.</span><span class="n">grouping</span><span class="o">,</span> <span class="n">mq</span><span class="o">,</span> <span class="n">ignoreNulls</span><span class="o">)</span>
+  <span class="o">}</span>
+
+  <span class="k">def</span> <span class="n">getUniqueKeysOnAggregate</span><span class="o">(</span>
+      <span class="n">grouping</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">Int</span><span class="o">],</span>
+      <span class="n">mq</span><span class="k">:</span> <span class="kt">RelMetadataQuery</span><span class="o">,</span>
+      <span class="n">ignoreNulls</span><span class="k">:</span> <span class="kt">Boolean</span><span class="o">)</span><span class="k">:</span> <span class="kt">util.Set</span><span class="o">[</span><span class="kt">ImmutableBitSet</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="c1">// group by keys form a unique key
+</span><span class="c1"></span>    <span class="nc">ImmutableSet</span><span class="o">.</span><span class="n">of</span><span class="o">(</span><span class="nc">ImmutableBitSet</span><span class="o">.</span><span class="n">of</span><span class="o">(</span><span class="n">grouping</span><span class="o">.</span><span class="n">indices</span><span class="k">:</span> <span class="k">_</span><span class="kt">*</span><span class="o">))</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>对于 Join 操作，则需要判断连接的左侧和右侧节点的唯一键情况，然后对左右的唯一键进行组合：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="k">class</span> <span class="nc">FlinkRelMdUniqueKeys</span> <span class="k">private</span> <span class="k">extends</span> <span class="nc">MetadataHandler</span><span class="o">[</span><span class="kt">BuiltInMetadata.UniqueKeys</span><span class="o">]</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="n">getUniqueKeys</span><span class="o">(</span>
+      <span class="n">join</span><span class="k">:</span> <span class="kt">Join</span><span class="o">,</span>
+      <span class="n">mq</span><span class="k">:</span> <span class="kt">RelMetadataQuery</span><span class="o">,</span>
+      <span class="n">ignoreNulls</span><span class="k">:</span> <span class="kt">Boolean</span><span class="o">)</span><span class="k">:</span> <span class="kt">JSet</span><span class="o">[</span><span class="kt">ImmutableBitSet</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="n">join</span><span class="o">.</span><span class="n">getJoinType</span> <span class="k">match</span> <span class="o">{</span>
+      <span class="k">case</span> <span class="nc">JoinRelType</span><span class="o">.</span><span class="nc">SEMI</span> <span class="o">|</span> <span class="nc">JoinRelType</span><span class="o">.</span><span class="nc">ANTI</span> <span class="k">=&gt;</span>
+        <span class="c1">// only return the unique keys from the LHS since a SEMI/ANTI join only
+</span><span class="c1"></span>        <span class="c1">// returns the LHS
+</span><span class="c1"></span>        <span class="n">mq</span><span class="o">.</span><span class="n">getUniqueKeys</span><span class="o">(</span><span class="n">join</span><span class="o">.</span><span class="n">getLeft</span><span class="o">,</span> <span class="n">ignoreNulls</span><span class="o">)</span>
+      <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span>
+        <span class="n">getJoinUniqueKeys</span><span class="o">(</span>
+          <span class="n">join</span><span class="o">.</span><span class="n">analyzeCondition</span><span class="o">(),</span> <span class="n">join</span><span class="o">.</span><span class="n">getJoinType</span><span class="o">,</span> <span class="n">join</span><span class="o">.</span><span class="n">getLeft</span><span class="o">,</span> <span class="n">join</span><span class="o">.</span><span class="n">getRight</span><span class="o">,</span> <span class="n">mq</span><span class="o">,</span> <span class="n">ignoreNulls</span><span class="o">)</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="k">private</span> <span class="k">def</span> <span class="n">getJoinUniqueKeys</span><span class="o">(</span>
+      <span class="n">joinInfo</span><span class="k">:</span> <span class="kt">JoinInfo</span><span class="o">,</span>
+      <span class="n">joinRelType</span><span class="k">:</span> <span class="kt">JoinRelType</span><span class="o">,</span>
+      <span class="n">left</span><span class="k">:</span> <span class="kt">RelNode</span><span class="o">,</span>
+      <span class="n">right</span><span class="k">:</span> <span class="kt">RelNode</span><span class="o">,</span>
+      <span class="n">mq</span><span class="k">:</span> <span class="kt">RelMetadataQuery</span><span class="o">,</span>
+      <span class="n">ignoreNulls</span><span class="k">:</span> <span class="kt">Boolean</span><span class="o">)</span><span class="k">:</span> <span class="kt">JSet</span><span class="o">[</span><span class="kt">ImmutableBitSet</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">leftUniqueKeys</span> <span class="k">=</span> <span class="n">mq</span><span class="o">.</span><span class="n">getUniqueKeys</span><span class="o">(</span><span class="n">left</span><span class="o">,</span> <span class="n">ignoreNulls</span><span class="o">)</span>
+    <span class="k">val</span> <span class="n">rightUniqueKeys</span> <span class="k">=</span> <span class="n">mq</span><span class="o">.</span><span class="n">getUniqueKeys</span><span class="o">(</span><span class="n">right</span><span class="o">,</span> <span class="n">ignoreNulls</span><span class="o">)</span>
+    <span class="n">getJoinUniqueKeys</span><span class="o">(</span>
+      <span class="n">joinInfo</span><span class="o">,</span> <span class="n">joinRelType</span><span class="o">,</span> <span class="n">left</span><span class="o">.</span><span class="n">getRowType</span><span class="o">,</span> <span class="n">leftUniqueKeys</span><span class="o">,</span> <span class="n">rightUniqueKeys</span><span class="o">,</span>
+      <span class="n">mq</span><span class="o">.</span><span class="n">areColumnsUnique</span><span class="o">(</span><span class="n">left</span><span class="o">,</span> <span class="n">joinInfo</span><span class="o">.</span><span class="n">leftSet</span><span class="o">,</span> <span class="n">ignoreNulls</span><span class="o">),</span>
+      <span class="n">mq</span><span class="o">.</span><span class="n">areColumnsUnique</span><span class="o">(</span><span class="n">right</span><span class="o">,</span> <span class="n">joinInfo</span><span class="o">.</span><span class="n">rightSet</span><span class="o">,</span> <span class="n">ignoreNulls</span><span class="o">),</span>
+      <span class="n">mq</span><span class="o">)</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>对于 Project 或 Calc 操作，则首先需要从子节点中提取唯一键，然后确保所有唯一键都在输出列表中，且在这些字段上不能进行任何计算操作（只作为 <code>RexInputRef</code> 或 <code>AS</code>,因为无法确定其它映射的结果是否能保留唯一性）。</p>
+
+<p>对于其它的情况，这里不再赘述，感兴趣的可以参考原始代码。</p>
+
+<h3 id="三类-sink">三类 Sink</h3>
+
+<p>在 Flink SQL 中，流表 Sink 对应的有三个接口 <code>AppendStreamTableSink</code>，<code>RetractStreamTableSink</code> 和 <code>UpsertStreamTableSink</code>。
+<code>AppendStreamTableSink</code> 适用于查询结果只存在 APPEND 结果的情况，即不存在更新和撤回的消息；<code>UpsertStreamTableSink</code> 则适用于查询结果存在唯一键的情况，在这种情况下 UPDATE 结果不会被转换为 DELETE 和 INSERT 两条消息；<code>RetractStreamTableSink</code> 则是一种更通用的形式，但是 UPDATE 会被转换为 DELETE 和 INSERT 两条消息。需要注意的是，<code>UpsertStreamTableSink</code> 同样有可能接收到 DELETE 消息，例如在 Outer Join 的情况下，仍然会有 DELETE 消息产生，但是对于 Aggregate，则可以有效减少撤回的消息数量；<code>UpsertStreamTableSink</code> 要求查询结果必须存在唯一键，这个也不难理解，只有存在唯一键，才能确定是对已有结果和更新还是新插入的结果。</p>
+
+<p>在 <code>StreamExecSink</code> 中，<code>needsUpdatesAsRetraction(input: RelNode)</code> 是根据 <code>TableSink</code> 的类型来确定的：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="k">class</span> <span class="nc">StreamExecSink</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="o">{</span>
+  <span class="c1">//如果是RetractStreamTableSink，则要求子节点必须以 RETRACT 形式发送消息
+</span><span class="c1"></span>  <span class="k">override</span> <span class="k">def</span> <span class="n">needsUpdatesAsRetraction</span><span class="o">(</span><span class="n">input</span><span class="k">:</span> <span class="kt">RelNode</span><span class="o">)</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span>
+    <span class="n">sink</span><span class="o">.</span><span class="n">isInstanceOf</span><span class="o">[</span><span class="kt">RetractStreamTableSink</span><span class="o">[</span><span class="k">_</span><span class="o">]]</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>在生成物理执行计划的过程中，会根据 Sink 类型进行检验和转换：</p>
+
+<ul>
+<li><code>AppendStreamTableSink</code> 要求查询结果是 APPEND 的，通过 <code>UpdatingPlanChecker.isAppendOnly()</code> 进行校验（遍历逻辑树）</li>
+<li><code>UpsertStreamTableSink</code> 要求查询结果存在唯一键</li>
+<li><code>RetractStreamTableSink</code> 是通用的，不需要校验</li>
+</ul>
+
+<h3 id="table-转换为-stream">Table 转换为 Stream</h3>
+
+<p>在将 <code>Table</code> 转换为 Stream 的过程中，同样有三种形式，分别对应 <code>StreamTableEnvironment.toAppendStream</code>, <code>StreamTableEnvironment.toRetractStream</code> 和 <code>StreamTableEnvironment.toUpsertStream</code> 三个方法。</p>
+
+<p>转换成 Stream 的操作会被转换为 <code>OutputConversionModifyOperation</code>，其包含三种模式，分别对应上面的三个方法：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">class</span> <span class="n">OutputConversionModifyOperation</span> <span class="nf">implements</span> <span class="n">ModifyOperation</span> <span class="p">{</span>
+  <span class="cm">/**
+</span><span class="cm">	 * Should the output type contain the change flag, and what should the
+</span><span class="cm">	 * flag represent (retraction or deletion).
+</span><span class="cm">	 */</span>
+	<span class="kd">public</span> <span class="nf">enum</span> <span class="n">UpdateMode</span> <span class="p">{</span>
+		<span class="n">APPEND</span><span class="p">,</span>
+		<span class="n">RETRACT</span><span class="p">,</span>
+		<span class="n">UPSERT</span>
+	<span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>OutputConversionModifyOperation</code> 被转换为 <code>DataStreamTableSink</code>，通过两个属性 <code>updatesAsRetraction</code> 和 <code>withChangeFlag</code> 来表征上面的三种模式：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">class</span> <span class="nf">DataStreamTableSink</span><span class="p">[</span><span class="n">T</span><span class="p">](</span>
+    <span class="n">queryOperation</span><span class="o">:</span> <span class="n">QueryOperation</span><span class="p">,</span>
+    <span class="n">outputType</span><span class="o">:</span> <span class="n">TypeInformation</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
+    <span class="n">val</span> <span class="nf">updatesAsRetraction</span><span class="o">:</span> <span class="n">Boolean</span><span class="p">,</span> 
+    <span class="n">val</span> <span class="nf">withChangeFlag</span><span class="o">:</span> <span class="n">Boolean</span>
+  <span class="p">)</span> <span class="kd">extends</span> <span class="nf">TableSink</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="p">{</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>对应的映射关系为：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="k">abstract</span> <span class="k">class</span> <span class="nc">PlannerBase</span> <span class="o">{</span>
+  <span class="k">private</span><span class="o">[</span><span class="kt">flink</span><span class="o">]</span> <span class="k">def</span> <span class="n">translateToRel</span><span class="o">(</span><span class="n">modifyOperation</span><span class="k">:</span> <span class="kt">ModifyOperation</span><span class="o">)</span><span class="k">:</span> <span class="kt">RelNode</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="n">modifyOperation</span> <span class="k">match</span> <span class="o">{</span>
+      <span class="k">case</span> <span class="n">outputConversion</span><span class="k">:</span> <span class="kt">OutputConversionModifyOperation</span> <span class="o">=&gt;</span>
+        <span class="k">val</span> <span class="n">input</span> <span class="k">=</span> <span class="n">getRelBuilder</span><span class="o">.</span><span class="n">queryOperation</span><span class="o">(</span><span class="n">outputConversion</span><span class="o">.</span><span class="n">getChild</span><span class="o">).</span><span class="n">build</span><span class="o">()</span>
+        <span class="k">val</span> <span class="o">(</span><span class="n">updatesAsRetraction</span><span class="o">,</span> <span class="n">withChangeFlag</span><span class="o">)</span> <span class="k">=</span> <span class="n">outputConversion</span><span class="o">.</span><span class="n">getUpdateMode</span> <span class="k">match</span> <span class="o">{</span>
+          <span class="k">case</span> <span class="nc">UpdateMode</span><span class="o">.</span><span class="nc">RETRACT</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="kc">true</span><span class="o">,</span> <span class="kc">true</span><span class="o">)</span>
+          <span class="k">case</span> <span class="nc">UpdateMode</span><span class="o">.</span><span class="nc">APPEND</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="kc">false</span><span class="o">,</span> <span class="kc">false</span><span class="o">)</span>
+          <span class="k">case</span> <span class="nc">UpdateMode</span><span class="o">.</span><span class="nc">UPSERT</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="kc">false</span><span class="o">,</span> <span class="kc">true</span><span class="o">)</span>
+        <span class="o">}</span>
+        <span class="k">val</span> <span class="n">typeInfo</span> <span class="k">=</span> <span class="nc">LegacyTypeInfoDataTypeConverter</span><span class="o">.</span><span class="n">toLegacyTypeInfo</span><span class="o">(</span><span class="n">outputConversion</span><span class="o">.</span><span class="n">getType</span><span class="o">)</span>
+        <span class="k">val</span> <span class="n">tableSink</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">DataStreamTableSink</span><span class="o">(</span>
+          <span class="n">outputConversion</span><span class="o">.</span><span class="n">getChild</span><span class="o">,</span> <span class="n">typeInfo</span><span class="o">,</span> <span class="n">updatesAsRetraction</span><span class="o">,</span> <span class="n">withChangeFlag</span><span class="o">)</span>
+        <span class="nc">LogicalSink</span><span class="o">.</span><span class="n">create</span><span class="o">(</span><span class="n">input</span><span class="o">,</span> <span class="n">tableSink</span><span class="o">,</span> <span class="s">&#34;DataStreamTableSink&#34;</span><span class="o">)</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="updateasretractiontrait-的初始化"><code>UpdateAsRetractionTrait</code> 的初始化</h3>
+
+<p>在 <code>AssignDefaultRetractionRule</code> 中，如果节点的 <code>UpdateAsRetractionTrait</code> 没有设置，那么会被设置为默认的 <code>UpdateAsRetractionTrait(false)</code>，即不以 Retract 模式输出。如果用户要求将结果输出为 Retract Stream 或输出到 <code>RetractTableSink</code>，就需要初始化根节点为 <code>UpdateAsRetractionTrait(true)</code>。</p>
+
+<p>在 <code>FlinkUpdateAsRetractionTraitInitProgram</code> 中会根据 <code>StreamOptimizeContext.updateAsRetraction</code> 来确定是否将根节点初始化为 <code>UpdateAsRetractionTrait(true)</code>:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="k">class</span> <span class="nc">FlinkUpdateAsRetractionTraitInitProgram</span> <span class="k">extends</span> <span class="nc">FlinkOptimizeProgram</span><span class="o">[</span><span class="kt">StreamOptimizeContext</span><span class="o">]</span> <span class="o">{</span>
+
+  <span class="k">override</span> <span class="k">def</span> <span class="n">optimize</span><span class="o">(</span><span class="n">root</span><span class="k">:</span> <span class="kt">RelNode</span><span class="o">,</span> <span class="n">context</span><span class="k">:</span> <span class="kt">StreamOptimizeContext</span><span class="o">)</span><span class="k">:</span> <span class="kt">RelNode</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">context</span><span class="o">.</span><span class="n">updateAsRetraction</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">val</span> <span class="n">newTraitSet</span> <span class="k">=</span> <span class="n">root</span><span class="o">.</span><span class="n">getTraitSet</span><span class="o">.</span><span class="n">plus</span><span class="o">(</span><span class="nc">UpdateAsRetractionTrait</span><span class="o">(</span><span class="kc">true</span><span class="o">))</span>
+      <span class="n">root</span><span class="o">.</span><span class="n">copy</span><span class="o">(</span><span class="n">newTraitSet</span><span class="o">,</span> <span class="n">root</span><span class="o">.</span><span class="n">getInputs</span><span class="o">)</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="n">root</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>在 <code>StreamCommonSubGraphBasedOptimizer</code> 中会根据输出的要求来获取输出的模式，并进一步初始化 <code>StreamOptimizeContext</code>:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-scala" data-lang="scala"><span class="k">class</span> <span class="nc">StreamCommonSubGraphBasedOptimizer</span><span class="o">(</span><span class="n">planner</span><span class="k">:</span> <span class="kt">StreamPlanner</span><span class="o">)</span>
+  <span class="k">extends</span> <span class="nc">CommonSubGraphBasedOptimizer</span> <span class="o">{</span>
+  
+  <span class="k">override</span> <span class="k">protected</span> <span class="k">def</span> <span class="n">doOptimize</span><span class="o">(</span><span class="n">roots</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">RelNode</span><span class="o">])</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">RelNodeBlock</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">config</span> <span class="k">=</span> <span class="n">planner</span><span class="o">.</span><span class="n">getTableConfig</span>
+    <span class="c1">// build RelNodeBlock plan
+</span><span class="c1"></span>    <span class="k">val</span> <span class="n">sinkBlocks</span> <span class="k">=</span> <span class="nc">RelNodeBlockPlanBuilder</span><span class="o">.</span><span class="n">buildRelNodeBlockPlan</span><span class="o">(</span><span class="n">roots</span><span class="o">,</span> <span class="n">config</span><span class="o">)</span>
+    <span class="c1">// infer updateAsRetraction property for sink block
+</span><span class="c1"></span>    <span class="n">sinkBlocks</span><span class="o">.</span><span class="n">foreach</span> <span class="o">{</span> <span class="n">sinkBlock</span> <span class="k">=&gt;</span>
+      <span class="k">val</span> <span class="n">retractionFromRoot</span> <span class="k">=</span> <span class="n">sinkBlock</span><span class="o">.</span><span class="n">outputNode</span> <span class="k">match</span> <span class="o">{</span>
+        <span class="k">case</span> <span class="n">n</span><span class="k">:</span> <span class="kt">Sink</span> <span class="o">=&gt;</span>
+          <span class="n">n</span><span class="o">.</span><span class="n">sink</span> <span class="k">match</span> <span class="o">{</span>
+            <span class="k">case</span> <span class="k">_:</span> <span class="kt">RetractStreamTableSink</span><span class="o">[</span><span class="k">_</span><span class="o">]</span> <span class="k">=&gt;</span> <span class="kc">true</span>
+            <span class="k">case</span> <span class="n">s</span><span class="k">:</span> <span class="kt">DataStreamTableSink</span><span class="o">[</span><span class="k">_</span><span class="o">]</span> <span class="k">=&gt;</span> <span class="n">s</span><span class="o">.</span><span class="n">updatesAsRetraction</span>
+            <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="kc">false</span>
+          <span class="o">}</span>
+        <span class="k">case</span> <span class="n">o</span> <span class="k">=&gt;</span>
+          <span class="n">o</span><span class="o">.</span><span class="n">getTraitSet</span><span class="o">.</span><span class="n">getTrait</span><span class="o">(</span><span class="nc">UpdateAsRetractionTraitDef</span><span class="o">.</span><span class="nc">INSTANCE</span><span class="o">).</span><span class="n">sendsUpdatesAsRetractions</span>
+      <span class="o">}</span>
+      <span class="n">sinkBlock</span><span class="o">.</span><span class="n">setUpdateAsRetraction</span><span class="o">(</span><span class="n">retractionFromRoot</span><span class="o">)</span>
+
+      <span class="o">.......</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="物理执行计划">物理执行计划</h3>
+
+<p>在生成的物理执行计划中，每个节点生成的记录以 <code>BaseRow</code> 的形式封装，可以根据 <code>BaseRow</code> 中封装的 header 信息获取一条记录对应的变更类型：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">final</span> <span class="kd">class</span> <span class="nf">BaseRowUtil</span> <span class="p">{</span>
+	<span class="cm">/**
+</span><span class="cm">	 * Indicates the row as an accumulate message.
+</span><span class="cm">	 */</span>
+	<span class="kd">public</span> <span class="nf">static</span> <span class="kd">final</span> <span class="nf">byte</span> <span class="n">ACCUMULATE_MSG</span> <span class="o">=</span> <span class="n">0</span><span class="p">;</span>
+
+	<span class="cm">/**
+</span><span class="cm">	 * Indicates the row as a retraction message.
+</span><span class="cm">	 */</span>
+	<span class="kd">public</span> <span class="nf">static</span> <span class="kd">final</span> <span class="nf">byte</span> <span class="n">RETRACT_MSG</span> <span class="o">=</span> <span class="n">1</span><span class="p">;</span>
+
+	<span class="kd">public</span> <span class="nf">static</span> <span class="kt">boolean</span> <span class="nf">isAccumulateMsg</span><span class="p">(</span><span class="n">BaseRow</span> <span class="nf">baseRow</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="n">baseRow</span><span class="p">.</span><span class="na">getHeader</span><span class="p">()</span> <span class="o">==</span> <span class="n">ACCUMULATE_MSG</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="kd">public</span> <span class="nf">static</span> <span class="kt">boolean</span> <span class="nf">isRetractMsg</span><span class="p">(</span><span class="n">BaseRow</span> <span class="nf">baseRow</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="n">baseRow</span><span class="p">.</span><span class="na">getHeader</span><span class="p">()</span> <span class="o">==</span> <span class="n">RETRACT_MSG</span><span class="p">;</span>
+	<span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>这样，每个节点可以根据从上游接收的记录的变更类型确定需要执行的操作；同样地，每个节点也可以设置对应的变更类型通知下游节点。在 <code>StreamingJoinOperator</code> 和 <code>GroupAggFunction</code> 中可以看到比较详细的对变更消息的处理过程，后面分析到 Join 操作和 Aggregate 的详细实现时会进行更细致的分析。</p>
+
+<p>同时，一些操作也会根据 <code>AccModeTrait</code> 来决定生成的操作类型和提交的记录类型，例如在 <code>StreamExecGroupAggregate</code> 中会根据子节点的 <code>AccModeTrait</code> 确定是否需要为聚合函数生成 <code>retract</code> 方法，也会根据当前节点的 <code>AccModeTrait</code> 来决定在聚合结果发生更新是是否提交 <code>RETRACT_MSG</code>。具体的可参考 <code>StreamExecGroupAggregate</code> 的代码。</p>
+
+<h2 id="小结">小结</h2>
+
+<p>本文简单介绍了流和动态表的映射关系，并对 Flink SQL 中动态表相关的一些实现做了介绍。动态表主要涉及到对计算结果和撤回和更新，这和具体的 SQL 操作有很大的关系，后面在介绍 Join、Aggregate 等算子的具体实现时还会进一步加以分析。</p>
+
+<h2 id="参考">参考</h2>
+
+<ul>
+<li><a href="https://ci.apache.org/projects/flink/flink-docs-master/dev/table/streaming/dynamic_tables.html">Dynamic Tables</a></li>
+<li><a href="https://docs.google.com/presentation/d/1e2tH9OoGKdgetVNimTm4aP8yTww9qbhY9E5IJrCDdKA/present?slide=id.g2ae3bde830_0_53">Foundations of Streaming SQL [Qcon London 2018]</a></li>
+</ul>
+
+<p>-EOF-</p>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">原始链接</span>
+    <span class="item-content"><a href="https://blog.jrwang.me/2019/2019-10-16-flink-sourcecode-stream-and-dynamic-table/">https://blog.jrwang.me/2019/2019-10-16-flink-sourcecode-stream-and-dynamic-table/</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2019-10-19
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/flink/">Flink</a>
+          <a href="/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/">实时计算</a>
+          <a href="/tags/sql/">SQL</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/2019/aloha-introduce/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">Aloha：一个分布式任务调度框架</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/2019/2019-09-16-flink-sourcecode-sql-time-attribute.md/">
+            <span class="next-text nav-default">Flink 源码阅读笔记（17）- Flink SQL 中的时间属性</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+    <script src="https://utteranc.es/client.js"
+            repo="jrthe42/blog-comment"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/utterance">comments powered by utterances.</a></noscript>
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:jrthe42@gmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/jrthe42" class="iconfont icon-github" title="github"></a>
+      <a href="https://weibo.com/jrthe42" class="iconfont icon-weibo" title="weibo"></a>
+  <a href="https://blog.jrwang.me/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2015 - 
+    2019
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.f79f403f.min.js"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-66913886-2', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>
