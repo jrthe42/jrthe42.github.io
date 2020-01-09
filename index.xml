@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>JR&#39;s Blog</title>
@@ -6,7 +6,7 @@
     <description>Recent content on JR&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sat, 19 Oct 2019 14:22:57 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 05 Jan 2020 19:30:45 +0800</lastBuildDate>
     
 	<atom:link href="https://blog.jrwang.me/index.xml" rel="self" type="application/rss+xml" />
     
@@ -29,6 +29,15 @@
       <description>Coder.
 Reader.
 Currently interested in Distributed System and Streaming Processing.</description>
+    </item>
+    
+    <item>
+      <title>Flink 源码阅读笔记（19）- Flink SQL 中流表 Join 的实现</title>
+      <link>https://blog.jrwang.me/2020/2020-01-05-flink-sourcecode-sql-stream-join/</link>
+      <pubDate>Sun, 05 Jan 2020 19:30:45 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/2020/2020-01-05-flink-sourcecode-sql-stream-join/</guid>
+      <description>在使用 SQL 进行数据分析的过程中，关联查询是经常要使用到的操作。在传统的 OLTP 和 OLAP 领域中，关联查询的数据集都是有界的，因此可以依赖于缓存有界的数据集</description>
     </item>
     
     <item>

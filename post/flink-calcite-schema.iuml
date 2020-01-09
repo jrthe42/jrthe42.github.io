@@ -1,0 +1,30 @@
+@startuml flink-calcite-schema
+
+class PlannerContext
+
+class CatalogManagerCalciteSchema {
+    private final CatalogManager catalogManager;
+}
+class CatalogCalciteSchema {
+    private final String catalogName;
+    private final Catalog catalog;
+}
+class DatabaseCalciteSchema {
+	private final String databaseName;
+	private final String catalogName;
+	private final Catalog catalog;
+}
+
+CatalogManagerCalciteSchema --> CatalogCalciteSchema
+CatalogCalciteSchema --> DatabaseCalciteSchema
+
+PlannerContext -down-> CatalogManagerCalciteSchema
+PlannerContext -down-> FunctionCatalogOperatorTable
+
+class FunctionCatalogOperatorTable {
+    private final FunctionCatalog functionCatalog;
+}
+class FunctionCatalog
+
+FunctionCatalogOperatorTable -down-> FunctionCatalog
+@enduml

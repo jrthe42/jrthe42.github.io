@@ -1,0 +1,39 @@
+@startuml sql-user-define-functions
+
+interface FunctionDefinition {
+	FunctionKind getKind();
+	boolean isDeterministic();
+}
+
+abstract class UserDefinedFunction implements FunctionDefinition {
+	String functionIdentifier();
+}
+
+
+abstract class ScalarFunction extends UserDefinedFunction {
+}
+
+abstract class TableFunction<T> extends UserDefinedFunction {
+}
+
+abstract class UserDefinedAggregateFunction<T, ACC> extends UserDefinedFunction {
+}
+
+abstract class AggregateFunction<T, ACC> extends UserDefinedAggregateFunction {
+}
+
+abstract class TableAggregateFunction<T, ACC> extends UserDefinedAggregateFunction {
+}
+
+abstract class AsyncTableFunction<T> extends UserDefinedFunction {
+}
+
+abstract class TemporalTableFunction extends TableFunction {
+}
+
+class BuiltInFunctionDefinition implements FunctionDefinition {
+	private final String name;
+	private final FunctionKind kind;
+	private final TypeInference typeInference;
+}
+@enduml

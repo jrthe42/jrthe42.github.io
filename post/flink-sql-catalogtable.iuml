@@ -1,0 +1,44 @@
+@startuml catalogtable
+
+interface CatalogBaseTable {
+	Map<String, String> getProperties();
+	TableSchema getSchema();
+	String getComment();
+}
+
+interface CatalogView extends CatalogBaseTable {
+	String getOriginalQuery();
+	String getExpandedQuery();
+}
+
+abstract class AbstractCatalogView implements CatalogView {
+}
+
+class CatalogViewImpl extends AbstractCatalogView {
+}
+
+class QueryOperationCatalogView extends AbstractCatalogView {
+	private final QueryOperation queryOperation;
+}
+
+interface CatalogTable extends CatalogBaseTable {
+	boolean isPartitioned();
+	List<String> getPartitionKeys();
+	Map<String, String> toProperties();
+}
+
+abstract class AbstractCatalogTable implements CatalogTable {
+	private final TableSchema tableSchema;
+	private final List<String> partitionKeys;
+	private final Map<String, String> properties;
+}
+
+class CatalogTableImpl extends AbstractCatalogTable {
+}
+
+class ConnectorCatalogTable<T1, T2> extends AbstractCatalogTable {
+	private final TableSource<T1> tableSource;
+	private final TableSink<T2> tableSink;
+	private final boolean isBatch;
+}
+@enduml

@@ -3,469 +3,476 @@
   
   <url>
     <loc>https://blog.jrwang.me/2019/aloha-introduce/</loc>
-    <lastmod>2019-03-15T23:58:18+00:00</lastmod>
+    <lastmod>2019-09-12T16:35:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/about/</loc>
-    <lastmod>2017-08-28T21:41:52+08:00</lastmod>
+    <lastmod>2019-09-12T17:56:36+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/flink/</loc>
-    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
+    <lastmod>2020-01-09T17:57:40+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>https://blog.jrwang.me/2019/2019-10-16-flink-sourcecode-stream-and-dynamic-table/</loc>
-    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
+    <loc>https://blog.jrwang.me/2020/2020-01-05-flink-sourcecode-sql-stream-join/</loc>
+    <lastmod>2020-01-09T17:57:40+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/</loc>
-    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
+    <lastmod>2020-01-09T17:57:40+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/post/</loc>
-    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
+    <lastmod>2020-01-09T17:57:40+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/sql/</loc>
-    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
+    <lastmod>2020-01-09T17:57:40+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/</loc>
-    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
+    <lastmod>2020-01-09T17:57:40+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</loc>
-    <lastmod>2019-10-19T14:22:57+08:00</lastmod>
+    <lastmod>2020-01-09T17:57:40+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.jrwang.me/2019/2019-10-16-flink-sourcecode-stream-and-dynamic-table/</loc>
+    <lastmod>2019-10-28T10:19:43+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/2019-09-16-flink-sourcecode-sql-time-attribute.md/</loc>
-    <lastmod>2019-09-29T20:05:03+08:00</lastmod>
+    <lastmod>2019-10-16T19:59:15+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/2019-09-12-flink-sourcecode-sql-catalog/</loc>
-    <lastmod>2019-09-15T20:34:45+08:00</lastmod>
+    <lastmod>2019-10-09T10:35:23+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-sql-overview/</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
+    <lastmod>2019-10-23T17:35:26+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-async-io/</loc>
-    <lastmod>2019-07-27T20:31:53+00:00</lastmod>
+    <lastmod>2019-09-12T16:14:51+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-two-stream-join/</loc>
-    <lastmod>2019-07-13T20:18:13+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-time-and-window/</loc>
-    <lastmod>2019-07-07T19:18:23+00:00</lastmod>
+    <lastmod>2020-01-07T16:26:40+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-checkpoint/</loc>
-    <lastmod>2019-06-22T19:58:33+00:00</lastmod>
+    <lastmod>2019-09-12T16:20:41+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-state/</loc>
-    <lastmod>2019-06-15T20:11:24+00:00</lastmod>
+    <lastmod>2019-10-26T19:35:09+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-task-lifecycle/</loc>
-    <lastmod>2019-06-02T19:05:03+00:00</lastmod>
+    <lastmod>2019-09-12T16:32:52+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-data-exchange/</loc>
-    <lastmod>2019-05-25T20:03:00+00:00</lastmod>
+    <lastmod>2019-09-12T16:25:21+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-memory-management/</loc>
-    <lastmod>2019-05-19T14:20:53+00:00</lastmod>
+    <lastmod>2019-09-12T16:27:18+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-resource-manager/</loc>
-    <lastmod>2019-05-11T19:01:10+00:00</lastmod>
+    <lastmod>2019-09-12T16:28:27+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-bootstarp/</loc>
-    <lastmod>2019-05-05T21:42:38+00:00</lastmod>
+    <lastmod>2019-11-07T11:12:25+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-rpc/</loc>
-    <lastmod>2019-05-03T20:42:38+00:00</lastmod>
+    <lastmod>2019-09-12T16:30:11+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/aloha/</loc>
-    <lastmod>2019-03-15T23:58:18+00:00</lastmod>
+    <lastmod>2019-09-12T16:35:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/original/</loc>
-    <lastmod>2019-03-15T23:58:18+00:00</lastmod>
+    <lastmod>2019-09-12T16:35:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/rpc/</loc>
-    <lastmod>2019-03-15T23:58:18+00:00</lastmod>
+    <lastmod>2019-09-12T16:35:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/spark/</loc>
-    <lastmod>2019-03-15T23:58:18+00:00</lastmod>
+    <lastmod>2019-09-12T16:35:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-executiongraph/</loc>
-    <lastmod>2019-02-23T19:38:53+00:00</lastmod>
+    <lastmod>2019-09-12T16:26:29+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-jobgraph/</loc>
-    <lastmod>2019-02-17T16:35:45+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2019/flink-source-code-streamgraph/</loc>
-    <lastmod>2019-02-16T20:42:38+00:00</lastmod>
+    <lastmod>2019-09-12T16:31:22+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/docker/</loc>
-    <lastmod>2018-12-29T20:08:21+00:00</lastmod>
+    <lastmod>2019-11-05T20:18:51+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/kubernets/</loc>
-    <lastmod>2018-12-29T20:08:21+00:00</lastmod>
+    <lastmod>2019-11-05T20:18:51+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2018/container-and-kubernetes/</loc>
-    <lastmod>2018-12-29T20:08:21+00:00</lastmod>
+    <lastmod>2019-11-05T20:18:51+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2018/dynamic-variable-in-scala/</loc>
-    <lastmod>2018-06-07T21:05:51+00:00</lastmod>
+    <lastmod>2019-09-12T16:14:34+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/scala/</loc>
-    <lastmod>2018-06-07T21:05:51+00:00</lastmod>
+    <lastmod>2019-09-12T16:14:34+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/calcite/</loc>
-    <lastmod>2018-05-30T15:15:57+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2018/parse-table-in-sql/</loc>
-    <lastmod>2018-05-30T15:15:57+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2018/partial-function-in-scala/</loc>
-    <lastmod>2018-03-01T20:35:18+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2017/flink-state-checkpoint/</loc>
-    <lastmod>2017-09-20T20:18:16+00:00</lastmod>
+    <lastmod>2019-09-12T16:10:35+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/grpc-at-first-view/</loc>
-    <lastmod>2016-08-25T18:10:35+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/grpc/</loc>
-    <lastmod>2016-08-25T18:10:35+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/java-thread-states/</loc>
-    <lastmod>2016-07-23T19:44:11+00:00</lastmod>
+    <lastmod>2019-09-12T10:33:49+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/java-simpledateformat-multithread-threadlocal/</loc>
-    <lastmod>2016-07-09T23:14:11+00:00</lastmod>
+    <lastmod>2019-09-12T10:33:41+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/hbase/</loc>
-    <lastmod>2016-04-22T15:44:11+00:00</lastmod>
+    <lastmod>2019-09-12T10:32:41+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/mapreduce/</loc>
-    <lastmod>2016-04-22T15:44:11+00:00</lastmod>
+    <lastmod>2019-09-12T10:32:41+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/gc-overhead-limit-in-putsortreducer/</loc>
-    <lastmod>2016-04-22T15:44:11+00:00</lastmod>
+    <lastmod>2019-09-12T10:32:41+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/collection/</loc>
-    <lastmod>2016-04-10T20:26:22+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/java/</loc>
-    <lastmod>2016-04-10T20:26:22+00:00</lastmod>
+    <lastmod>2019-09-12T14:19:07+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/java-collections-set/</loc>
-    <lastmod>2016-04-10T20:26:22+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/source-code-analysis/</loc>
-    <lastmod>2016-04-10T20:26:22+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/java-collections-treemap/</loc>
-    <lastmod>2016-04-09T20:00:21+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/java-enum/</loc>
-    <lastmod>2016-04-01T20:06:19+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/java-collections-linkedhashmap/</loc>
-    <lastmod>2016-03-27T20:21:06+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/java-collections-linkedlist/</loc>
-    <lastmod>2016-03-21T19:03:52+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/java-collections-deque-arraydeque/</loc>
-    <lastmod>2016-03-16T20:32:07+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/java-collections-vector-stack/</loc>
-    <lastmod>2016-03-15T22:06:19+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/java-collections-hashmap/</loc>
-    <lastmod>2016-03-15T09:00:21+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/java-collections-arraylist/</loc>
-    <lastmod>2016-03-14T20:00:21+00:00</lastmod>
+    <lastmod>2019-09-07T17:33:33+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2016/java-inner-class/</loc>
-    <lastmod>2016-01-30T22:35:11+00:00</lastmod>
+    <lastmod>2019-09-12T14:04:30+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2015/import-data-to-hbase-using-bulk-loding/</loc>
-    <lastmod>2015-12-06T19:20:11+00:00</lastmod>
+    <lastmod>2019-09-12T10:32:28+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2015/java-annotation/</loc>
-    <lastmod>2015-11-26T19:24:35+00:00</lastmod>
+    <lastmod>2019-09-12T14:19:07+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/tags/design-pattern/</loc>
-    <lastmod>2015-11-20T20:40:11+00:00</lastmod>
+    <lastmod>2019-09-12T10:32:56+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2015/java-dynamic-proxy-and-java-reflection/</loc>
-    <lastmod>2015-11-20T20:40:11+00:00</lastmod>
+    <lastmod>2019-09-12T10:32:56+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2015/java-reflection/</loc>
-    <lastmod>2015-11-13T21:20:11+00:00</lastmod>
+    <lastmod>2019-09-12T10:33:34+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2015/java-generics/</loc>
-    <lastmod>2015-11-03T20:18:11+00:00</lastmod>
+    <lastmod>2019-09-12T14:14:02+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2015/java-varargs/</loc>
-    <lastmod>2015-10-29T21:30:11+00:00</lastmod>
+    <lastmod>2019-09-12T10:33:57+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://blog.jrwang.me/2015/java-field-init-note/</loc>
-    <lastmod>2015-10-03T18:37:11+00:00</lastmod>
+    <lastmod>2019-09-12T14:05:58+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>

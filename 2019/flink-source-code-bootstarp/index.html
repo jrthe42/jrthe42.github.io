@@ -23,7 +23,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.58.0 with theme even" />
+<meta name="generator" content="Hugo 0.59.0 with theme even" />
 
 
 <link rel="canonical" href="https://blog.jrwang.me/2019/flink-source-code-bootstarp/" />
@@ -43,13 +43,13 @@
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://blog.jrwang.me/2019/flink-source-code-bootstarp/" />
 <meta property="article:published_time" content="2019-05-05T21:42:38+00:00" />
-<meta property="article:modified_time" content="2019-05-05T21:42:38+00:00" />
+<meta property="article:modified_time" content="2019-11-07T11:12:25+08:00" />
 <meta itemprop="name" content="Flink 源码阅读笔记（5）- 集群启动流程">
 <meta itemprop="description" content="在 Flink 1.5.0 版本发布的时候，Flink 迎来了一个重要的改进：根据 FLIP-6 重构了 Flink 集群部署和任务处理模型，以便更好地和管理资源和调度任务，更优雅地和 Yar">
 
 
 <meta itemprop="datePublished" content="2019-05-05T21:42:38&#43;00:00" />
-<meta itemprop="dateModified" content="2019-05-05T21:42:38&#43;00:00" />
+<meta itemprop="dateModified" content="2019-11-07T11:12:25&#43;08:00" />
 <meta itemprop="wordCount" content="6108">
 
 
@@ -294,7 +294,7 @@
 
 <h2 id="minicluster-的启动流程">MiniCluster 的启动流程</h2>
 
-<p>我们先从最为简单的 MiniCluster 着手，分析一下 Flink 的启动流程以及内部各组件之间的交互。 MiniCluster 看一看做是一个内嵌的 Flink 运行时环境，所有的组件都在独立的本地线程中运行。MiniCluster 的启动入口在 <code>LocalStreamEnvironment</code> 中。</p>
+<p>我们先从最为简单的 MiniCluster 着手，分析一下 Flink 的启动流程以及内部各组件之间的交互。 MiniCluster 可以看做是一个内嵌的 Flink 运行时环境，所有的组件都在独立的本地线程中运行。MiniCluster 的启动入口在 <code>LocalStreamEnvironment</code> 中。</p>
 
 <p>在 <code>MiniCluster#start</code> 中，启动流程大致分为三个阶段：</p>
 
@@ -1828,7 +1828,7 @@
   <p class="copyright-item">
     <span class="item-title">上次更新</span>
     <span class="item-content">
-        2019-05-05
+        2019-11-07
         
     </span>
   </p>
@@ -1897,7 +1897,7 @@
   <span class="copyright-year">
     &copy; 
     2015 - 
-    2019
+    2020
     <span class="heart">
       <i class="iconfont icon-heart"></i>
     </span>

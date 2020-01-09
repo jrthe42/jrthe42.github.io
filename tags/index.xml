@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Tags on JR&#39;s Blog</title>
@@ -6,7 +6,7 @@
     <description>Recent content in Tags on JR&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sat, 19 Oct 2019 14:22:57 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 05 Jan 2020 19:30:45 +0800</lastBuildDate>
     
 	<atom:link href="https://blog.jrwang.me/tags/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,7 +14,7 @@
     <item>
       <title>Flink</title>
       <link>https://blog.jrwang.me/tags/flink/</link>
-      <pubDate>Sat, 19 Oct 2019 14:22:57 +0800</pubDate>
+      <pubDate>Sun, 05 Jan 2020 19:30:45 +0800</pubDate>
       
       <guid>https://blog.jrwang.me/tags/flink/</guid>
       <description></description>
@@ -23,7 +23,7 @@
     <item>
       <title>SQL</title>
       <link>https://blog.jrwang.me/tags/sql/</link>
-      <pubDate>Sat, 19 Oct 2019 14:22:57 +0800</pubDate>
+      <pubDate>Sun, 05 Jan 2020 19:30:45 +0800</pubDate>
       
       <guid>https://blog.jrwang.me/tags/sql/</guid>
       <description></description>
@@ -32,7 +32,7 @@
     <item>
       <title>实时计算</title>
       <link>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</link>
-      <pubDate>Sat, 19 Oct 2019 14:22:57 +0800</pubDate>
+      <pubDate>Sun, 05 Jan 2020 19:30:45 +0800</pubDate>
       
       <guid>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</guid>
       <description></description>
