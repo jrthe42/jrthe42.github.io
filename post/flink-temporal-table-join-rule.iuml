@@ -1,0 +1,65 @@
+@startuml flink-correlate-to-join-rule-for-temporal-table
+
+abstract class LogicalCorrelateToJoinFromTemporalTableRule {
+}
+
+abstract class LogicalCorrelateToJoinFromLookupTemporalTableRule extends LogicalCorrelateToJoinFromTemporalTableRule {
+}
+
+abstract class LogicalCorrelateToJoinFromGeneralTemporalTableRule extends LogicalCorrelateToJoinFromTemporalTableRule {
+}
+
+class LogicalCorrelateToJoinFromLookupTableRuleWithFilter extends LogicalCorrelateToJoinFromLookupTemporalTableRule {
+}
+
+class LogicalCorrelateToJoinFromLookupTableRuleWithoutFilter extends LogicalCorrelateToJoinFromLookupTemporalTableRule {
+}
+
+class LogicalCorrelateToJoinFromTemporalTableRuleWithFilter extends LogicalCorrelateToJoinFromGeneralTemporalTableRule {
+}
+
+class LogicalCorrelateToJoinFromTemporalTableRuleWithoutFilter extends LogicalCorrelateToJoinFromGeneralTemporalTableRule {
+}
+
+
+interface CommonTemporalTableJoinRule {
+}
+
+interface CommonLookupJoinRule extends CommonTemporalTableJoinRule {
+
+}
+
+abstract class BaseSnapshotOnTableScanRule implements CommonLookupJoinRule {
+}
+
+class StreamExecLookupJoinRule$SnapshotOnTableScanRule extends BaseSnapshotOnTableScanRule {
+}
+
+class BatchExecLookupJoinRule$SnapshotOnTableScanRule extends BaseSnapshotOnTableScanRule {
+}
+
+abstract class BaseSnapshotOnCalcTableScanRule implements CommonLookupJoinRule{
+}
+
+class StreamExecLookupJoinRule$SnapshotOnCalcTableScanRule extends BaseSnapshotOnCalcTableScanRule {
+}
+
+class BatchExecLookupJoinRule$SnapshotOnCalcTableScanRule extends BaseSnapshotOnCalcTableScanRule {
+}
+
+class StreamExecTemporalJoinRule {
+
+}
+
+
+
+' lateral join with udtf
+class FlinkLogicalCorrelateConverter {
+}
+
+class StreamExecCorrelateRule {
+}
+
+class StreamExecCorrelate {
+}
+@enduml 

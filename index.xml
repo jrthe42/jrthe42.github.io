@@ -6,7 +6,7 @@
     <description>Recent content on JR&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 05 Jan 2020 19:30:45 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 26 Dec 2020 20:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://blog.jrwang.me/index.xml" rel="self" type="application/rss+xml" />
     
@@ -29,6 +29,24 @@
       <description>Coder.
 Reader.
 Currently interested in Distributed System and Streaming Processing.</description>
+    </item>
+    
+    <item>
+      <title>Flink 源码阅读笔记（21）- Flink JobManager HA 机制的扩展与实现</title>
+      <link>https://blog.jrwang.me/2020/2020-12-26-flink-ha/</link>
+      <pubDate>Sat, 26 Dec 2020 20:00:00 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/2020/2020-12-26-flink-ha/</guid>
+      <description>在 Flink 1.12 中，Flink on Kubernetes 的 Native 部署方案由实验特性正式变更为生产环境可用。其中一个重要特性是扩展了 HA 的实现，引入了一种新的、完全基于 Kubernetes 的 HA 方案。</description>
+    </item>
+    
+    <item>
+      <title>Flink 源码阅读笔记（20）- Flink 基于 Mailbox 的线程模型</title>
+      <link>https://blog.jrwang.me/2020/2020-12-20-flink-sourcecode-mailbox-threading-model/</link>
+      <pubDate>Sun, 20 Dec 2020 17:20:26 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/2020/2020-12-20-flink-sourcecode-mailbox-threading-model/</guid>
+      <description>Flink 1.10 对内部事件处理的线程模型做了一个大的改进，采用了类似 Actor 的信箱模型。这篇文章我们将深入 Flink 内部 Mailbox 线程模型的设计即实现。 背景 在之前的线程模型中</description>
     </item>
     
     <item>

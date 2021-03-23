@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Mailbox on JR&#39;s Blog</title>
+    <link>https://blog.jrwang.me/tags/mailbox/</link>
+    <description>Recent content in Mailbox on JR&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 20 Dec 2020 17:20:26 +0800</lastBuildDate>
+    
+	<atom:link href="https://blog.jrwang.me/tags/mailbox/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Flink 源码阅读笔记（20）- Flink 基于 Mailbox 的线程模型</title>
+      <link>https://blog.jrwang.me/2020/2020-12-20-flink-sourcecode-mailbox-threading-model/</link>
+      <pubDate>Sun, 20 Dec 2020 17:20:26 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/2020/2020-12-20-flink-sourcecode-mailbox-threading-model/</guid>
+      <description>Flink 1.10 对内部事件处理的线程模型做了一个大的改进，采用了类似 Actor 的信箱模型。这篇文章我们将深入 Flink 内部 Mailbox 线程模型的设计即实现。 背景 在之前的线程模型中</description>
+    </item>
+    
+  </channel>
+</rss>

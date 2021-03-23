@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>高可用 on JR&#39;s Blog</title>
+    <link>https://blog.jrwang.me/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/</link>
+    <description>Recent content in 高可用 on JR&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 26 Dec 2020 20:00:00 +0800</lastBuildDate>
+    
+	<atom:link href="https://blog.jrwang.me/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Flink 源码阅读笔记（21）- Flink JobManager HA 机制的扩展与实现</title>
+      <link>https://blog.jrwang.me/2020/2020-12-26-flink-ha/</link>
+      <pubDate>Sat, 26 Dec 2020 20:00:00 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/2020/2020-12-26-flink-ha/</guid>
+      <description>在 Flink 1.12 中，Flink on Kubernetes 的 Native 部署方案由实验特性正式变更为生产环境可用。其中一个重要特性是扩展了 HA 的实现，引入了一种新的、完全基于 Kubernetes 的 HA 方案。</description>
+    </item>
+    
+  </channel>
+</rss>

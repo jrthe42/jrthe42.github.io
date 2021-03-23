@@ -1,0 +1,166 @@
+@startuml flinl-ha
+together {
+interface LeaderContender {
+    void grantLeadership(UUID leaderSessionID);
+    void revokeLeadership();
+    void handleError(Exception exception);
+}
+
+LeaderElectionService -up-> LeaderContender
+
+'each contender has to instantiate its own leader election service
+interface LeaderElectionService {
+    void start(LeaderContender contender) throws Exception;
+    void stop() throws Exception;
+    void confirmLeadership(UUID leaderSessionID, String leaderAddress);
+    boolean hasLeadership(@Nonnull UUID leaderSessionId);
+}
+
+
+'only a single and thus directly grants him the leadership upon start up
+class StandaloneLeaderElectionService implements LeaderElectionService {
+}
+
+class EmbeddedLeaderElectionService implements LeaderElectionService {
+}
+
+interface LeaderElectionEventHandler {
+    void onGrantLeadership();
+    void onRevokeLeadership();
+    void onLeaderInformationChange(LeaderInformation leaderInformation);
+}
+
+class DefaultLeaderElectionService implements LeaderElectionService, LeaderElectionEventHandler {
+    private LeaderElectionDriver leaderElectionDriver;
+}
+
+interface LeaderElectionDriver {
+    void writeLeaderInformation(LeaderInformation leaderInformation);
+    boolean hasLeadership();
+}
+
+class ZooKeeperLeaderElectionDriver implements LeaderElectionDriver {
+}
+
+class KubernetesLeaderElectionDriver implements LeaderElectionDriver {
+}
+
+DefaultLeaderElectionService --> LeaderElectionDriver
+
+}
+
+
+together {
+
+interface LeaderRetrievalListener {
+    void notifyLeaderAddress(@Nullable String leaderAddress, @Nullable UUID leaderSessionID);
+    void handleError(Exception exception);
+}
+
+interface LeaderRetrievalService {
+    void start(LeaderRetrievalListener listener) throws Exception;
+    void stop() throws Exception;
+}
+
+LeaderRetrievalService -up-> LeaderRetrievalListener
+
+class StandaloneLeaderRetrievalService implements LeaderRetrievalService {
+}
+
+class EmbeddedLeaderRetrievalService implements LeaderRetrievalService {
+}
+
+interface LeaderRetrievalEventHandler {
+    void notifyLeaderAddress(LeaderInformation leaderInformation);
+}
+
+class DefaultLeaderRetrievalService implements LeaderRetrievalService, LeaderRetrievalEventHandler {
+    private LeaderRetrievalDriver leaderRetrievalDriver;
+    private volatile LeaderRetrievalListener leaderListener;
+}
+
+interface LeaderRetrievalDriver {
+    void close() throws Exception;
+}
+
+DefaultLeaderRetrievalService --> LeaderRetrievalDriver
+
+class ZooKeeperLeaderRetrievalDriver implements LeaderRetrievalDriver {
+}
+
+class KubernetesLeaderRetrievalDriver implements LeaderRetrievalDriver {
+}
+
+}
+
+
+together {
+interface HighAvailabilityServices {
+    LeaderRetrievalService getResourceManagerLeaderRetriever();
+    LeaderRetrievalService getDispatcherLeaderRetriever();
+    LeaderRetrievalService getJobManagerLeaderRetriever(
+            JobID jobID, String defaultJobManagerAddress);
+
+    LeaderElectionService getResourceManagerLeaderElectionService();
+    LeaderElectionService getDispatcherLeaderElectionService();
+    LeaderElectionService getJobManagerLeaderElectionService(JobID jobID);
+
+    CheckpointRecoveryFactory getCheckpointRecoveryFactory();
+    JobGraphStore getJobGraphStore() throws Exception;
+    RunningJobsRegistry getRunningJobsRegistry() throws Exception;
+    BlobStore createBlobStore() throws IOException;
+}
+
+abstract class AbstractNonHaServices implements HighAvailabilityServices {
+
+}
+
+class StandaloneHaServices extends AbstractNonHaServices {
+
+}
+
+abstract class AbstractHaServices implements HighAvailabilityServices {
+
+}
+
+class ZooKeeperHaServices extends AbstractHaServices {
+
+}
+
+class KubernetesHaServices extends AbstractHaServices {
+
+}
+}
+
+
+together {
+interface RetrievableStateStorageHelper<T extends Serializable> {
+    RetrievableStateHandle<T> store(T state) throws Exception;
+}
+
+class FileSystemStateStorageHelper<T extends Serializable> implements RetrievableStateStorageHelper {
+}
+
+interface StateHandleStore<T extends Serializable, R extends ResourceVersion<R>> {
+    RetrievableStateHandle<T> addAndLock(String name, T state) throws Exception;
+    void replace(String name, R resourceVersion, T state) throws Exception;
+    R exists(String name) throws Exception;
+    RetrievableStateHandle<T> getAndLock(String name) throws Exception;
+    List<Tuple2<RetrievableStateHandle<T>, String>> getAllAndLock() throws Exception;
+    Collection<String> getAllHandles() throws Exception;
+    boolean releaseAndTryRemove(String name) throws Exception;
+    void releaseAndTryRemoveAll() throws Exception;
+    void clearEntries() throws Exception;
+    void release(String name) throws Exception;
+    void releaseAll() throws Exception;
+}
+
+class ZooKeeperStateHandleStore<T extends Serializable> implements StateHandleStore {
+    private final RetrievableStateStorageHelper<T> storage;
+}
+
+class KubernetesStateHandleStore<T extends Serializable> implements StateHandleStore {
+    private final RetrievableStateStorageHelper<T> storage;
+}
+}
+@enduml

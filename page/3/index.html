@@ -45,7 +45,7 @@
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://blog.jrwang.me/" />
 
-<meta property="og:updated_time" content="2020-01-05T19:30:45+08:00" />
+<meta property="og:updated_time" content="2020-12-26T20:00:00+08:00" />
 <meta itemprop="name" content="JR&#39;s Blog">
 <meta itemprop="description" content="JR&#39;s Blog">
 
@@ -112,6 +112,44 @@
       <div class="content-wrapper">
         <div id="content" class="content">
           <section id="posts" class="posts">
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2019/flink-source-code-jobgraph/">Flink 源码阅读笔记（2）- JobGraph 的生成</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2019-02-17 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      前面的文章我们介绍了 StreamGraph 的生成，这个实际上只对应 Flink 作业在逻辑上的执行计划图。Flink 会进一步对 StreamGraph 进行转换，得到另一个执行计划图，即 JobGr
+    </div>
+    <div class="read-more">
+      <a href="/2019/flink-source-code-jobgraph/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2019/flink-source-code-streamgraph/">Flink 源码阅读笔记（1）- StreamGraph 的生成</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2019-02-16 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      在编写 Flink 的程序的时候，核心的要点是构造出数据处理的拓扑结构，即任务执行逻辑的 DAG。我们先来看一下 Flink 任务的拓扑在逻辑上是怎么保存的。 StreamExecutionEnvironment StreamExecutionEnvironment 是 Flink
+    </div>
+    <div class="read-more">
+      <a href="/2019/flink-source-code-streamgraph/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
     <article class="post">
   <header class="post-header">
     <h1 class="post-title"><a class="post-link" href="/2018/container-and-kubernetes/">关于容器技术的小抄</a></h1>
@@ -264,44 +302,6 @@
   </div>
 </article>
 
-    <article class="post">
-  <header class="post-header">
-    <h1 class="post-title"><a class="post-link" href="/2016/gc-overhead-limit-in-putsortreducer/">记一次使用 PutSortReducer 时 OOM 错误的排查过程</a></h1>
-    <div class="post-meta">
-      <span class="post-time"> 2016-04-22 </span>
-      
-    </div>
-  </header>
-  
-  <div class="post-content">
-    <div class="post-summary">
-      之前写过一篇文章介绍如何使用 Bulk Load 的方式向 HBase 中批量导入数据。前两天在运行导入任务时总是会有一个 Reduce 出现 GC overhead limit exceeded 的错误从而导致任务失败，这一度让我
-    </div>
-    <div class="read-more">
-      <a href="/2016/gc-overhead-limit-in-putsortreducer/" class="read-more-link">阅读更多</a>
-    </div>
-  </div>
-</article>
-
-    <article class="post">
-  <header class="post-header">
-    <h1 class="post-title"><a class="post-link" href="/2016/java-collections-set/">Java 容器源码分析之 Set</a></h1>
-    <div class="post-meta">
-      <span class="post-time"> 2016-04-10 </span>
-      
-    </div>
-  </header>
-  
-  <div class="post-content">
-    <div class="post-summary">
-      Set 表示由无重复对象组成的集合，也是集合框架中重要的一种集合类型，直接扩展自 Collection 接口。在一个 Set 中，不能有两个引用指向同一个对象，或两个指向 null 的引
-    </div>
-    <div class="read-more">
-      <a href="/2016/java-collections-set/" class="read-more-link">阅读更多</a>
-    </div>
-  </div>
-</article>
-
     </section>
   
   <nav class="pagination">
@@ -343,7 +343,7 @@
   <span class="copyright-year">
     &copy; 
     2015 - 
-    2020
+    2021
     <span class="heart">
       <i class="iconfont icon-heart"></i>
     </span>

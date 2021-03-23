@@ -45,7 +45,7 @@
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://blog.jrwang.me/" />
 
-<meta property="og:updated_time" content="2020-01-05T19:30:45+08:00" />
+<meta property="og:updated_time" content="2020-12-26T20:00:00+08:00" />
 <meta itemprop="name" content="JR&#39;s Blog">
 <meta itemprop="description" content="JR&#39;s Blog">
 
@@ -127,6 +127,44 @@
     </div>
     <div class="read-more">
       <a href="/2019/aloha-introduce/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2020/2020-12-26-flink-ha/">Flink 源码阅读笔记（21）- Flink JobManager HA 机制的扩展与实现</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2020-12-26 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      在 Flink 1.12 中，Flink on Kubernetes 的 Native 部署方案由实验特性正式变更为生产环境可用。其中一个重要特性是扩展了 HA 的实现，引入了一种新的、完全基于 Kubernetes 的 HA 方案。
+    </div>
+    <div class="read-more">
+      <a href="/2020/2020-12-26-flink-ha/" class="read-more-link">阅读更多</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/2020/2020-12-20-flink-sourcecode-mailbox-threading-model/">Flink 源码阅读笔记（20）- Flink 基于 Mailbox 的线程模型</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2020-12-20 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      Flink 1.10 对内部事件处理的线程模型做了一个大的改进，采用了类似 Actor 的信箱模型。这篇文章我们将深入 Flink 内部 Mailbox 线程模型的设计即实现。 背景 在之前的线程模型中
+    </div>
+    <div class="read-more">
+      <a href="/2020/2020-12-20-flink-sourcecode-mailbox-threading-model/" class="read-more-link">阅读更多</a>
     </div>
   </div>
 </article>
@@ -264,44 +302,6 @@
   </div>
 </article>
 
-    <article class="post">
-  <header class="post-header">
-    <h1 class="post-title"><a class="post-link" href="/2019/flink-source-code-time-and-window/">Flink 源码阅读笔记（12）- 时间、定时器和窗口</a></h1>
-    <div class="post-meta">
-      <span class="post-time"> 2019-07-07 </span>
-      
-    </div>
-  </header>
-  
-  <div class="post-content">
-    <div class="post-summary">
-      流式数据处理中，很多操作要依赖于时间属性进行，因此时间属性也是流式引擎能够保证准确处理数据的基石。在这篇文章中，我们将对 Flink 中时间属性和窗口的
-    </div>
-    <div class="read-more">
-      <a href="/2019/flink-source-code-time-and-window/" class="read-more-link">阅读更多</a>
-    </div>
-  </div>
-</article>
-
-    <article class="post">
-  <header class="post-header">
-    <h1 class="post-title"><a class="post-link" href="/2019/flink-source-code-checkpoint/">Flink 源码阅读笔记（11）- Checkpoint 机制和状态恢复</a></h1>
-    <div class="post-meta">
-      <span class="post-time"> 2019-06-22 </span>
-      
-    </div>
-  </header>
-  
-  <div class="post-content">
-    <div class="post-summary">
-      在上一篇文章中，我们对 Flink 状态管理相关的代码逻辑进行了分析，但为了实现任务的故障恢复以及数据一致性的效果，还需要借助于检查点（Checkpoi
-    </div>
-    <div class="read-more">
-      <a href="/2019/flink-source-code-checkpoint/" class="read-more-link">阅读更多</a>
-    </div>
-  </div>
-</article>
-
     </section>
   
   <nav class="pagination">
@@ -340,7 +340,7 @@
   <span class="copyright-year">
     &copy; 
     2015 - 
-    2020
+    2021
     <span class="heart">
       <i class="iconfont icon-heart"></i>
     </span>

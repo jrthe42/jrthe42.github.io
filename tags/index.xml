@@ -6,7 +6,7 @@
     <description>Recent content in Tags on JR&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 05 Jan 2020 19:30:45 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 26 Dec 2020 20:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://blog.jrwang.me/tags/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,9 +14,45 @@
     <item>
       <title>Flink</title>
       <link>https://blog.jrwang.me/tags/flink/</link>
-      <pubDate>Sun, 05 Jan 2020 19:30:45 +0800</pubDate>
+      <pubDate>Sat, 26 Dec 2020 20:00:00 +0800</pubDate>
       
       <guid>https://blog.jrwang.me/tags/flink/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Kubernetes</title>
+      <link>https://blog.jrwang.me/tags/kubernetes/</link>
+      <pubDate>Sat, 26 Dec 2020 20:00:00 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/kubernetes/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>实时计算</title>
+      <link>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</link>
+      <pubDate>Sat, 26 Dec 2020 20:00:00 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>高可用</title>
+      <link>https://blog.jrwang.me/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/</link>
+      <pubDate>Sat, 26 Dec 2020 20:00:00 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Mailbox</title>
+      <link>https://blog.jrwang.me/tags/mailbox/</link>
+      <pubDate>Sun, 20 Dec 2020 17:20:26 +0800</pubDate>
+      
+      <guid>https://blog.jrwang.me/tags/mailbox/</guid>
       <description></description>
     </item>
     
@@ -26,15 +62,6 @@
       <pubDate>Sun, 05 Jan 2020 19:30:45 +0800</pubDate>
       
       <guid>https://blog.jrwang.me/tags/sql/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>实时计算</title>
-      <link>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</link>
-      <pubDate>Sun, 05 Jan 2020 19:30:45 +0800</pubDate>
-      
-      <guid>https://blog.jrwang.me/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/</guid>
       <description></description>
     </item>
     

@@ -1,0 +1,93 @@
+@startuml flink-mailbox-model
+interface TaskMailbox {
+    boolean isMailboxThread();
+    boolean hasMail();
+
+    Optional<Mail> tryTake(int priority);
+    Mail take(int priority) throws InterruptedException;
+
+    boolean createBatch();
+    Optional<Mail> tryTakeFromBatch();
+
+    void put(Mail mail);
+    void putFirst(Mail mail);
+
+    List<Mail> drain();
+    void quiesce();
+    List<Mail> close();
+
+    State getState();
+
+    void runExclusively(Runnable runnable);
+}
+
+class TaskMailboxImpl implements TaskMailbox {
+    private Thread taskMailboxThread;
+    private Deque<Mail> queue;
+    private ReentrantLock lock;
+}
+
+class Mail {
+    private ThrowingRunnable<> runnable;
+    private StreamTaskActionExecutor actionExecutor;
+
+    int getPriority();
+    void tryCancel(boolean mayInterruptIfRunning);
+    void run() throws Exception;
+}
+
+TaskMailbox --> Mail
+
+interface MailboxExecutor {
+    void execute(ThrowingRunnable<> command, ...);
+    Future<T> submit(Callable<T> command, ...);
+    void yield();
+    boolean tryYield();
+}
+
+class MailboxExecutorImpl implements MailboxExecutor {
+    private final TaskMailbox mailbox;
+    private final StreamTaskActionExecutor actionExecutor;
+    private final MailboxProcessor mailboxProcessor;
+
+    private final int priority;
+}
+
+
+class MailboxProcessor {
+    MailboxDefaultAction mailboxDefaultAction;
+
+    TaskMailbox mailbox;
+    StreamTaskActionExecutor actionExecutor;
+
+    MailboxExecutor getMainMailboxExecutor();
+    MailboxExecutor getMailboxExecutor(int priority)
+
+    void runMailboxLoop()
+    boolean runMailboxStep();
+    void drain();
+}
+
+MailboxProcessor --> MailboxDefaultAction
+MailboxProcessor --> TaskMailbox
+MailboxProcessor --> MailboxExecutor
+
+
+namespace MailboxDefaultAction {
+interface MailboxDefaultAction {
+    void runDefaultAction(Controller controller);
+}
+
+interface Suspension {
+    void resume();
+}
+
+interface Controller {
+    void allActionsCompleted();
+    Suspension suspendDefaultAction();
+}
+
+MailboxDefaultAction --> Controller
+Controller -> Suspension
+}
+@enduml

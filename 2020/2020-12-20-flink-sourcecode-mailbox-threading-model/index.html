@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Flink 源码阅读笔记（20）- Flink 基于 Mailbox 的线程模型 - JR&#39;s Blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="jrthe42" /><meta name="description" content="Flink 1.10 对内部事件处理的线程模型做了一个大的改进，采用了类似 Actor 的信箱模型。这篇文章我们将深入 Flink 内部 Mailbox 线程模型的设计即实现。 背景 在之前的线程模型中" /><meta name="keywords" content="jrthe42, Blog, Programming" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.59.0 with theme even" />
+
+
+<link rel="canonical" href="https://blog.jrwang.me/2020/2020-12-20-flink-sourcecode-mailbox-threading-model/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+<link href="/dist/even.7d171193.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="Flink 源码阅读笔记（20）- Flink 基于 Mailbox 的线程模型" />
+<meta property="og:description" content="Flink 1.10 对内部事件处理的线程模型做了一个大的改进，采用了类似 Actor 的信箱模型。这篇文章我们将深入 Flink 内部 Mailbox 线程模型的设计即实现。 背景 在之前的线程模型中" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.jrwang.me/2020/2020-12-20-flink-sourcecode-mailbox-threading-model/" />
+<meta property="article:published_time" content="2020-12-20T17:20:26+08:00" />
+<meta property="article:modified_time" content="2021-03-23T22:16:10+08:00" />
+<meta itemprop="name" content="Flink 源码阅读笔记（20）- Flink 基于 Mailbox 的线程模型">
+<meta itemprop="description" content="Flink 1.10 对内部事件处理的线程模型做了一个大的改进，采用了类似 Actor 的信箱模型。这篇文章我们将深入 Flink 内部 Mailbox 线程模型的设计即实现。 背景 在之前的线程模型中">
+
+
+<meta itemprop="datePublished" content="2020-12-20T17:20:26&#43;08:00" />
+<meta itemprop="dateModified" content="2021-03-23T22:16:10&#43;08:00" />
+<meta itemprop="wordCount" content="3734">
+
+
+
+<meta itemprop="keywords" content="Flink,实时计算,Mailbox," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Flink 源码阅读笔记（20）- Flink 基于 Mailbox 的线程模型"/>
+<meta name="twitter:description" content="Flink 1.10 对内部事件处理的线程模型做了一个大的改进，采用了类似 Actor 的信箱模型。这篇文章我们将深入 Flink 内部 Mailbox 线程模型的设计即实现。 背景 在之前的线程模型中"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">JRTHE42</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">JRTHE42</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">Flink 源码阅读笔记（20）- Flink 基于 Mailbox 的线程模型</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-12-20 </span>
+        
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#背景">背景</a></li>
+<li><a href="#改进方案">改进方案</a></li>
+<li><a href="#具体实现">具体实现</a>
+<ul>
+<li><a href="#整体设计">整体设计</a></li>
+<li><a href="#mailbox">Mailbox</a></li>
+<li><a href="#mailboxprocessor">MailboxProcessor</a></li>
+<li><a href="#mailboxexecutor">MailboxExecutor</a></li>
+</ul></li>
+<li><a href="#streamtask-如何应用-mailbox-模型">StreamTask 如何应用 Mailbox 模型</a>
+<ul>
+<li><a href="#legacy-source-的兼容处理">Legacy Source 的兼容处理</a></li>
+</ul></li>
+<li><a href="#小结">小结</a></li>
+<li><a href="#参考">参考</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      
+
+<p>Flink 1.10 对内部事件处理的线程模型做了一个大的改进，采用了类似 Actor 的信箱模型。这篇文章我们将深入 Flink 内部 Mailbox 线程模型的设计即实现。</p>
+
+<h2 id="背景">背景</h2>
+
+<p>在之前的线程模型中，<code>StreamTask</code> 中可能存在多个潜在的线程会修改内部的状态，因此需要通过加锁的方式来确保线程安全的状态，这个全局的锁就是著名的 <code>checkpointLock</code>。通过 <code>checkpointLock</code> 控制线程间的并发会让程序代码变得很复杂，并且锁对象还通过一些 API 暴露给了用户（例如 <code>SourceFunction#getCheckpointLock()</code>），如果没有正确加锁很容易引发线程安全问题。</p>
+
+<p>为了解决这个问题，社区提出了基于 Mailbox 的线程模型，见 <a href="https://issues.apache.org/jira/browse/FLINK-12477">FLINK-12477</a>。Mailbox 机制借鉴了 Actor 模型，通过单个 Mailbox 线程配合阻塞队列的方式，将内部状态的修改交由单个线程完成，从而避免多线程的问题。相比于使用 <code>checkpointLock</code>，Mailbox 模型另一个好处是方便控制事件处理的优先级，通过锁竞争很难达到类似的效果。</p>
+
+<p>在原始的线程模型中，<code>checkpointLock</code> 主要用在三个地方：</p>
+
+<ul>
+<li>事件处理：包括 events, watermarks, barriers, latency markers 的处理和发送</li>
+<li>checkpoint 触发：通过 RPC 调用触发 checkpoint（在 Source 中）、通知 checkpoint 的完成情况，（注：对下游来说，checkpoint 触发和取消是通过 barrier 触发的，归为第一种情况）</li>
+<li>Processing Time Timers: 处理时间定时器是通过 <code>ScheduledExecutor</code> 异步执行的（事件事件定时器触发是通过 watermark 触发的，归为第一种情况）</li>
+</ul>
+
+<p>在新的改进方案中，对锁的替换不仅仅要做到排他的效果，对于事件处理还需要保证原子性。</p>
+
+<h2 id="改进方案">改进方案</h2>
+
+<p>Mailbox 模型的核心思想其实比较简单，其底层就是 FIFO 的队列 + 一个单线程的循环事件处理。所有需要处理的事件都封装成一个 Mail 投递到 Mailbox 中，然后按先后顺序由单线程加以处理，从而简化了并发访问问题。</p>
+
+<p>在使用 Mailbox 以前，<code>StreamTask</code> 的核心逻辑是在 <code>StreamTask#run()</code> 中，内部是一个循环的事件处理。除此以外，checkpoint trigger 和 processing time timer 在其它线程中运行。</p>
+
+<p>在改进方案中，<code>StreamTask</code> 的基础逻辑大致如下（伪代码，来自<a href="https://docs.google.com/document/d/1eDpsUKv2FqwZiS1Pm6gYO5eFHScBHfULKmH1-ZEWB4g">设计文档</a>）：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="n">BlockingQueue</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;</span> <span class="nf">mailbox</span> <span class="o">=</span> <span class="p">...</span>
+
+<span class="kt">void</span> <span class="nf">runMailboxProcessing</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">//TODO: can become a cancel-event through mailbox eventually
+</span><span class="c1"></span>    <span class="n">Runnable</span> <span class="nf">letter</span><span class="p">;</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">isRunning</span><span class="p">())</span> <span class="p">{</span> 
+        <span class="k">while</span> <span class="p">((</span><span class="n">letter</span> <span class="o">=</span> <span class="n">mailbox</span><span class="p">.</span><span class="na">poll</span><span class="p">())</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">letter</span><span class="p">.</span><span class="na">run</span><span class="p">();</span>
+        <span class="p">}</span>
+
+        <span class="n">defaultAction</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">defaultAction</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// e.g. event-processing from an input
+</span><span class="c1"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上面只是核心代码的大致逻辑，具体的实现还有一些优化，比如队列的公平性。之前的抢锁操作是完全没有任何公平性而言的。</p>
+
+<p>在这个模型下，事件处理的循环被移到了 Mailbox 处理线程中，因此以往在 <code>StreamTask#run()</code> 中的循环逻辑就不再需要了。但这里会有个问题，因为历史原因，Flink Source Function 的核心逻辑是一个循环，这个循环不能和 Mailbox 的事件循环穿插执行，因此需要进行兼容性处理。在 <a href="https://cwiki.apache.org/confluence/display/FLINK/FLIP-27%3A+Refactor+Source+Interface">FLIP-27</a> 提出的新的 Source 接口中，已经可以比较好地和 Mailbox 模型进行兼容了。</p>
+
+<p>对于 checkpoint trigger 和 processing time timer，只需要将对应的操作封装为 Mail 投递到 Mailbox 中，等待 Mailbox 线程进行处理即可。</p>
+
+<h2 id="具体实现">具体实现</h2>
+
+<h3 id="整体设计">整体设计</h3>
+
+<p>下面这张图展示了 Mailbox 线程模型中的核心抽象。</p>
+
+<p><img src="/img/flink-mailbox/flink-mailbox-model.png" alt="flink-mailbox" /></p>
+
+<p><code>Mail</code> 中封装了需要处理的消息和相应的动作，checkpoint trigger 和 processing time timer 就是通过 <code>Mail</code> 触发的；<code>TaskMailbox</code> 用于存储 <code>Mail</code>（需要处理的消息）；<code>MailboxProcessor</code> 负责从 <code>TaskMailbox</code> 中取出信件并处理；其它的调用方通过 <code>MailboxExecutor</code> 向 <code>TaskMailbox</code> 中投递信件。</p>
+
+<p><code>MailboxDefaultAction</code> 则是 <code>MailboxProcessor</code> 的默认动作，如前所述，<code>MailboxDefaultAction</code> 主要负责处理基础的 stream event、barrier、watermark 等。在 Mailbox 主线程的循环中，处理完新的 <code>Mail</code> 后就会执行该动作。<code>MailboxDefaultAction</code> 通过一个 <code>MailboxController</code> 和 Mailbox 进行交互，可以借此获悉所有的事件都处理完毕，或者临时暂停 <code>MailboxDefaultAction</code>。</p>
+
+<h3 id="mailbox">Mailbox</h3>
+
+<p><code>TaskMailbox</code> 的内部使用了一个普通的 <code>Deque</code> 存储写入的 <code>Mail</code>，对 <code>Deque</code> 读写通过一个 <code>ReentrantLock</code> 来加以保护。<code>Mailbox</code> 的一个主要特性是可以做优先级控制，每一个 <code>Mail</code> 都有其优先级，从 <code>TaskMailbox</code> 获取 <code>Mail</code> 时可以指定优先级，实际实现时就是通过遍历队列元素比较优先级。</p>
+
+<p>为了减少读取队列时的同步开销，<code>TaskMailbox</code> 支持创建一个 batch 后续消费，相当于把队列中的元素存入一个额外的队列，后续消费时就避免了加锁的操作。</p>
+
+<h3 id="mailboxprocessor">MailboxProcessor</h3>
+
+<p>MailboxProcessot 核心就是前面提过的事件循环，在这个事件循环中，除了处理 <code>TaskMailbox</code> 中的事件外，还有一个 <code>MailboxDefaultAction</code> 用做默认的行为。</p>
+
+<p><code>MailboxDefaultAction</code> 和 <code>TaskMailbox</code> 内部的 <code>Mail</code> 的区别在于，<code>Mail</code> 通常用于一些控制类的消息处理，例如 checkpoint 触发，而 <code>MailboxDefaultAction</code> 则用于数据流上的普通消息处理（如正常的数据记录，barrier）等。数据流上的消息数据量比较大，通过邮箱内部队列进行处理显然开销比较大。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">class</span> <span class="n">MailboxProcessor</span> <span class="nf">implements</span> <span class="n">Closeable</span> <span class="p">{</span>
+    <span class="c1">//邮箱
+</span><span class="c1"></span>    <span class="kd">protected</span> <span class="nf">final</span> <span class="n">TaskMailbox</span> <span class="nf">mailbox</span><span class="p">;</span>
+
+    <span class="c1">// 默认行为，用于普通的数据流上的消息数据处理
+</span><span class="c1"></span>    <span class="kd">protected</span> <span class="nf">final</span> <span class="n">MailboxDefaultAction</span> <span class="nf">mailboxDefaultAction</span><span class="p">;</span>
+
+    <span class="kd">public</span> <span class="nf">void</span> <span class="n">runMailboxLoop</span><span class="p">()</span> <span class="kd">throws</span> <span class="nf">Exception</span> <span class="p">{</span>
+        <span class="kd">final</span> <span class="nf">TaskMailbox</span> <span class="n">localMailbox</span> <span class="o">=</span> <span class="n">mailbox</span><span class="p">;</span>
+        <span class="c1">//确保当前调用必须发生在 Mailbox 的事件处理线程中
+</span><span class="c1"></span>        <span class="n">checkState</span><span class="p">(</span><span class="n">localMailbox</span><span class="p">.</span><span class="na">isMailboxThread</span><span class="p">(),</span> <span class="s">&#34;Method must be executed by declared mailbox thread!&#34;</span><span class="p">);</span>
+
+        <span class="k">assert</span> <span class="n">localMailbox</span><span class="p">.</span><span class="na">getState</span><span class="p">()</span> <span class="o">==</span> <span class="n">TaskMailbox</span><span class="p">.</span><span class="na">State</span><span class="p">.</span><span class="na">OPEN</span> <span class="o">:</span> <span class="s">&#34;Mailbox must be opened!&#34;</span><span class="p">;</span>
+
+        <span class="kd">final</span> <span class="nf">MailboxController</span> <span class="n">defaultActionContext</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MailboxController</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+        <span class="k">while</span> <span class="p">(</span><span class="n">isMailboxLoopRunning</span><span class="p">())</span> <span class="p">{</span> <span class="c1">//事件循环
+</span><span class="c1"></span>            <span class="c1">// The blocking `processMail` call will not return until default action is available.
+</span><span class="c1"></span>            <span class="c1">// 处理事件，这是一个阻塞方法，如果默认行为不可用，方法不会返回
+</span><span class="c1"></span>            <span class="n">processMail</span><span class="p">(</span><span class="n">localMailbox</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">isMailboxLoopRunning</span><span class="p">())</span> <span class="p">{</span> <span class="c1">// 再做一次检查，因为上面的 mail 处理可能会改变运行状态
+</span><span class="c1"></span>                <span class="c1">//执行默认行为
+</span><span class="c1"></span>                <span class="n">mailboxDefaultAction</span><span class="p">.</span><span class="na">runDefaultAction</span><span class="p">(</span><span class="n">defaultActionContext</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="mailboxexecutor">MailboxExecutor</h3>
+
+<p><code>MailboxExecutor</code> 的主要作用是向 <code>TaskMailbox</code> 中投递 <code>Mail</code>，这个接口被设计为类似 <code>java.util.concurrent.Executor</code> 接口。提交 <code>Mail</code> 的行为可以在任意线程中进行，因为 <code>TaskMailbox</code> 内部有基于锁的同步控制。</p>
+
+<p>除了提交 <code>Mail</code> 外，<code>MailboxExecutor</code> 还有一个比较重要的作用体现在 <code>MailboxExecutor#yield</code> 方法中。<code>yield</code> 这个词在程序设计语言中非常常见，但其含义往往又让人摸不着头脑。从字面解释来看，<code>yield</code> 有“让出”，“屈服”之意，在一些场景下也有“生成”的意思。这里我们不纠结这个，还是来看看这个方法设计的意图的什么。</p>
+
+<p>Mailbox 模型中所有的事件都是在单个事件处理线程中处理的，排除掉优先级的因素，所有的事件按照 FIFO 的顺序加以处理。正常情况下，这种处理顺序是没有问题的。但是考虑到一种特殊的情况，如果要完成对事件A的处理需要等待一个条件，只有在处理完事件B之后这个条件才能满足，但是事件B在队列里的顺序是在事件A之后的，这样某种程度上来说就造成了一种 “死锁”。</p>
+
+<p><code>yield</code> 方法就是为了解决上面的问题，<code>yield</code> 会从队列中取出下一个事件进行处理，看上去像是暂时“让出”了对当前事件的处理。</p>
+
+<p>说起来有点抽象，看一个示例：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="n">MailboxExecutor</span> <span class="nf">mailboxExecutor</span> <span class="o">=</span> <span class="p">....</span>
+
+<span class="n">mailboxExecutor</span><span class="p">.</span><span class="na">executr</span><span class="p">(()</span> <span class="o">-&gt;</span> <span class="p">{</span>
+    <span class="c1">// ...
+</span><span class="c1"></span>    <span class="c1">// 当前事件处理的逻辑，要完成，需要依赖后面某个事件的处理
+</span><span class="c1"></span>    <span class="k">while</span> <span class="p">(</span><span class="n">resource</span> <span class="nf">not</span> <span class="n">available</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 取出下一个事件处理
+</span><span class="c1"></span>        <span class="n">mailboxExecutor</span><span class="p">.</span><span class="na">yield</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="c1">// 继续处理当前事件
+</span><span class="c1"></span>    <span class="c1">// ...
+</span><span class="c1"></span><span class="p">})</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>注意，为了不破坏 <code>Mailbox</code> 模型单线程执行的特性，这个方法必须在 <code>Mailbox</code> 事件处理线程中调用。这是一个阻塞方法，因此可能会阻塞事件处理线程。有些场景下可能还需要依赖事件处理线程来提交新的事件，因此也提供了非阻塞的 <code>tryYield</code> 方法。</p>
+
+<h2 id="streamtask-如何应用-mailbox-模型">StreamTask 如何应用 Mailbox 模型</h2>
+
+<p>StreamTask 的核心是处理消息流中的 <code>StreamRecord</code>，这个处理逻辑是 <code>MailboxProcessor</code> 的默认行为，即：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">class</span> <span class="nf">StreamTask</span> <span class="p">{</span>
+    <span class="kd">protected</span> <span class="nf">void</span> <span class="n">processInput</span><span class="p">(</span><span class="n">MailboxDefaultAction</span><span class="p">.</span><span class="na">Controller</span> <span class="nf">controller</span><span class="p">)</span> <span class="kd">throws</span> <span class="nf">Exception</span> <span class="p">{</span>
+        <span class="n">InputStatus</span> <span class="nf">status</span> <span class="o">=</span> <span class="n">inputProcessor</span><span class="p">.</span><span class="na">processInput</span><span class="p">();</span> <span class="c1">//处理输入
+</span><span class="c1"></span>        <span class="k">if</span> <span class="p">(</span><span class="n">status</span> <span class="o">==</span> <span class="n">InputStatus</span><span class="p">.</span><span class="na">MORE_AVAILABLE</span> <span class="o">&amp;&amp;</span> <span class="n">recordWriter</span><span class="p">.</span><span class="na">isAvailable</span><span class="p">())</span> <span class="p">{</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">status</span> <span class="o">==</span> <span class="n">InputStatus</span><span class="p">.</span><span class="na">END_OF_INPUT</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// 没有后续的输入了，告知 MailboxDefaultAction.Controller 
+</span><span class="c1"></span>            <span class="n">controller</span><span class="p">.</span><span class="na">allActionsCompleted</span><span class="p">();</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="c1">// 暂时没有输入的情况
+</span><span class="c1"></span>        <span class="n">TaskIOMetricGroup</span> <span class="nf">ioMetrics</span> <span class="o">=</span> <span class="n">getEnvironment</span><span class="p">().</span><span class="na">getMetricGroup</span><span class="p">().</span><span class="na">getIOMetricGroup</span><span class="p">();</span>
+        <span class="n">TimerGauge</span> <span class="nf">timer</span><span class="p">;</span>
+        <span class="n">CompletableFuture</span><span class="o">&lt;?&gt;</span> <span class="n">resumeFuture</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">recordWriter</span><span class="p">.</span><span class="na">isAvailable</span><span class="p">())</span> <span class="p">{</span>
+            <span class="n">timer</span> <span class="o">=</span> <span class="n">ioMetrics</span><span class="p">.</span><span class="na">getBackPressuredTimePerSecond</span><span class="p">();</span>
+            <span class="n">resumeFuture</span> <span class="o">=</span> <span class="n">recordWriter</span><span class="p">.</span><span class="na">getAvailableFuture</span><span class="p">();</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">timer</span> <span class="o">=</span> <span class="n">ioMetrics</span><span class="p">.</span><span class="na">getIdleTimeMsPerSecond</span><span class="p">();</span>
+            <span class="n">resumeFuture</span> <span class="o">=</span> <span class="n">inputProcessor</span><span class="p">.</span><span class="na">getAvailableFuture</span><span class="p">();</span>
+        <span class="p">}</span>
+        <span class="c1">// 一旦有输入了，就告知 controller 要恢复 MailboxDefaultAction 的处理
+</span><span class="c1"></span>        <span class="n">assertNoException</span><span class="p">(</span>
+                <span class="n">resumeFuture</span><span class="p">.</span><span class="na">thenRun</span><span class="p">(</span>
+                        <span class="c1">// 首先会暂停 MailboxDefaultAction 的处理
+</span><span class="c1"></span>                        <span class="k">new</span> <span class="n">ResumeWrapper</span><span class="p">(</span><span class="n">controller</span><span class="p">.</span><span class="na">suspendDefaultAction</span><span class="p">(</span><span class="n">timer</span><span class="p">),</span> <span class="n">timer</span><span class="p">)));</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="nf">static</span> <span class="kd">class</span> <span class="nf">ResumeWrapper</span> <span class="kd">implements</span> <span class="nf">Runnable</span> <span class="p">{</span>
+        <span class="kd">private</span> <span class="nf">final</span> <span class="n">Suspension</span> <span class="nf">suspendedDefaultAction</span><span class="p">;</span>
+        <span class="kd">private</span> <span class="nf">final</span> <span class="n">TimerGauge</span> <span class="nf">timer</span><span class="p">;</span>
+
+        <span class="kd">public</span> <span class="nf">ResumeWrapper</span><span class="p">(</span><span class="n">Suspension</span> <span class="nf">suspendedDefaultAction</span><span class="p">,</span> <span class="n">TimerGauge</span> <span class="nf">timer</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="na">suspendedDefaultAction</span> <span class="o">=</span> <span class="n">suspendedDefaultAction</span><span class="p">;</span>
+            <span class="n">timer</span><span class="p">.</span><span class="na">markStart</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="na">timer</span> <span class="o">=</span> <span class="n">timer</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="nf">void</span> <span class="n">run</span><span class="p">()</span> <span class="p">{</span>
+            <span class="n">timer</span><span class="p">.</span><span class="na">markEnd</span><span class="p">();</span>
+            <span class="n">suspendedDefaultAction</span><span class="p">.</span><span class="na">resume</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>对于 checkpoint 的触发，是通过 <code>MailboxExecutor</code> 提交一个 Mail 来实现的：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">class</span> <span class="nf">StreamTask</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="nf">Future</span><span class="o">&lt;</span><span class="n">Boolean</span><span class="o">&gt;</span> <span class="nf">triggerCheckpointAsync</span><span class="p">(</span>
+            <span class="n">CheckpointMetaData</span> <span class="nf">checkpointMetaData</span><span class="p">,</span>
+            <span class="n">CheckpointOptions</span> <span class="nf">checkpointOptions</span><span class="p">,</span>
+            <span class="kt">boolean</span> <span class="nf">advanceToEndOfEventTime</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">CompletableFuture</span><span class="o">&lt;</span><span class="n">Boolean</span><span class="o">&gt;</span> <span class="nf">result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CompletableFuture</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+        <span class="c1">// 提交到 mailbox 中运行
+</span><span class="c1"></span>        <span class="n">mainMailboxExecutor</span><span class="p">.</span><span class="na">execute</span><span class="p">(</span>
+                <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">{</span>
+                    <span class="p">......</span>
+                    <span class="k">try</span> <span class="p">{</span>
+                        <span class="n">result</span><span class="p">.</span><span class="na">complete</span><span class="p">(</span><span class="n">triggerCheckpoint</span><span class="p">(</span><span class="n">checkpointMetaData</span><span class="p">,</span> <span class="n">checkpointOptions</span><span class="p">,</span> <span class="n">advanceToEndOfEventTime</span><span class="p">));</span>
+                    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">Exception</span> <span class="nf">ex</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="c1">// Report the failure both via the Future result but also to the mailbox
+</span><span class="c1"></span>                        <span class="n">result</span><span class="p">.</span><span class="na">completeExceptionally</span><span class="p">(</span><span class="n">ex</span><span class="p">);</span>
+                        <span class="k">throw</span> <span class="n">ex</span><span class="p">;</span>
+                    <span class="p">}</span>
+                <span class="p">},</span>
+                <span class="s">&#34;checkpoint %s with %s&#34;</span><span class="p">,</span>
+                <span class="n">checkpointMetaData</span><span class="p">,</span>
+                <span class="n">checkpointOptions</span><span class="p">);</span>
+        <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>checkpoint 完成或者放弃的通知也是提交到 Mailbox 中运行的：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">class</span> <span class="nf">StreamTask</span> <span class="p">{</span>
+    <span class="c1">// checkpoint 完成或者失败的回调通知操作
+</span><span class="c1"></span>    <span class="kd">private</span> <span class="nf">Future</span><span class="o">&lt;</span><span class="n">Void</span><span class="o">&gt;</span> <span class="nf">notifyCheckpointOperation</span><span class="p">(</span>
+            <span class="n">RunnableWithException</span> <span class="nf">runnable</span><span class="p">,</span> <span class="n">String</span> <span class="nf">description</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">CompletableFuture</span><span class="o">&lt;</span><span class="n">Void</span><span class="o">&gt;</span> <span class="nf">result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CompletableFuture</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+        <span class="n">mailboxProcessor</span>
+                <span class="p">.</span><span class="na">getMailboxExecutor</span><span class="p">(</span><span class="n">TaskMailbox</span><span class="p">.</span><span class="na">MAX_PRIORITY</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">execute</span><span class="p">(</span>
+                        <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">{</span>
+                            <span class="k">try</span> <span class="p">{</span>
+                                <span class="n">runnable</span><span class="p">.</span><span class="na">run</span><span class="p">();</span>
+                            <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">Exception</span> <span class="nf">ex</span><span class="p">)</span> <span class="p">{</span>
+                                <span class="n">result</span><span class="p">.</span><span class="na">completeExceptionally</span><span class="p">(</span><span class="n">ex</span><span class="p">);</span>
+                                <span class="k">throw</span> <span class="n">ex</span><span class="p">;</span>
+                            <span class="p">}</span>
+                            <span class="n">result</span><span class="p">.</span><span class="na">complete</span><span class="p">(</span><span class="kc">null</span><span class="p">);</span>
+                        <span class="p">},</span>
+                        <span class="n">description</span><span class="p">);</span>
+        <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>对于 processing time timer 的触发也是类似的：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">class</span> <span class="nf">streamTask</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="nf">ProcessingTimeServiceFactory</span> <span class="n">getProcessingTimeServiceFactory</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">mailboxExecutor</span> <span class="o">-&gt;</span>
+                <span class="k">new</span> <span class="n">ProcessingTimeServiceImpl</span><span class="p">(</span>
+                        <span class="n">timerService</span><span class="p">,</span>
+                        <span class="n">callback</span> <span class="o">-&gt;</span> <span class="n">deferCallbackToMailbox</span><span class="p">(</span><span class="n">mailboxExecutor</span><span class="p">,</span> <span class="n">callback</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="n">ProcessingTimeCallback</span> <span class="nf">deferCallbackToMailbox</span><span class="p">(</span>
+            <span class="n">MailboxExecutor</span> <span class="nf">mailboxExecutor</span><span class="p">,</span> <span class="n">ProcessingTimeCallback</span> <span class="nf">callback</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">timestamp</span> <span class="o">-&gt;</span> <span class="p">{</span>
+            <span class="c1">// 提交到 mailbox 中运行
+</span><span class="c1"></span>            <span class="n">mailboxExecutor</span><span class="p">.</span><span class="na">execute</span><span class="p">(</span>
+                    <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">invokeProcessingTimeCallback</span><span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">),</span>
+                    <span class="s">&#34;Timer callback for %s @ %d&#34;</span><span class="p">,</span>
+                    <span class="n">callback</span><span class="p">,</span>
+                    <span class="n">timestamp</span><span class="p">);</span>
+        <span class="p">};</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="legacy-source-的兼容处理">Legacy Source 的兼容处理</h3>
+
+<p>前面提到，因为历史遗留的问题，<code>SourceFunction</code> 被设计成一个无限的循环，这个循环不能和 Mailbox 的事件循环穿插执行，因此需要进行兼容性处理。</p>
+
+<p><code>SourceStreamTask</code> 被设计为 <code>StreamTask</code> 的子类，会启动另外一个独立的线程 <code>LegacySourceFunctionThread</code> 运行 <code>SourceFunction</code> 中的循环。这样相当于有两个线程在同时运行，一个是 <code>SourceFunction</code> 中生成数据流中的数据，另一个是 <code>Mailbox</code> 中的事件处理线程。为了防止这两个线程发生冲突，在 <code>SourceStreamTask</code> 中保留了 checkpoint lock，用于在这两个线程间进行并发控制。</p>
+
+<p>为了达到这样的效果，Flink 提供了一个 <code>StreamTaskActionExecutor</code> 的封装，用来运行 <code>Runnable</code>。正常情况下，StreamTaskActionExecutor 的实现就是直接去运行 <code>Runnable</code>；同时也提供了一个 <code>SynchronizedStreamTaskActionExecutor</code> 的实现，在运行 <code>Runnable</code> 的时候会进行加锁控制，这样就把获取锁的操作引入到 Mailbox 处理线程中了：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">class</span> <span class="nf">SynchronizedStreamTaskActionExecutor</span> <span class="kd">implements</span> <span class="nf">StreamTaskActionExecutor</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="nf">final</span> <span class="n">Object</span> <span class="nf">mutex</span><span class="p">;</span>
+
+    <span class="kd">public</span> <span class="nf">SynchronizedStreamTaskActionExecutor</span><span class="p">(</span><span class="n">Object</span> <span class="nf">mutex</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="na">mutex</span> <span class="o">=</span> <span class="n">mutex</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="nf">void</span> <span class="n">run</span><span class="p">(</span><span class="n">RunnableWithException</span> <span class="nf">runnable</span><span class="p">)</span> <span class="kd">throws</span> <span class="nf">Exception</span> <span class="p">{</span>
+        <span class="kd">synchronized</span> <span class="p">(</span><span class="n">mutex</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">runnable</span><span class="p">.</span><span class="na">run</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="小结">小结</h2>
+
+<p>Mailbox 模型是常见的用来控制并发的一种设计，通过引入 Mailbox 的线程模型，Flink 简化了 <code>StreamTask</code> 的代码逻辑，规避了多线程竞争带来的并发问题。</p>
+
+<p>通过对 <code>Mailbox</code>、 <code>MailboxProcessor</code>、<code>MailboxExecutor</code> 这几个接口的设计进行分析，可以看出 Flink 的 Mailbox 模型设计还是比较优雅的，在使用方面也比较简单，很值得我们在开发其它项目的时候参考。</p>
+
+<h2 id="参考">参考</h2>
+
+<ul>
+<li><a href="https://issues.apache.org/jira/browse/FLINK-12477">FLINK-12477</a></li>
+<li><a href="https://docs.google.com/document/d/1eDpsUKv2FqwZiS1Pm6gYO5eFHScBHfULKmH1-ZEWB4g">Change threading-model in StreamTask to a mailbox-based approach</a></li>
+</ul>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">原始链接</span>
+    <span class="item-content"><a href="https://blog.jrwang.me/2020/2020-12-20-flink-sourcecode-mailbox-threading-model/">https://blog.jrwang.me/2020/2020-12-20-flink-sourcecode-mailbox-threading-model/</a></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2021-03-23
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/flink/">Flink</a>
+          <a href="/tags/%E5%AE%9E%E6%97%B6%E8%AE%A1%E7%AE%97/">实时计算</a>
+          <a href="/tags/mailbox/">Mailbox</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/2020/2020-12-26-flink-ha/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">Flink 源码阅读笔记（21）- Flink JobManager HA 机制的扩展与实现</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/2020/2020-01-05-flink-sourcecode-sql-stream-join/">
+            <span class="next-text nav-default">Flink 源码阅读笔记（19）- Flink SQL 中流表 Join 的实现</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+    <script src="https://utteranc.es/client.js"
+            repo="jrthe42/blog-comment"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/utterance">comments powered by utterances.</a></noscript>
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:jrthe42@gmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/jrthe42" class="iconfont icon-github" title="github"></a>
+      <a href="https://weibo.com/jrthe42" class="iconfont icon-weibo" title="weibo"></a>
+  <a href="https://blog.jrwang.me/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2015 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author"><a rel="license noopener" href="https://blog.jrwang.me" target="_blank">jrthe42</a></span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.f79f403f.min.js"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-66913886-2', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>
